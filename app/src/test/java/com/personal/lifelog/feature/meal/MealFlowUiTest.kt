@@ -99,13 +99,15 @@ class MealFlowUiTest {
             db.records()::datesWithRecords,
             db.records()::mealsOn,
         )
+        val sleepViewModel = SleepViewModel(records, clock) { zone }
+        val workoutRepository = WorkoutRepository(db, writes, clock)
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
                 LifelogApp(
                     homeViewModel = homeViewModel,
                     settingsViewModel = settingsViewModel,
-                    sleepViewModel = SleepViewModel(records, clock) { zone },
-                    workoutRepository = WorkoutRepository(db, writes, clock),
+                    sleepViewModel = sleepViewModel,
+                    workoutRepository = workoutRepository,
                     records = records,
                     photos = photos,
                     clock = clock,
