@@ -25,6 +25,8 @@ interface RecordDao {
 
     @Query("SELECT * FROM SleepRecord WHERE archiveLocalDate = :date ORDER BY COALESCE(endedAtUtcMs, startedAtUtcMs) DESC, id ASC")
     fun sleepsOn(date: String): Flow<List<SleepRecord>>
+    @Query("SELECT * FROM SleepRecord ORDER BY COALESCE(endedAtUtcMs, startedAtUtcMs) DESC, id ASC")
+    fun observeSleeps(): Flow<List<SleepRecord>>
     @Query("SELECT * FROM SleepRecord WHERE activeSlot = 1") fun activeSleep(): Flow<SleepRecord?>
     @Query("SELECT * FROM SleepRecord WHERE activeSlot = 1") suspend fun activeSleepNow(): SleepRecord?
     @Query("SELECT * FROM SleepRecord WHERE id = :id") suspend fun sleep(id: String): SleepRecord?

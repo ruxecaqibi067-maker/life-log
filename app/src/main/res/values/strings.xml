@@ -11,7 +11,6 @@
 
     <!-- 今天 -->
     <string name="home_quick_meal">记饮食</string>
-    <string name="home_quick_sleep">准备睡了 / 起床了</string>
     <string name="home_quick_workout">记运动</string>
     <string name="home_timeline_title">今日时间线</string>
     <string name="home_timeline_dev_note">时间线整合将在后续任务包接入</string>

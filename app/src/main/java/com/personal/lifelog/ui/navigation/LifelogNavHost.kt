@@ -39,6 +39,10 @@ import com.personal.lifelog.feature.settings.SettingsScreen
 import com.personal.lifelog.feature.settings.SettingsViewModel
 import java.time.Clock
 import java.time.ZoneId
+import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.feature.sleep.SleepEditorViewModel
+import com.personal.lifelog.feature.sleep.SleepEditorScreen
+import com.personal.lifelog.feature.sleep.SleepHistoryScreen
 
 /**
  * Single-activity navigation shell. The bottom bar only shows on the two tab
@@ -58,6 +62,7 @@ fun LifelogApp(
     photos: PhotoStorage,
     clock: Clock,
     zoneIdProvider: () -> ZoneId,
+    sleepViewModel: SleepViewModel,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -126,8 +131,10 @@ fun LifelogApp(
                     onOpenSettings = { navController.navigateSingle(LifelogRoutes.SETTINGS) },
                     onRecordMeal = { navController.navigate(LifelogRoutes.mealEditor()) },
                     onOpenMeal = { id -> navController.navigate(LifelogRoutes.mealDetail(id)) },
-                    onOpenSleep = { navController.navigate(LifelogRoutes.sleepEditor()) },
+                    onOpenSleep = { navController.navigateSingle(LifelogRoutes.SLEEP_HISTORY) },
                     onRecordWorkout = { navController.navigate(LifelogRoutes.workoutEditor()) },
+                    sleepViewModel = sleepViewModel,
+                    onEditSleep = { navController.navigate(LifelogRoutes.sleepEditor(it)) },
                 )
             }
             composable(LifelogRoutes.REVIEW) {
@@ -163,6 +170,12 @@ fun LifelogApp(
                     onFinished = { navController.popBackStack() },
                 )
             }
+            composable(LifelogRoutes.SLEEP_HISTORY) {
+                SleepHistoryScreen(sleepViewModel,
+                    onAdd = { navController.navigate(LifelogRoutes.sleepEditor()) },
+                    onEdit = { navController.navigate(LifelogRoutes.sleepEditor(it)) },
+                    onBack = { navController.navigateUp() })
+            }
             composable(
                 route = LifelogRoutes.MEAL_DETAIL_PATTERN,
                 arguments = listOf(LifelogRoutes.mealIdArgument),
@@ -190,9 +203,13 @@ fun LifelogApp(
                 arguments = listOf(LifelogRoutes.sleepIdArgument),
             ) { entry ->
                 val sleepId = entry.arguments?.getString(LifelogRoutes.ARG_SLEEP_ID)
-                DevPlaceholderScreen(
-                    title = stringResource(R.string.home_quick_sleep),
-                    route = LifelogRoutes.sleepEditor(sleepId),
+                val editor: SleepEditorViewModel = viewModel {
+                    SleepEditorViewModel(sleepViewModel.repository, sleepViewModel.clock,
+                        sleepViewModel.zoneIdProvider, sleepId, createSavedStateHandle())
+                }
+                SleepEditorScreen(
+                    viewModel = editor,
+                    editing = sleepId != null,
                     onBack = { navController.navigateUp() },
                 )
             }

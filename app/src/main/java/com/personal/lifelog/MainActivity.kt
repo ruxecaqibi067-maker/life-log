@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.settings.SettingsViewModel
+import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.ui.navigation.LifelogApp
 import com.personal.lifelog.ui.theme.LifeLogTheme
 import com.personal.lifelog.ui.theme.resolvedDarkTheme
@@ -35,6 +36,9 @@ class MainActivity : ComponentActivity() {
                 )
             }
             val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
+            val sleepViewModel: SleepViewModel = viewModel {
+                SleepViewModel(container.records, container.clock, container.zoneIdProvider)
+            }
             val darkTheme = resolvedDarkTheme(themeMode)
 
             // Keep system bar icon contrast in sync with the stored theme choice,
@@ -52,6 +56,7 @@ class MainActivity : ComponentActivity() {
                 LifelogApp(
                     homeViewModel = homeViewModel,
                     settingsViewModel = settingsViewModel,
+                    sleepViewModel = sleepViewModel,
                     records = container.records,
                     photos = container.photos,
                     clock = container.clock,
