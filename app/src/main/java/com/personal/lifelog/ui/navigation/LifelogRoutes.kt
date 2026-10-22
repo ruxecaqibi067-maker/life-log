@@ -29,6 +29,9 @@ object LifelogRoutes {
     const val SLEEP_EDIT = "sleep/edit"
     const val WORKOUT_EDIT = "workout/edit"
 
+    /** Read-only detail; T05 adds it so a saved meal can be opened, edited and deleted. */
+    const val MEAL_DETAIL = "meal/detail"
+
     const val ARG_MEAL_ID = "mealId"
     const val ARG_SLEEP_ID = "sleepId"
     const val ARG_WORKOUT_ID = "workoutId"
@@ -36,11 +39,13 @@ object LifelogRoutes {
     // Patterns registered with composable(): the query template is required for
     // navigation-compose to parse optional query arguments (see the class comment).
     const val MEAL_EDIT_PATTERN = "$MEAL_EDIT?$ARG_MEAL_ID={$ARG_MEAL_ID}"
+    const val MEAL_DETAIL_PATTERN = "$MEAL_DETAIL?$ARG_MEAL_ID={$ARG_MEAL_ID}"
     const val SLEEP_EDIT_PATTERN = "$SLEEP_EDIT?$ARG_SLEEP_ID={$ARG_SLEEP_ID}"
     const val WORKOUT_EDIT_PATTERN = "$WORKOUT_EDIT?$ARG_WORKOUT_ID={$ARG_WORKOUT_ID}"
 
     /** Optional record UUIDs are URL-encoded by the navigation library when navigating. */
     fun mealEditor(id: String? = null): String = editorRoute(MEAL_EDIT, ARG_MEAL_ID, id)
+    fun mealDetail(id: String): String = "$MEAL_DETAIL?$ARG_MEAL_ID=$id"
     fun sleepEditor(id: String? = null): String = editorRoute(SLEEP_EDIT, ARG_SLEEP_ID, id)
     fun workoutEditor(id: String? = null): String = editorRoute(WORKOUT_EDIT, ARG_WORKOUT_ID, id)
 

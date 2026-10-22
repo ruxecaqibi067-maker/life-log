@@ -12,10 +12,13 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -23,11 +26,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.personal.lifelog.R
+import com.personal.lifelog.data.media.PhotoStorage
+import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.feature.home.HomeScreen
 import com.personal.lifelog.feature.home.HomeViewModel
+import com.personal.lifelog.feature.meal.MealDetailScreen
+import com.personal.lifelog.feature.meal.MealDetailViewModel
+import com.personal.lifelog.feature.meal.MealEditorScreen
+import com.personal.lifelog.feature.meal.MealEditorViewModel
 import com.personal.lifelog.feature.review.ReviewScreen
 import com.personal.lifelog.feature.settings.SettingsScreen
 import com.personal.lifelog.feature.settings.SettingsViewModel
+import java.time.Clock
+import java.time.ZoneId
 
 /**
  * Single-activity navigation shell. The bottom bar only shows on the two tab
@@ -43,14 +54,26 @@ import com.personal.lifelog.feature.settings.SettingsViewModel
 fun LifelogApp(
     homeViewModel: HomeViewModel,
     settingsViewModel: SettingsViewModel,
+    records: RecordRepository,
+    photos: PhotoStorage,
+    clock: Clock,
+    zoneIdProvider: () -> ZoneId,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val today by homeViewModel.today.collectAsStateWithLifecycle()
     val hasRecordsToday by homeViewModel.hasRecordsToday.collectAsStateWithLifecycle()
+    val todayMeals by homeViewModel.todayMeals.collectAsStateWithLifecycle()
     val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
     val themeError by settingsViewModel.themeError.collectAsStateWithLifecycle()
+
+    // T04's contract: pages that resume with draft tickets call maintain. The shell
+    // performs the general abandoned-ticket sweep once per app composition; failures
+    // surface through the photo operations that actually need the files.
+    LaunchedEffect(photos) {
+        photos.maintain()
+    }
 
     Scaffold(
         bottomBar = {
@@ -99,8 +122,10 @@ fun LifelogApp(
                 HomeScreen(
                     today = today,
                     hasRecordsToday = hasRecordsToday,
+                    todayMeals = todayMeals,
                     onOpenSettings = { navController.navigateSingle(LifelogRoutes.SETTINGS) },
                     onRecordMeal = { navController.navigate(LifelogRoutes.mealEditor()) },
+                    onOpenMeal = { id -> navController.navigate(LifelogRoutes.mealDetail(id)) },
                     onOpenSleep = { navController.navigate(LifelogRoutes.sleepEditor()) },
                     onRecordWorkout = { navController.navigate(LifelogRoutes.workoutEditor()) },
                 )
@@ -123,11 +148,42 @@ fun LifelogApp(
                 arguments = listOf(LifelogRoutes.mealIdArgument),
             ) { entry ->
                 val mealId = entry.arguments?.getString(LifelogRoutes.ARG_MEAL_ID)
-                DevPlaceholderScreen(
-                    title = stringResource(R.string.home_quick_meal),
-                    route = LifelogRoutes.mealEditor(mealId),
-                    onBack = { navController.navigateUp() },
+                val editorViewModel: MealEditorViewModel = viewModel {
+                    MealEditorViewModel(
+                        mealId = mealId,
+                        savedStateHandle = createSavedStateHandle(),
+                        records = records,
+                        photos = photos,
+                        clock = clock,
+                        zoneIdProvider = zoneIdProvider,
+                    )
+                }
+                MealEditorScreen(
+                    viewModel = editorViewModel,
+                    onFinished = { navController.popBackStack() },
                 )
+            }
+            composable(
+                route = LifelogRoutes.MEAL_DETAIL_PATTERN,
+                arguments = listOf(LifelogRoutes.mealIdArgument),
+            ) { entry ->
+                val mealId = entry.arguments?.getString(LifelogRoutes.ARG_MEAL_ID)
+                if (mealId == null) {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                } else {
+                    val detailViewModel: MealDetailViewModel = viewModel {
+                        MealDetailViewModel(
+                            mealId = mealId,
+                            records = records,
+                            photos = photos,
+                        )
+                    }
+                    MealDetailScreen(
+                        viewModel = detailViewModel,
+                        onBack = { navController.popBackStack() },
+                        onEdit = { id -> navController.navigate(LifelogRoutes.mealEditor(id)) },
+                    )
+                }
             }
             composable(
                 route = LifelogRoutes.SLEEP_EDIT_PATTERN,

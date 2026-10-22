@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
                     container.clock,
                     container.zoneIdProvider,
                     container.records::datesWithRecords,
+                    container.records::mealsOn,
                 )
             }
             val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
@@ -48,7 +49,14 @@ class MainActivity : ComponentActivity() {
             }
 
             LifeLogTheme(themeMode = themeMode) {
-                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel)
+                LifelogApp(
+                    homeViewModel = homeViewModel,
+                    settingsViewModel = settingsViewModel,
+                    records = container.records,
+                    photos = container.photos,
+                    clock = container.clock,
+                    zoneIdProvider = container.zoneIdProvider,
+                )
             }
         }
     }

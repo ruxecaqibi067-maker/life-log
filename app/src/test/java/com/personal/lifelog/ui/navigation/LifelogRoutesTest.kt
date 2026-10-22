@@ -33,6 +33,7 @@ class LifelogRoutesTest {
     fun editorRoutesWithIdCarryStableArgumentNames() {
         val id = "7e9d4c8b-2f1a-4e6b-9c3d-0a1b2c3d4e5f"
         assertEquals("meal/edit?mealId=$id", LifelogRoutes.mealEditor(id))
+        assertEquals("meal/detail?mealId=$id", LifelogRoutes.mealDetail(id))
         assertEquals("sleep/edit?sleepId=$id", LifelogRoutes.sleepEditor(id))
         assertEquals("workout/edit?workoutId=$id", LifelogRoutes.workoutEditor(id))
     }
@@ -57,12 +58,17 @@ class LifelogRoutesTest {
         // navigation-compose only parses query arguments declared in the pattern itself;
         // a pattern missing the template silently drops ids passed at navigate time.
         assertEquals("meal/edit?mealId={mealId}", LifelogRoutes.MEAL_EDIT_PATTERN)
+        assertEquals("meal/detail?mealId={mealId}", LifelogRoutes.MEAL_DETAIL_PATTERN)
         assertEquals("sleep/edit?sleepId={sleepId}", LifelogRoutes.SLEEP_EDIT_PATTERN)
         assertEquals("workout/edit?workoutId={workoutId}", LifelogRoutes.WORKOUT_EDIT_PATTERN)
         // Builder outputs must stay consistent with the fixed part of the pattern.
         assertEquals(
             LifelogRoutes.MEAL_EDIT_PATTERN.substringBefore('?'),
             LifelogRoutes.mealEditor().substringBefore('?'),
+        )
+        assertEquals(
+            LifelogRoutes.MEAL_DETAIL_PATTERN.substringBefore('?'),
+            LifelogRoutes.mealDetail("7e9d4c8b-2f1a-4e6b-9c3d-0a1b2c3d4e5f").substringBefore('?'),
         )
         assertEquals(
             LifelogRoutes.SLEEP_EDIT_PATTERN.substringBefore('?'),

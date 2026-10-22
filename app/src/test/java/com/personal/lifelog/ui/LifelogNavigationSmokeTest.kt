@@ -14,6 +14,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
+import com.personal.lifelog.data.media.PhotoStorage
+import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.domain.ThemeMode
@@ -66,11 +68,27 @@ class LifelogNavigationSmokeTest {
     }
 
     private fun setAppContent() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val writes = WriteCoordinator()
+        val records = RecordRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
+        val photos = PhotoStorage(context, db, records, writes, clock)
         val settingsViewModel = SettingsViewModel(SettingsRepository(db, WriteCoordinator(), clock))
-        val homeViewModel = HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, db.records()::datesWithRecords)
+        val homeViewModel = HomeViewModel(
+            clock,
+            { ZoneId.of("Asia/Shanghai") },
+            db.records()::datesWithRecords,
+            db.records()::mealsOn,
+        )
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
-                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel)
+                LifelogApp(
+                    homeViewModel = homeViewModel,
+                    settingsViewModel = settingsViewModel,
+                    records = records,
+                    photos = photos,
+                    clock = clock,
+                    zoneIdProvider = { ZoneId.of("Asia/Shanghai") },
+                )
             }
         }
     }
@@ -102,8 +120,9 @@ class LifelogNavigationSmokeTest {
     @Test
     fun reservedEditorRoutesShowPlaceholderAndReturn() {
         setAppContent()
+        // T05 replaced the meal placeholder with the real editor.
         compose.onNodeWithText("记饮食").performClick()
-        compose.onNodeWithText("导航路由：meal/edit", substring = true).assertExists()
+        compose.onNodeWithText("吃了什么（选填）").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
 
