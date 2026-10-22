@@ -1,0 +1,37 @@
+# Local IDE / build output
+.idea/
+*.iml
+.gradle/
+.kotlin/
+**/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+.DS_Store
+Thumbs.db
+
+# Signing material / secrets
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+.env
+.env.*
+!.env.example
+
+# Private user data and generated delivery artifacts
+private/
+user-data/
+backups/
+artifacts/
+*.apk
+*.aab
+*.apks
+*.hprof
+*.log
+
+# Local worktrees live outside this repository
+.worktrees/
+
+# Keep gradle/wrapper/gradle-wrapper.jar and app/schemas/ tracked.
