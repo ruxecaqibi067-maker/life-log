@@ -2,6 +2,7 @@ package com.personal.lifelog
 
 import android.content.Context
 import com.personal.lifelog.data.local.AppDatabase
+import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.SnapshotRepository
@@ -20,6 +21,7 @@ class AppContainer(
     val writes = WriteCoordinator()
     internal val database: AppDatabase by lazy { AppDatabase.create(appContext, clock) }
     val records: RecordRepository by lazy { RecordRepository(database, writes, clock, zoneIdProvider) }
+    val photos: PhotoStorage by lazy { PhotoStorage(appContext, database, records, writes, clock) }
     val workouts: WorkoutRepository by lazy { WorkoutRepository(database, writes, clock) }
     val settings: SettingsRepository by lazy { SettingsRepository(database, writes, clock) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
