@@ -1,5 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">生活随记</string>
-    <string name="welcome_message">随手记下生活片段</string>
+
+    <!-- 主导航 -->
+    <string name="nav_today">今天</string>
+    <string name="nav_review">回顾</string>
+    <string name="nav_settings">设置</string>
+    <string name="open_settings">打开设置</string>
+    <string name="back">返回</string>
+
+    <!-- 今天 -->
+    <string name="home_quick_meal">记饮食</string>
+    <string name="home_quick_sleep">准备睡了 / 起床了</string>
+    <string name="home_quick_workout">记运动</string>
+    <string name="home_timeline_title">今日时间线</string>
+    <string name="home_timeline_dev_note">时间线整合将在后续任务包接入</string>
+    <string name="home_timeline_has_records_note">今天已有记录，完整时间线将在后续任务包接入</string>
+
+    <!-- 回顾 -->
+    <string name="review_date_placeholder">日期选择</string>
+    <string name="review_dev_note">日期选择与时间线将在后续任务包接入</string>
+
+    <!-- 设置 -->
+    <string name="settings_theme">主题</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="settings_theme_error">主题保存失败，请重试</string>
+    <string name="settings_exercises">运动项目管理</string>
+    <string name="settings_backup">备份与恢复</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本</string>
+    <string name="settings_local_note">数据仅保存在本机，不联网、无账号</string>
+
+    <!-- 公共状态组件 -->
+    <string name="empty_timeline_title">这一天还没有记录</string>
+    <string name="empty_timeline_hint">保存的饮食、作息和运动会按时间显示在这里</string>
+    <string name="empty_review_hint">选择日期后，这里会显示当天的记录</string>
+    <string name="saving">保存中…</string>
+    <string name="retry">重试</string>
+
+    <!-- 开发占位 -->
+    <string name="dev_badge">开发中</string>
+    <string name="dev_placeholder_note">该页面将在后续任务包中实现</string>
+    <string name="dev_placeholder_route">导航路由：%1$s</string>
 </resources>
