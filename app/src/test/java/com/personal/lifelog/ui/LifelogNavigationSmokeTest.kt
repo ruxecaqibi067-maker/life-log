@@ -15,6 +15,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.repository.SettingsRepository
+import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.feature.home.HomeViewModel
@@ -70,7 +71,8 @@ class LifelogNavigationSmokeTest {
         val homeViewModel = HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, db.records()::datesWithRecords)
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
-                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel)
+                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel,
+                    workoutRepository = WorkoutRepository(db, WriteCoordinator(), clock))
             }
         }
     }
@@ -97,6 +99,16 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithText("主题").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
+    }
+
+    @Test
+    fun exerciseLibraryOpensFromSettingsAndReturnsToSettings() {
+        setAppContent()
+        compose.onNodeWithContentDescription("打开设置").performClick()
+        compose.onNodeWithText("运动项目管理").performClick()
+        compose.onNodeWithText("新增项目").assertExists()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithText("主题").assertExists()
     }
 
     @Test

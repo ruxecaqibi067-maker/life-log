@@ -48,7 +48,11 @@ class MainActivity : ComponentActivity() {
             }
 
             LifeLogTheme(themeMode = themeMode) {
-                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel)
+                LifelogApp(
+                    homeViewModel = homeViewModel,
+                    settingsViewModel = settingsViewModel,
+                    workoutRepository = container.workouts,
+                )
             }
         }
     }

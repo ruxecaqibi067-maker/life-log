@@ -1,9 +1,12 @@
 package com.personal.lifelog.feature.settings
 
 import android.content.pm.PackageManager
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -38,8 +42,8 @@ import com.personal.lifelog.ui.components.ErrorState
 
 /**
  * 设置 shell. The theme selector is fully functional and persists through the Room
- * AppSettings row; exercise management, backup/restore and other sections are
- * visible placeholders reserved for T07/T14 and clearly marked as such.
+ * AppSettings row; exercise management opens the T07 library. Backup/restore
+ * remains a visible placeholder reserved for T14.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +51,7 @@ fun SettingsScreen(
     themeMode: ThemeMode,
     themeWriteFailed: Boolean,
     onThemeSelected: (ThemeMode) -> Unit,
+    onOpenExercises: () -> Unit,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -68,6 +73,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -91,10 +97,11 @@ fun SettingsScreen(
             }
 
             SectionLabel(stringResource(R.string.settings_about))
-            DevRow(
-                icon = Icons.Filled.FitnessCenter,
-                label = stringResource(R.string.settings_exercises),
-            )
+            OutlinedButton(onClick = onOpenExercises, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.FitnessCenter, contentDescription = null)
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.settings_exercises))
+            }
             DevRow(
                 icon = Icons.Filled.Backup,
                 label = stringResource(R.string.settings_backup),

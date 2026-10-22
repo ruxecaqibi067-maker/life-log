@@ -16,6 +16,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -23,6 +25,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.personal.lifelog.R
+import com.personal.lifelog.data.repository.WorkoutRepository
+import com.personal.lifelog.feature.exercise.ExerciseLibraryScreen
+import com.personal.lifelog.feature.exercise.ExerciseLibraryViewModel
 import com.personal.lifelog.feature.home.HomeScreen
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.review.ReviewScreen
@@ -43,6 +48,7 @@ import com.personal.lifelog.feature.settings.SettingsViewModel
 fun LifelogApp(
     homeViewModel: HomeViewModel,
     settingsViewModel: SettingsViewModel,
+    workoutRepository: WorkoutRepository,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -115,8 +121,15 @@ fun LifelogApp(
                     themeMode = themeMode,
                     themeWriteFailed = themeError != null,
                     onThemeSelected = settingsViewModel::setTheme,
+                    onOpenExercises = { navController.navigateSingle(LifelogRoutes.EXERCISES) },
                     onBack = { navController.navigateUp() },
                 )
+            }
+            composable(LifelogRoutes.EXERCISES) {
+                val exerciseViewModel: ExerciseLibraryViewModel = viewModel {
+                    ExerciseLibraryViewModel(workoutRepository, createSavedStateHandle())
+                }
+                ExerciseLibraryScreen(exerciseViewModel, onBack = { navController.navigateUp() })
             }
             composable(
                 route = LifelogRoutes.MEAL_EDIT_PATTERN,

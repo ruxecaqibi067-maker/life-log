@@ -23,6 +23,7 @@ object LifelogRoutes {
     const val TODAY = "today"
     const val REVIEW = "review"
     const val SETTINGS = "settings"
+    const val EXERCISES = "exercises"
 
     // Reserved editor routes; placeholder screens exist today, real editors arrive later.
     const val MEAL_EDIT = "meal/edit"
