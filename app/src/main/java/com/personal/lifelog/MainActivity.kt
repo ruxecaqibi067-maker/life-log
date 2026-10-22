@@ -1,49 +1,54 @@
 package com.personal.lifelog
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.personal.lifelog.feature.home.HomeViewModel
+import com.personal.lifelog.feature.settings.SettingsViewModel
+import com.personal.lifelog.ui.navigation.LifelogApp
+import com.personal.lifelog.ui.theme.LifeLogTheme
+import com.personal.lifelog.ui.theme.resolvedDarkTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme(
-                colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
-            ) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier = Modifier.safeDrawingPadding().padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.headlineMedium,
-                        )
-                        Text(
-                            text = stringResource(R.string.welcome_message),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
+            val container = (application as App).container
+            val settingsViewModel: SettingsViewModel = viewModel {
+                SettingsViewModel(container.settings)
+            }
+            val homeViewModel: HomeViewModel = viewModel {
+                HomeViewModel(
+                    container.clock,
+                    container.zoneIdProvider,
+                    container.records::datesWithRecords,
+                )
+            }
+            val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
+            val darkTheme = resolvedDarkTheme(themeMode)
+
+            // Keep system bar icon contrast in sync with the stored theme choice,
+            // including when the user picks a mode that differs from the system.
+            val view = LocalView.current
+            SideEffect {
+                val window = (view.context as Activity).window
+                WindowCompat.getInsetsController(window, view).apply {
+                    isAppearanceLightStatusBars = !darkTheme
+                    isAppearanceLightNavigationBars = !darkTheme
                 }
+            }
+
+            LifeLogTheme(themeMode = themeMode) {
+                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel)
             }
         }
     }
