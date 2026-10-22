@@ -1,6 +1,6 @@
 # 第一版任务包索引
 
-当前阶段：主管规划。下表所有实现任务均为**未开始**；文档已生成不代表 App 已实现或测试通过。
+当前阶段：**T01–T07 实现已接受，真机待验证；T08 可开始**。动态状态和证据以 [主管进度板](STATUS.md)、[本轮验收报告](reviews/T01-T07_INTEGRATION.md) 为准；完整第一版仍需 T08–T16。
 
 项目根目录：`C:\Users\user1\Desktop\workspace\NEW TRY\life-log-android`。
 
@@ -20,22 +20,22 @@ S/M/L 是经验工作量与风险标记，定义见 `WORKFLOW.md`；不是 token
 
 | 编号 | 工作包 | 直接前置 | 规模 | 状态 | 独享交接文件 |
 |---|---|---|---|---|---|
-| [T01](tasks/T01.md) | 开发环境与可构建空安卓工程 | 无 | M | 未开始 | `handoffs/T01.md` |
-| [T02](tasks/T02.md) | 领域、数据库与 Room 契约 | T01 | L | 未开始 | `handoffs/T02.md` |
-| [T03](tasks/T03.md) | 主题与导航壳 | T02 | S | 未开始 | `handoffs/T03.md` |
-| [T04](tasks/T04.md) | 照片导入、拍摄与持久化服务 | T02 | L | 未开始 | `handoffs/T04.md` |
-| [T05](tasks/T05.md) | 饮食记录闭环 | T03、T04 | M | 未开始 | `handoffs/T05.md` |
-| [T06](tasks/T06.md) | 作息记录闭环 | T03 | M | 未开始 | `handoffs/T06.md` |
-| [T07](tasks/T07.md) | 内置与自定义运动项目管理 | T03 | M | 未开始 | `handoffs/T07.md` |
-| [T08](tasks/T08.md) | 一次训练多个项目与基础记录 | T07 | M | 未开始 | `handoffs/T08.md` |
-| [T09](tasks/T09.md) | 力量逐组与重复组快捷操作 | T08 | L | 未开始 | `handoffs/T09.md` |
-| [T10](tasks/T10.md) | 今天与回顾整合 | T05、T06、T09 | M | 未开始 | `handoffs/T10.md` |
-| [T11](tasks/T11.md) | 版本化 ZIP、JSON 与照片导出 | T10 | L | 未开始 | `handoffs/T11.md` |
-| [T12](tasks/T12.md) | 导入解析、预检与只读预览 | T11 | L | 未开始 | `handoffs/T12.md` |
-| [T13](tasks/T13.md) | 恢复引擎与失败回滚 | T12 | L | 未开始 | `handoffs/T13.md` |
-| [T14](tasks/T14.md) | 设置中的备份恢复界面 | T13 | M | 未开始 | `handoffs/T14.md` |
-| [T15](tasks/T15.md) | 全链质量与荣耀真机候选包 | T14 | L | 未开始 | `handoffs/T15.md` |
-| [T16](tasks/T16.md) | 正式签名发布与覆盖升级 | T15 | M | 未开始 | `handoffs/T16.md` |
+| [T01](tasks/T01.md) | 开发环境与可构建空安卓工程 | 无 | M | 实现已接受/真机待验证 | `handoffs/T01.md` |
+| [T02](tasks/T02.md) | 领域、数据库与 Room 契约 | T01 | L | 实现已接受/真机待验证 | `handoffs/T02.md` |
+| [T03](tasks/T03.md) | 主题与导航壳 | T02 | S | 实现已接受/真机待验证 | `handoffs/T03.md` |
+| [T04](tasks/T04.md) | 照片导入、拍摄与持久化服务 | T02 | L | 实现已接受/真机待验证 | `handoffs/T04.md` |
+| [T05](tasks/T05.md) | 饮食记录闭环 | T03、T04 | M | 实现已接受/真机待验证 | `handoffs/T05.md` |
+| [T06](tasks/T06.md) | 作息记录闭环 | T03 | M | 实现已接受/真机待验证 | `handoffs/T06.md` |
+| [T07](tasks/T07.md) | 内置与自定义运动项目管理 | T03 | M | 实现已接受/真机待验证 | `handoffs/T07.md` |
+| [T08](tasks/T08.md) | 一次训练多个项目与基础记录 | T07 | M | 可开始 | `handoffs/T08.md` |
+| [T09](tasks/T09.md) | 力量逐组与重复组快捷操作 | T08 | L | 待前置 | `handoffs/T09.md` |
+| [T10](tasks/T10.md) | 今天与回顾整合 | T05、T06、T09 | M | 待前置 | `handoffs/T10.md` |
+| [T11](tasks/T11.md) | 版本化 ZIP、JSON 与照片导出 | T10 | L | 待前置 | `handoffs/T11.md` |
+| [T12](tasks/T12.md) | 导入解析、预检与只读预览 | T11 | L | 待前置 | `handoffs/T12.md` |
+| [T13](tasks/T13.md) | 恢复引擎与失败回滚 | T12 | L | 待前置 | `handoffs/T13.md` |
+| [T14](tasks/T14.md) | 设置中的备份恢复界面 | T13 | M | 待前置 | `handoffs/T14.md` |
+| [T15](tasks/T15.md) | 全链质量与荣耀真机候选包 | T14 | L | 待前置 | `handoffs/T15.md` |
+| [T16](tasks/T16.md) | 正式签名发布与覆盖升级 | T15 | M | 待前置 | `handoffs/T16.md` |
 
 交接文件路径均相对于 `docs/`。未执行的任务不预先填写完成交接，运行证据不能用计划文字代替。
 
