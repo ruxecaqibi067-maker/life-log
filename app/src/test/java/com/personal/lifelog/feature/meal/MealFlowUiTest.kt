@@ -17,10 +17,12 @@ import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
+import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.settings.SettingsViewModel
+import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.ui.navigation.LifelogApp
 import com.personal.lifelog.ui.theme.LifeLogTheme
 import kotlinx.coroutines.runBlocking
@@ -101,6 +103,8 @@ class MealFlowUiTest {
                 LifelogApp(
                     homeViewModel = homeViewModel,
                     settingsViewModel = settingsViewModel,
+                    sleepViewModel = SleepViewModel(records, clock) { zone },
+                    workoutRepository = WorkoutRepository(db, writes, clock),
                     records = records,
                     photos = photos,
                     clock = clock,

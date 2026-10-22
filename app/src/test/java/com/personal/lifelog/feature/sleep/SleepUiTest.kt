@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
+import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.*
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.feature.home.HomeViewModel
@@ -59,7 +60,16 @@ class SleepUiTest {
                 val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, repository::datesWithRecords) }
                 val settings = vm(SettingsViewModel::class.java) { SettingsViewModel(SettingsRepository(db, writes, clock)) }
                 val sleep = vm(SleepViewModel::class.java) { SleepViewModel(repository, clock) { ZoneId.of("Asia/Shanghai") } }
-                LifelogApp(home, settings, sleep)
+                LifelogApp(
+                    homeViewModel = home,
+                    settingsViewModel = settings,
+                    sleepViewModel = sleep,
+                    records = repository,
+                    photos = PhotoStorage(context, db, repository, writes, clock),
+                    clock = clock,
+                    zoneIdProvider = { ZoneId.of("Asia/Shanghai") },
+                    workoutRepository = WorkoutRepository(db, writes, clock),
+                )
             }
         }
         awaitText("准备睡了")

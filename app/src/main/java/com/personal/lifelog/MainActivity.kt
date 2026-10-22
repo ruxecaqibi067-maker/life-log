@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     photos = container.photos,
                     clock = container.clock,
                     zoneIdProvider = container.zoneIdProvider,
+                    workoutRepository = container.workouts,
                 )
             }
         }

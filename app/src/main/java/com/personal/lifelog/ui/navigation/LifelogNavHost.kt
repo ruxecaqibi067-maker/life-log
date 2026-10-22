@@ -28,6 +28,9 @@ import androidx.navigation.compose.rememberNavController
 import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
+import com.personal.lifelog.data.repository.WorkoutRepository
+import com.personal.lifelog.feature.exercise.ExerciseLibraryScreen
+import com.personal.lifelog.feature.exercise.ExerciseLibraryViewModel
 import com.personal.lifelog.feature.home.HomeScreen
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.meal.MealDetailScreen
@@ -63,6 +66,7 @@ fun LifelogApp(
     clock: Clock,
     zoneIdProvider: () -> ZoneId,
     sleepViewModel: SleepViewModel,
+    workoutRepository: WorkoutRepository,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -147,8 +151,15 @@ fun LifelogApp(
                     themeMode = themeMode,
                     themeWriteFailed = themeError != null,
                     onThemeSelected = settingsViewModel::setTheme,
+                    onOpenExercises = { navController.navigateSingle(LifelogRoutes.EXERCISES) },
                     onBack = { navController.navigateUp() },
                 )
+            }
+            composable(LifelogRoutes.EXERCISES) {
+                val exerciseViewModel: ExerciseLibraryViewModel = viewModel {
+                    ExerciseLibraryViewModel(workoutRepository, createSavedStateHandle())
+                }
+                ExerciseLibraryScreen(exerciseViewModel, onBack = { navController.navigateUp() })
             }
             composable(
                 route = LifelogRoutes.MEAL_EDIT_PATTERN,

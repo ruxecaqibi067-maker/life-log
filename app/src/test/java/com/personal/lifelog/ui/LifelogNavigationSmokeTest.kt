@@ -18,6 +18,7 @@ import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.feature.home.HomeViewModel
@@ -87,6 +88,7 @@ class LifelogNavigationSmokeTest {
                     homeViewModel = homeViewModel,
                     settingsViewModel = settingsViewModel,
                     sleepViewModel = sleepViewModel,
+                    workoutRepository = WorkoutRepository(db, writes, clock),
                     records = records,
                     photos = photos,
                     clock = clock,
@@ -118,6 +120,16 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithText("主题").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
+    }
+
+    @Test
+    fun exerciseLibraryOpensFromSettingsAndReturnsToSettings() {
+        setAppContent()
+        compose.onNodeWithContentDescription("打开设置").performClick()
+        compose.onNodeWithText("运动项目管理").performClick()
+        compose.onNodeWithText("新增项目").assertExists()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithText("主题").assertExists()
     }
 
     @Test
