@@ -57,7 +57,7 @@ class SleepUiTest {
         val repository = RecordRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
-                val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, repository::datesWithRecords) }
+                val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, repository::datesWithRecords, repository::mealsOn) }
                 val settings = vm(SettingsViewModel::class.java) { SettingsViewModel(SettingsRepository(db, writes, clock)) }
                 val sleep = vm(SleepViewModel::class.java) { SleepViewModel(repository, clock) { ZoneId.of("Asia/Shanghai") } }
                 LifelogApp(

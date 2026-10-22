@@ -74,6 +74,8 @@ class MealEditorViewModel(
     private var originalPhotoId: String? = null
     private var originalDate: LocalDate? = null
     private var originalTime: LocalTime? = null
+    private var originalOccurredAt: Long? = null
+    private var originalZoneId: String? = null
     private var closing = false
 
     private val initialLocal = Instant.ofEpochMilli(clock.millis())
@@ -81,7 +83,7 @@ class MealEditorViewModel(
 
     private val _state = MutableStateFlow(
         MealEditorUiState(
-            loading = mealId != null,
+            loading = true,
             text = savedStateHandle.get<String>(KEY_TEXT) ?: "",
             satiety = savedStateHandle.get<String>(KEY_SATIETY)
                 ?.let { runCatching { Satiety.valueOf(it) }.getOrNull() },
@@ -132,7 +134,7 @@ class MealEditorViewModel(
                     }
                     val ticket = result.value.ticket
                     val preview = photos.previewUri(ticket)
-                    _state.update {
+                    update {
                         it.copy(
                             newPhotoTicket = ticket,
                             captureTicket = null,
@@ -169,7 +171,7 @@ class MealEditorViewModel(
         val removingReplacement = ticket != null || capture != null
         viewModelScope.launch {
             listOfNotNull(ticket, capture).distinct().forEach { photos.release(it) }
-            _state.update {
+            update {
                 it.copy(
                     newPhotoTicket = null,
                     captureTicket = null,
@@ -202,7 +204,7 @@ class MealEditorViewModel(
                         photos.release(result.value.ticket)
                         return@launch
                     }
-                    _state.update {
+                    update {
                         it.copy(
                             captureTicket = result.value.ticket,
                             captureRequest = result.value,
@@ -266,7 +268,7 @@ class MealEditorViewModel(
                         return@launch
                     }
                     val preview = photos.previewUri(result.value.ticket)
-                    _state.update {
+                    update {
                         it.copy(
                             newPhotoTicket = result.value.ticket,
                             captureTicket = null,
@@ -293,7 +295,7 @@ class MealEditorViewModel(
                         photoError = result.error.toMealUiError(),
                     )
                 }
-                PhotoResult.Cancelled -> _state.update {
+                PhotoResult.Cancelled -> update {
                     it.copy(
                         captureTicket = null,
                         captureRequest = null,
@@ -306,7 +308,9 @@ class MealEditorViewModel(
 
     fun save() {
         val current = _state.value
-        if (current.saving || current.loading || current.missing || closing) return
+        if (current.saving || current.loading || current.missing || closing ||
+            current.photoStatus == MealPhotoStatus.PROCESSING
+        ) return
         val hasPhoto = current.newPhotoTicket != null ||
             (current.originalPhotoId != null && !current.photoRemoved)
         mealValidationError(current.text, hasPhoto)?.let { error ->
@@ -314,7 +318,11 @@ class MealEditorViewModel(
             return
         }
         val occurredAt = try {
-            RecordTime.resolve(LocalDateTime.of(current.date, current.time), current.zoneId)
+            // An existing instant already disambiguates a repeated DST local time.
+            // Editing text/photo must preserve that exact instant, including milliseconds.
+            originalOccurredAt?.takeIf {
+                current.date == originalDate && current.time == originalTime && current.zoneId == originalZoneId
+            } ?: RecordTime.resolve(LocalDateTime.of(current.date, current.time), current.zoneId)
         } catch (_: DataViolation) {
             update { it.copy(error = MealUiError.INVALID_TIME) }
             return
@@ -395,6 +403,8 @@ class MealEditorViewModel(
             return
         }
         if (existing != null) {
+            originalOccurredAt = existing.occurredAtUtcMs
+            originalZoneId = existing.zoneId
             originalText = existing.text
             originalSatiety = existing.satiety
             originalPhotoId = existing.photoId

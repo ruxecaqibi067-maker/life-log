@@ -356,7 +356,7 @@ private fun MealForm(
 
         Button(
             onClick = onSave,
-            enabled = !state.saving,
+            enabled = !state.saving && state.photoStatus != MealPhotoStatus.PROCESSING,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp)

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performScrollTo
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
@@ -127,9 +128,32 @@ class MealFlowUiTest {
     }
 
     @Test
+    fun savedMealSleepShortcutAndExerciseLibraryCoexistAfterIntegration() {
+        setAppContent()
+        waitForText("准备睡了")
+        compose.onNodeWithText("记饮食").performClick()
+        compose.onNodeWithTag("meal_text_input").performTextInput("整合测试午饭")
+        compose.onNodeWithTag("meal_save_button").performClick()
+        waitForText("整合测试午饭")
+        compose.onNodeWithText("准备睡了").performClick()
+        waitForText("起床了")
+        compose.onNodeWithContentDescription("打开设置").performClick()
+        compose.onNodeWithText("运动项目管理").performScrollTo().performClick()
+        waitForText("新增项目")
+        compose.onNodeWithText("搜索项目名称").performTextInput("跑步")
+        waitForText("跑步")
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithContentDescription("返回").performClick()
+        waitForText("起床了")
+        compose.onNodeWithText("整合测试午饭").assertExists()
+        assertEquals(1, mealCount())
+        runBlocking { assertEquals(1, db.records().allSleeps().size) }
+    }
+
+    @Test
     fun createEditCancelAndDeleteFromHome() {
         setAppContent()
-        compose.onNodeWithText("这一天还没有记录").assertExists()
+        waitForText("这一天还没有记录")
 
         // Create a pure-text meal: no photo and no satiety are required.
         compose.onNodeWithText("记饮食").performClick()

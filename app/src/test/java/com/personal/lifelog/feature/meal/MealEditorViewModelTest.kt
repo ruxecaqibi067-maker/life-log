@@ -85,6 +85,7 @@ class MealEditorViewModelTest {
     private var captureFile: File? = null
     private var failNextDatabase = false
     private var saveGate: CompletableDeferred<Unit>? = null
+    private var importGate: CompletableDeferred<Unit>? = null
     private var photoBytes = byteArrayOf()
 
     @Before
@@ -113,6 +114,9 @@ class MealEditorViewModelTest {
             },
             syncDirectory = { check(it.isDirectory) },
             fault = { point ->
+                importGate?.let { gate ->
+                    if (point == PhotoFaultPoint.COPY_INPUT) gate.await()
+                }
                 saveGate?.let { gate ->
                     if (point == PhotoFaultPoint.BEFORE_DATABASE) gate.await()
                 }
@@ -481,5 +485,67 @@ class MealEditorViewModelTest {
         assertEquals(MealUiError.SOURCE_UNAVAILABLE, vm.state.value.photoError)
         assertFalse(stagingDir(ticket).exists())
         assertTrue(db.records().allMeals().isEmpty())
+    }
+
+    @Test
+    fun photoOnlyDraftIsDirtyAndRemovingItRestoresTheEmptyDraft() = runBlocking<Unit> {
+        val vm = editor()
+        awaitLoaded(vm)
+        assertFalse(vm.state.value.dirty)
+        vm.onPhotoPicked(photoUri)
+        assertTrue(awaitReady(vm).dirty)
+        vm.removePhoto()
+        val empty = withTimeout(10_000) { vm.state.first { it.newPhotoTicket == null } }
+        assertFalse(empty.dirty)
+        assertTrue(db.records().allMeals().isEmpty())
+    }
+
+    @Test
+    fun captureOnlyDraftRequiresDiscardAndCancelClearsThatState() = runBlocking<Unit> {
+        val vm = editor()
+        awaitLoaded(vm)
+        vm.beginCapture()
+        val pending = withTimeout(10_000) { vm.state.first { it.captureRequest != null } }
+        assertTrue(pending.dirty)
+        vm.onCaptureRequestLaunched()
+        vm.onCaptureResult(false)
+        val cancelled = withTimeout(10_000) { vm.state.first { it.captureTicket == null } }
+        assertFalse(cancelled.dirty)
+    }
+
+    @Test
+    fun saveWaitsForPhotoProcessingInsteadOfSilentlySavingOnlyText() = runBlocking<Unit> {
+        val vm = editor()
+        awaitLoaded(vm)
+        vm.onTextChanged("等待照片处理")
+        val gate = CompletableDeferred<Unit>()
+        importGate = gate
+        vm.onPhotoPicked(photoUri)
+        withTimeout(10_000) { vm.state.first { it.photoStatus == MealPhotoStatus.PROCESSING } }
+        vm.save()
+        assertFalse(vm.state.value.saving)
+        assertFalse(vm.state.value.savedSuccessfully)
+        assertTrue(db.records().allMeals().isEmpty())
+        gate.complete(Unit)
+        awaitReady(vm)
+        vm.save()
+        awaitSaved(vm)
+        assertNotNull(singleMeal().photoId)
+    }
+
+    @Test
+    fun editingTextPreservesTheExactInstantInsideADstOverlap() = runBlocking<Unit> {
+        val occurred = Instant.parse("2026-11-01T06:30:12.123Z").toEpochMilli()
+        val seeded = (photos.saveMeal(MealDraft(
+            id = RecordIds.newId(), occurredAtUtcMs = occurred,
+            zoneId = "America/New_York", text = "原文字",
+        )) as PhotoResult.Success).value
+        val vm = editor(seeded.id)
+        awaitLoaded(vm)
+        vm.onTextChanged("修改文字保留时间")
+        vm.save()
+        awaitSaved(vm)
+        assertEquals(occurred, singleMeal().occurredAtUtcMs)
+        assertEquals("America/New_York", singleMeal().zoneId)
     }
 }
