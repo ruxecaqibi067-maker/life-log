@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.filled.Bedtime
@@ -25,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,6 +39,9 @@ import androidx.compose.ui.unit.dp
 import com.personal.lifelog.R
 import com.personal.lifelog.ui.components.DevBadge
 import com.personal.lifelog.ui.components.EmptyState
+import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.feature.sleep.SleepHomeStatus
+import com.personal.lifelog.domain.RecordIds
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -56,7 +64,13 @@ fun HomeScreen(
     onRecordMeal: () -> Unit,
     onOpenSleep: () -> Unit,
     onRecordWorkout: () -> Unit,
+    sleepViewModel: SleepViewModel,
+    onEditSleep: (String) -> Unit,
 ) {
+    val sleepStatus by sleepViewModel.status.collectAsStateWithLifecycle()
+    val sleepBusy by sleepViewModel.busy.collectAsStateWithLifecycle()
+    val activeSleep = sleepStatus.active
+    val startId = remember(activeSleep?.id) { RecordIds.newId() }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -90,8 +104,10 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
             ) {
+                SleepHomeStatus(sleepViewModel, onOpenSleep, onEditSleep)
                 Text(
                     text = stringResource(R.string.home_timeline_title),
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -116,9 +132,15 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                 )
                 QuickActionCard(
-                    label = stringResource(R.string.home_quick_sleep),
+                    label = stringResource(when {
+                        sleepBusy -> R.string.saving
+                        !sleepStatus.loaded -> R.string.sleep_loading
+                        activeSleep == null -> R.string.sleep_start
+                        else -> R.string.sleep_finish
+                    }),
                     icon = Icons.Filled.Bedtime,
-                    onClick = onOpenSleep,
+                    onClick = { if (activeSleep == null) sleepViewModel.start(startId) else sleepViewModel.finish(activeSleep) },
+                    enabled = sleepStatus.loaded && !sleepBusy,
                     modifier = Modifier.weight(1f),
                 )
                 QuickActionCard(
@@ -186,9 +208,11 @@ private fun QuickActionCard(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Surface(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = 76.dp),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
