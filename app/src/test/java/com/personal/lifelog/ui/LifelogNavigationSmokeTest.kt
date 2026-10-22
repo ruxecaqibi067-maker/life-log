@@ -15,6 +15,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.repository.SettingsRepository
+import com.personal.lifelog.data.repository.RecordRepository
+import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.feature.home.HomeViewModel
@@ -68,9 +70,10 @@ class LifelogNavigationSmokeTest {
     private fun setAppContent() {
         val settingsViewModel = SettingsViewModel(SettingsRepository(db, WriteCoordinator(), clock))
         val homeViewModel = HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, db.records()::datesWithRecords)
+        val sleepViewModel = SleepViewModel(RecordRepository(db, WriteCoordinator(), clock) { ZoneId.of("Asia/Shanghai") }, clock) { ZoneId.of("Asia/Shanghai") }
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
-                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel)
+                LifelogApp(homeViewModel = homeViewModel, settingsViewModel = settingsViewModel, sleepViewModel = sleepViewModel)
             }
         }
     }
@@ -107,8 +110,8 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
 
-        compose.onNodeWithText("准备睡了 / 起床了").performClick()
-        compose.onNodeWithText("导航路由：sleep/edit", substring = true).assertExists()
+        compose.onNodeWithText("查看作息 / 补录").performClick()
+        compose.onNodeWithText("补录作息").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
 
         compose.onNodeWithText("记运动").performClick()

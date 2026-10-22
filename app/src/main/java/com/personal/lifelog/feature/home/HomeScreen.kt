@@ -1,5 +1,6 @@
 package com.personal.lifelog.feature.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,7 +16,9 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,8 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.personal.lifelog.R
+import com.personal.lifelog.feature.meal.MealListItem
+import com.personal.lifelog.feature.meal.MealTimeDisplay
+import com.personal.lifelog.feature.meal.satietyLabelRes
 import com.personal.lifelog.ui.components.DevBadge
 import com.personal.lifelog.ui.components.EmptyState
 import java.time.LocalDate
@@ -46,14 +53,19 @@ private val homeDateFormatter = DateTimeFormatter.ofPattern("M月d日 EEEE", Loc
  * The timeline claim is data-derived via [hasRecordsToday]: nothing is asserted
  * before the first database read (null) and an empty day is only claimed when the
  * date index actually has no entries. The screen never fabricates records.
+ *
+ * [todayMeals] is deliberately a meal-only list until T10 merges all three record
+ * types; tapping a row opens detail/edit.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     today: LocalDate,
     hasRecordsToday: Boolean?,
+    todayMeals: List<MealListItem>,
     onOpenSettings: () -> Unit,
     onRecordMeal: () -> Unit,
+    onOpenMeal: (String) -> Unit,
     onOpenSleep: () -> Unit,
     onRecordWorkout: () -> Unit,
 ) {
@@ -102,7 +114,11 @@ fun HomeScreen(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                 ) {
-                    TimelineBody(hasRecordsToday = hasRecordsToday)
+                    TimelineBody(
+                        hasRecordsToday = hasRecordsToday,
+                        meals = todayMeals,
+                        onOpenMeal = onOpenMeal,
+                    )
                 }
             }
             Row(
@@ -133,10 +149,43 @@ fun HomeScreen(
 }
 
 @Composable
-private fun TimelineBody(hasRecordsToday: Boolean?) {
-    when (hasRecordsToday) {
+private fun TimelineBody(
+    hasRecordsToday: Boolean?,
+    meals: List<MealListItem>,
+    onOpenMeal: (String) -> Unit,
+) {
+    when {
+        meals.isNotEmpty() -> Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.meal_home_section),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            meals.forEachIndexed { index, meal ->
+                MealRow(meal = meal, onClick = { onOpenMeal(meal.id) })
+                if (index < meals.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DevBadge()
+                Text(
+                    text = stringResource(R.string.meal_home_other_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         // First database read still pending: claim nothing.
-        null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        hasRecordsToday == null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
             DevBadge(modifier = Modifier.padding(top = 24.dp))
             Text(
                 text = stringResource(R.string.home_timeline_dev_note),
@@ -146,7 +195,8 @@ private fun TimelineBody(hasRecordsToday: Boolean?) {
                 textAlign = TextAlign.Center,
             )
         }
-        true -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+        hasRecordsToday -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
             DevBadge(modifier = Modifier.padding(top = 24.dp))
             Text(
                 text = stringResource(R.string.home_timeline_has_records_note),
@@ -156,7 +206,8 @@ private fun TimelineBody(hasRecordsToday: Boolean?) {
                 textAlign = TextAlign.Center,
             )
         }
-        false -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+        else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
             EmptyState(
                 title = stringResource(R.string.empty_timeline_title),
                 hint = stringResource(R.string.empty_timeline_hint),
@@ -175,6 +226,47 @@ private fun TimelineBody(hasRecordsToday: Boolean?) {
                     textAlign = TextAlign.Center,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MealRow(meal: MealListItem, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = stringResource(R.string.meal_open_detail), onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = MealTimeDisplay.time(meal.occurredAtUtcMs, meal.zoneId),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = meal.text ?: stringResource(R.string.meal_photo_only),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            meal.satiety?.let { satiety ->
+                Text(
+                    text = stringResource(satietyLabelRes(satiety)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (meal.hasPhoto) {
+            Icon(
+                imageVector = Icons.Outlined.Image,
+                contentDescription = stringResource(R.string.meal_photo_alt),
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

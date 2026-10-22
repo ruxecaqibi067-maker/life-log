@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_title">作息记录</string>
+    <string name="sleep_start">准备睡了</string>
+    <string name="sleep_finish">起床了</string>
+    <string name="sleep_loading">读取作息中…</string>
+    <string name="sleep_manage">查看作息 / 补录</string>
+    <string name="sleep_add">补录作息</string>
+    <string name="sleep_edit">编辑作息</string>
+    <string name="sleep_none">还没有作息记录</string>
+    <string name="sleep_empty_hint">可以补录夜间就寝或午睡，未记录不代表零小时。</string>
+    <string name="sleep_active">未结束 · 已保存就寝时间</string>
+    <string name="sleep_start_value">就寝时间：%1$s</string>
+    <string name="sleep_end_value">起床时间：%1$s</string>
+    <string name="sleep_archive">归档日期：%1$s</string>
+    <string name="sleep_duration">卧床时长：%1$d小时%2$d分</string>
+    <string name="sleep_duration_seconds">卧床时长：%1$d秒</string>
+    <string name="sleep_note">记录的是就寝时段，可修改实际起床时间。</string>
+    <string name="sleep_undo">撤销上次作息操作</string>
+    <string name="sleep_undo_start">撤销后将删除刚才保存的未结束时段。</string>
+    <string name="sleep_undo_finish">撤销后将移除刚才的起床时间，恢复为未结束时段。</string>
+    <string name="sleep_confirm">确认</string>
+    <string name="sleep_cancel">取消</string>
+    <string name="sleep_save">保存作息</string>
+    <string name="sleep_delete">删除作息</string>
+    <string name="sleep_delete_prompt">删除此作息记录？此操作无法撤回。</string>
+    <string name="sleep_discard">放弃修改？</string>
+    <string name="sleep_discard_hint">未保存的输入将被丢弃。</string>
+    <string name="sleep_long_title">请检查就寝时段</string>
+    <string name="sleep_long_hint">时段超过24小时，请核对完整日期、时间和时区。确认后按原值保存，不会自动调整。</string>
+    <string name="sleep_start_input">就寝日期时间</string>
+    <string name="sleep_end_input">起床日期时间</string>
+    <string name="sleep_datetime_hint">格式：2026-10-23T07:10，可保留秒</string>
+    <string name="sleep_zone_input">时区（IANA 名称）</string>
+    <string name="sleep_zone_hint">例如 Asia/Shanghai；保留录入地点的日期语义</string>
+    <string name="sleep_offset_input">UTC偏移（可留空）</string>
+    <string name="sleep_offset_hint">夏令时重复时间须填写，如 -04:00；改时间或时区时请核对偏移</string>
+    <string name="sleep_has_end">已起床（关闭则保留未结束状态）</string>
+    <string name="sleep_invalid_interval">起床时间必须晚于就寝时间，请检查完整日期与时区。</string>
+    <string name="sleep_overlap">与其他作息时段重叠，请修改时间后重试。</string>
+    <string name="sleep_invalid_time">日期时间格式、UTC偏移不正确，或该当地时间不存在，请检查输入。</string>
+    <string name="sleep_ambiguous">该当地时间因夏令时重复，请填写当时的UTC偏移后重试。</string>
+    <string name="sleep_invalid_zone">时区无效，请填写 IANA 名称，如 Asia/Shanghai。</string>
+    <string name="sleep_stale">记录已被修改或删除，请返回并重新打开。</string>
+    <string name="sleep_storage_full">存储空间不足，请清理空间后重试。</string>
+    <string name="sleep_storage_error">无法读写作息记录，请重试；输入仍保留。</string>
+</resources>
