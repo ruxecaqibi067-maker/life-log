@@ -24,11 +24,13 @@ class BackupArchive(val limits: BackupLimits = BackupLimits()) {
         requireBackup(json.size <= limits.dataBytes, BackupError.LIMIT)
         data.outputStream().use { it.write(json) }
         val entries = mutableListOf(digest(data, "data.json"))
+        var expanded = data.length()
+        requireBackup(expanded <= limits.expandedBytes, BackupError.LIMIT)
         snapshot.media.forEach { asset ->
             val path = "media/${asset.id}.jpg"
             val target = files.file(path)
             source(asset.relativePath).inputStream().use { input ->
-                target.outputStream().use { copyBounded(input, it, limits.photoBytes) }
+                target.outputStream().use { expanded += copyBounded(input, it, minOf(limits.photoBytes, limits.expandedBytes - expanded)) }
             }
             BackupValidation.photo(target, asset, limits)
             entries += digest(target, path)
