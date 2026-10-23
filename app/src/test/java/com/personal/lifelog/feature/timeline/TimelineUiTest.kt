@@ -1,4 +1,5 @@
 package com.personal.lifelog.feature.timeline
+import com.personal.lifelog.feature.sleep.pickSleepTime
 
 import android.app.Application
 import android.content.Context
@@ -287,8 +288,8 @@ class TimelineUiTest {
 
         compose.onNodeWithText("作息").performScrollTo().performClick()
         waitText("就寝日期时间")
-        compose.onNodeWithText("就寝日期时间").performTextReplacement("2026-10-20T23:50")
-        compose.onNodeWithText("起床日期时间").performScrollTo().performTextReplacement("2026-10-21T07:10")
+        compose.pickSleepTime("就寝日期时间", "2026-10-20T23:50")
+        compose.pickSleepTime("起床日期时间", "2026-10-21T07:10")
         compose.onNodeWithText("保存作息").performScrollTo().performClick()
         compose.waitUntil(10_000) {
             runBlocking { db.records().allSleeps().single().archiveLocalDate == "2026-10-21" }

@@ -16,8 +16,8 @@ val releaseSecrets = Properties().apply {
 }
 val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { !releaseSecrets.getProperty(it).isNullOrBlank() }
-val requestedVersionCode = providers.gradleProperty("releaseVersionCode").orElse("2").get().toInt()
-val requestedVersionName = providers.gradleProperty("releaseVersionName").orElse("0.1.1").get()
+val requestedVersionCode = providers.gradleProperty("releaseVersionCode").orElse("3").get().toInt()
+val requestedVersionName = providers.gradleProperty("releaseVersionName").orElse("0.1.2").get()
 require(requestedVersionCode > 0) { "versionCode must be positive" }
 require(requestedVersionName.matches(Regex("\\d+\\.\\d+\\.\\d+([-.][A-Za-z0-9.-]+)?"))) { "Invalid versionName" }
 

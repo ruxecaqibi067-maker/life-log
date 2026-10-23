@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.lifelog.R
@@ -21,11 +22,10 @@ import com.personal.lifelog.data.local.entity.SleepRecord
 import com.personal.lifelog.domain.ErrorCode
 import com.personal.lifelog.ui.components.EmptyState
 import java.time.Instant
-import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
-private val displayTime = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss XXX")
 private fun recordedTime(instant: Long, zone: String): String =
-    "${displayTime.format(Instant.ofEpochMilli(instant).atZone(RecordTime.zone(zone)))} [$zone]"
+    chineseSleepTime(Instant.ofEpochMilli(instant).atZone(RecordTime.zone(zone)))
 
 @Composable
 fun SleepRecordSummary(record: SleepRecord) {
@@ -130,29 +130,30 @@ fun SleepEditorScreen(viewModel: SleepEditorViewModel, editing: Boolean, onBack:
     val state by viewModel.state.collectAsStateWithLifecycle()
     var discard by rememberSaveable { mutableStateOf(false) }
     var delete by rememberSaveable { mutableStateOf(false) }
+    var picker by rememberSaveable { mutableStateOf<String?>(null) }
+    var pickerZone by rememberSaveable { mutableStateOf<String?>(null) }
+    val zone = viewModel.systemZone()
     val leave = { if (!state.busy) { if (state.dirty) discard = true else onBack() } }
     BackHandler { leave() }
     LaunchedEffect(state.done) { if (state.done) onBack() }
     SleepScaffold(if (editing) R.string.sleep_edit else R.string.sleep_add, leave) { modifier ->
-        Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier.testTag("sleep-form").verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             val form = state.form
             if (state.loading) Text(stringResource(R.string.sleep_loading))
             state.error?.let { SleepError(it) }
             if (form == null && !state.loading) TextButton(onClick = viewModel::load) { Text(stringResource(R.string.retry)) }
             if (form != null) {
                 Text(stringResource(R.string.sleep_note))
-                TimeFields(R.string.sleep_start_input, form.start, form.startZone, form.startOffset, !state.busy,
-                    { viewModel.change(form.copy(start = it, startOffset = "")) },
-                    { viewModel.change(form.copy(startZone = it, startOffset = "")) },
-                    { viewModel.change(form.copy(startOffset = it)) })
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TimeChoice(R.string.sleep_start_input, chineseSleepTime(form.startAt(zone)), !state.busy) {
+                    pickerZone = zone.id; picker = "start"
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Switch(checked = form.hasEnd, enabled = !state.busy, onCheckedChange = { viewModel.change(form.copy(hasEnd = it)) })
                     Text(stringResource(R.string.sleep_has_end), modifier = Modifier.weight(1f))
                 }
-                if (form.hasEnd) TimeFields(R.string.sleep_end_input, form.end, form.endZone, form.endOffset, !state.busy,
-                    { viewModel.change(form.copy(end = it, endOffset = "")) },
-                    { viewModel.change(form.copy(endZone = it, endOffset = "")) },
-                    { viewModel.change(form.copy(endOffset = it)) })
+                if (form.hasEnd) TimeChoice(R.string.sleep_end_input, chineseSleepTime(form.endAt(zone)), !state.busy) {
+                    pickerZone = zone.id; picker = "end"
+                }
                 Button(onClick = viewModel::save, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(if (state.busy) R.string.saving else R.string.sleep_save))
                 }
@@ -161,6 +162,21 @@ fun SleepEditorScreen(viewModel: SleepEditorViewModel, editing: Boolean, onBack:
                 }
             }
         }
+    }
+    val form = state.form
+    val target = picker
+    if (form != null && target != null) {
+        val selectedZone = ZoneId.of(pickerZone ?: zone.id)
+        SleepDateTimePicker(
+            title = if (target == "start") R.string.sleep_pick_start else R.string.sleep_pick_end,
+            initial = if (target == "start") form.startAt(selectedZone) else form.endAt(selectedZone),
+            zone = selectedZone,
+            onCancel = { picker = null },
+            onConfirm = { local, offset ->
+                viewModel.change(if (target == "start") form.pickStart(local, selectedZone, offset) else form.pickEnd(local, selectedZone, offset))
+                picker = null
+            },
+        )
     }
     if (discard) ConfirmDialog(R.string.sleep_discard, R.string.sleep_discard_hint, { discard = false }, { discard = false; onBack() })
     if (delete) ConfirmDialog(R.string.sleep_delete, R.string.sleep_delete_prompt, { delete = false }, { delete = false; viewModel.delete() })
@@ -171,14 +187,14 @@ fun SleepEditorScreen(viewModel: SleepEditorViewModel, editing: Boolean, onBack:
 }
 
 @Composable
-private fun TimeFields(title: Int, local: String, zone: String, offset: String, enabled: Boolean,
-                       onLocal: (String) -> Unit, onZone: (String) -> Unit, onOffset: (String) -> Unit) {
-    OutlinedTextField(local, onLocal, enabled = enabled, singleLine = true, modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(title)) }, supportingText = { Text(stringResource(R.string.sleep_datetime_hint)) })
-    OutlinedTextField(zone, onZone, enabled = enabled, singleLine = true, modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.sleep_zone_input)) }, supportingText = { Text(stringResource(R.string.sleep_zone_hint)) })
-    OutlinedTextField(offset, onOffset, enabled = enabled, singleLine = true, modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.sleep_offset_input)) }, supportingText = { Text(stringResource(R.string.sleep_offset_hint)) })
+private fun TimeChoice(title: Int, value: String, enabled: Boolean, onClick: () -> Unit) {
+    OutlinedCard(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.sleep_picker_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

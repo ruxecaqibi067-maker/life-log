@@ -33,6 +33,8 @@ class SleepEditorViewModel(
 
     init { load() }
 
+    fun systemZone(): ZoneId = zoneIdProvider()
+
     fun load() {
         if (state.value.busy) return
         state.value = state.value.copy(loading = true, error = null)
