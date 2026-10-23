@@ -1,6 +1,6 @@
 # 第一版任务包索引
 
-当前阶段：**T01–T07 实现已接受，真机待验证；T08 可开始**。动态状态和证据以 [主管进度板](STATUS.md)、[本轮验收报告](reviews/T01-T07_INTEGRATION.md) 为准；完整第一版仍需 T08–T16。
+当前阶段：**T01–T16 实现链已整合，进入荣耀实机测试**。状态以 [主管进度板](STATUS.md) 和 [本轮验收报告](reviews/V1_PHONE_CANDIDATE.md) 为准；T15/T16 尚缺荣耀、性能与最终使用证据。
 
 项目根目录：`C:\Users\user1\Desktop\workspace\NEW TRY\life-log-android`。
 
@@ -27,15 +27,15 @@ S/M/L 是经验工作量与风险标记，定义见 `WORKFLOW.md`；不是 token
 | [T05](tasks/T05.md) | 饮食记录闭环 | T03、T04 | M | 实现已接受/真机待验证 | `handoffs/T05.md` |
 | [T06](tasks/T06.md) | 作息记录闭环 | T03 | M | 实现已接受/真机待验证 | `handoffs/T06.md` |
 | [T07](tasks/T07.md) | 内置与自定义运动项目管理 | T03 | M | 实现已接受/真机待验证 | `handoffs/T07.md` |
-| [T08](tasks/T08.md) | 一次训练多个项目与基础记录 | T07 | M | 可开始 | `handoffs/T08.md` |
-| [T09](tasks/T09.md) | 力量逐组与重复组快捷操作 | T08 | L | 待前置 | `handoffs/T09.md` |
-| [T10](tasks/T10.md) | 今天与回顾整合 | T05、T06、T09 | M | 待前置 | `handoffs/T10.md` |
-| [T11](tasks/T11.md) | 版本化 ZIP、JSON 与照片导出 | T10 | L | 待前置 | `handoffs/T11.md` |
-| [T12](tasks/T12.md) | 导入解析、预检与只读预览 | T11 | L | 待前置 | `handoffs/T12.md` |
-| [T13](tasks/T13.md) | 恢复引擎与失败回滚 | T12 | L | 待前置 | `handoffs/T13.md` |
-| [T14](tasks/T14.md) | 设置中的备份恢复界面 | T13 | M | 待前置 | `handoffs/T14.md` |
-| [T15](tasks/T15.md) | 全链质量与荣耀真机候选包 | T14 | L | 待前置 | `handoffs/T15.md` |
-| [T16](tasks/T16.md) | 正式签名发布与覆盖升级 | T15 | M | 待前置 | `handoffs/T16.md` |
+| [T08](tasks/T08.md) | 一次训练多个项目与基础记录 | T07 | M | 实现已接受/真机待验证 | `handoffs/T08.md` |
+| [T09](tasks/T09.md) | 力量逐组与重复组快捷操作 | T08 | L | 实现已接受/真机待验证 | `handoffs/T09.md` |
+| [T10](tasks/T10.md) | 今天与回顾整合 | T05、T06、T09 | M | 实现已接受/真机待验证 | `handoffs/T10.md` |
+| [T11](tasks/T11.md) | 版本化 ZIP、JSON 与照片导出 | T10 | L | 实现已接受/真机待验证 | `handoffs/T11.md` |
+| [T12](tasks/T12.md) | 导入解析、预检与只读预览 | T11 | L | 实现已接受/真机待验证 | `handoffs/T12.md` |
+| [T13](tasks/T13.md) | 恢复引擎与失败回滚 | T12 | L | 实现已接受/真机待验证 | `handoffs/T13.md` |
+| [T14](tasks/T14.md) | 设置中的备份恢复界面 | T13 | M | 实现已接受/真机待验证 | `handoffs/T14.md` |
+| [T15](tasks/T15.md) | 全链质量与荣耀真机候选包 | T14 | L | 主机/模拟器已接受；荣耀/性能待测 | `handoffs/T15.md` |
+| [T16](tasks/T16.md) | 正式签名发布与覆盖升级 | T15 | M | 签名/模拟器升级已接受；荣耀升级待测 | `handoffs/T16.md` |
 
 交接文件路径均相对于 `docs/`。未执行的任务不预先填写完成交接，运行证据不能用计划文字代替。
 

@@ -4,7 +4,7 @@
 
 ## 手机上安装
 
-1. 从本机 `artifacts/t16/v0.1.1-2/` 取得 `life-log-0.1.1-2-release.apk`，通过 USB 等方式复制到手机。
+1. 用手机打开 [实机测试下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.1-test.1)，下载 `life-log-0.1.1-2-release.apk`。也可从电脑下载后经 USB 复制到手机；[首次实机测试清单](testing/HONOR_PHONE_TEST.md) 给出具体步骤。
 2. 在手机文件管理器打开 APK；系统询问时允许这个安装来源。安装后打开「生活随记」。不需要账号。
 3. 首次只使用虚构记录，验证饮食、作息、运动、照片和备份流程。完整检查表在 `docs/ACCEPTANCE.md`。
 
@@ -38,6 +38,6 @@
 
 脚本生成 APK、SHA256SUMS、证书验证结果与 `release.json`（Git 提交、版本及构建类型）。后续必须继续使用这份签名资料并提高 `-VersionCode`，例如 `-VersionCode 3 -VersionName 0.1.2`。不要重新运行密钥初始化来替换已有密钥。
 
-签名机制与 Android 更新要求见 [Android 官方应用签名说明](https://developer.android.com/studio/publish/app-signing)。本项目没有公开发布、上传商店或创建远程仓库。
+签名机制与 Android 更新要求见 [Android 官方应用签名说明](https://developer.android.com/studio/publish/app-signing)。本轮主管按用户明确授权整合并推送 GitHub，下载附件标记为预发布实机测试候选；未上传应用商店。
 
 交付后安排一周自用，将不便录入、难以查找或修改的具体场景交回主管；一周反馈不能提前写成已经通过。
