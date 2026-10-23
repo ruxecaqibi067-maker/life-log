@@ -58,10 +58,17 @@ fun WorkoutEditorScreen(
         Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
             // Persistent status/save controls stay visible even when a long form is scrolled.
             state.error?.let { error ->
-                WorkoutError(error)
+                if (state.errorSetId != null) Text(stringResource(R.string.workout_error_set_number),
+                    Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error)
+                else WorkoutError(error)
                 state.errorItemId?.let { id -> state.form?.items?.indexOfFirst { it.id == id }?.let { index ->
                     Text(stringResource(R.string.workout_item_error, index + 1, state.form!!.items[index].name),
                         Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error)
+                    state.errorSetId?.let { setId ->
+                        val setIndex = state.form!!.items[index].sets.indexOfFirst { it.id == setId }
+                        Text(stringResource(R.string.workout_set_error, setIndex + 1), Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.error)
+                    }
                 } }
             }
             if (state.loading) Text(stringResource(R.string.workout_loading), Modifier.padding(16.dp))
@@ -79,42 +86,53 @@ fun WorkoutEditorScreen(
                             Modifier.fillMaxWidth(), enabled = !state.busy,
                             label = { Text(stringResource(R.string.workout_note)) })
                     }
-                    itemsIndexed(form.items, key = { _, row -> row.id }) { index, row ->
-                        OutlinedCard(Modifier.fillMaxWidth().testTag("workout-item-${row.id}")) {
-                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(itemHeading(index, row), style = MaterialTheme.typography.titleMedium)
-                                Row {
-                                    IconButton({ viewModel.move(row.id, -1) }, enabled = !state.busy && index > 0) {
-                                        Icon(Icons.Default.ArrowUpward, stringResource(R.string.workout_move_up, index + 1))
+                    form.items.forEachIndexed { index, row ->
+                        item(key = row.id) {
+                            OutlinedCard(Modifier.fillMaxWidth().testTag("workout-item-${row.id}")) {
+                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(itemHeading(index, row), style = MaterialTheme.typography.titleMedium)
+                                    Row {
+                                        IconButton({ viewModel.move(row.id, -1) }, enabled = !state.busy && index > 0) {
+                                            Icon(Icons.Default.ArrowUpward, stringResource(R.string.workout_move_up, index + 1))
+                                        }
+                                        IconButton({ viewModel.move(row.id, 1) }, enabled = !state.busy && index < form.items.lastIndex) {
+                                            Icon(Icons.Default.ArrowDownward, stringResource(R.string.workout_move_down, index + 1))
+                                        }
+                                        IconButton({ viewModel.remove(row.id) }, enabled = !state.busy) {
+                                            Icon(Icons.Default.Close, stringResource(R.string.workout_remove, index + 1))
+                                        }
                                     }
-                                    IconButton({ viewModel.move(row.id, 1) }, enabled = !state.busy && index < form.items.lastIndex) {
-                                        Icon(Icons.Default.ArrowDownward, stringResource(R.string.workout_move_down, index + 1))
+                                    if (row.type != ExerciseType.STRENGTH) {
+                                        WorkoutNumber(row.minutes, R.string.workout_minutes, "${row.id}-minutes", !state.busy) {
+                                            viewModel.changeItem(row.copy(minutes = it))
+                                        }
+                                        // Preserve arbitrary integer seconds in existing records without decimal rounding.
+                                        WorkoutNumber(row.seconds, R.string.workout_seconds, "${row.id}-seconds", !state.busy) {
+                                            viewModel.changeItem(row.copy(seconds = it))
+                                        }
                                     }
-                                    IconButton({ viewModel.remove(row.id) }, enabled = !state.busy) {
-                                        Icon(Icons.Default.Close, stringResource(R.string.workout_remove, index + 1))
+                                    if (row.type == ExerciseType.CARDIO) {
+                                        WorkoutNumber(row.kilometers, R.string.workout_km, "${row.id}-km", !state.busy) {
+                                            viewModel.changeItem(row.copy(kilometers = it))
+                                        }
                                     }
+                                    if (row.type == ExerciseType.STRENGTH) {
+                                        Text(if (row.sets.isEmpty()) stringResource(R.string.workout_no_quantity)
+                                            else stringResource(R.string.workout_sets_entered, row.sets.count { !it.blank }))
+                                    }
+                                    OutlinedTextField(row.note, { viewModel.changeItem(row.copy(note = it)) },
+                                        Modifier.fillMaxWidth(), enabled = !state.busy,
+                                        label = { Text(stringResource(R.string.workout_item_note)) })
                                 }
-                                if (row.type != ExerciseType.STRENGTH) {
-                                    WorkoutNumber(row.minutes, R.string.workout_minutes, "${row.id}-minutes", !state.busy) {
-                                        viewModel.changeItem(row.copy(minutes = it))
-                                    }
-                                    // Preserve arbitrary integer seconds in existing records without decimal rounding.
-                                    WorkoutNumber(row.seconds, R.string.workout_seconds, "${row.id}-seconds", !state.busy) {
-                                        viewModel.changeItem(row.copy(seconds = it))
-                                    }
-                                }
-                                if (row.type == ExerciseType.CARDIO) {
-                                    WorkoutNumber(row.kilometers, R.string.workout_km, "${row.id}-km", !state.busy) {
-                                        viewModel.changeItem(row.copy(kilometers = it))
-                                    }
-                                }
-                                if (row.type == ExerciseType.STRENGTH) {
-                                    Text(if (row.sets.isEmpty()) stringResource(R.string.workout_no_quantity)
-                                        else stringResource(R.string.workout_sets_retained, row.sets.size))
-                                }
-                                OutlinedTextField(row.note, { viewModel.changeItem(row.copy(note = it)) },
-                                    Modifier.fillMaxWidth(), enabled = !state.busy,
-                                    label = { Text(stringResource(R.string.workout_item_note)) })
+                            }
+                        }
+                        if (row.type == ExerciseType.STRENGTH) {
+                            itemsIndexed(row.sets, key = { _, set -> "${row.id}-${set.id}" }) { setIndex, set ->
+                                WorkoutSetEditor(row, index, set, setIndex, !state.busy,
+                                    state.errorSetId == set.id, viewModel)
+                            }
+                            item(key = "${row.id}-sets-actions") {
+                                WorkoutSetActions(row, !state.busy, viewModel)
                             }
                         }
                     }
@@ -288,6 +306,7 @@ private fun WorkoutError(code: ErrorCode) {
         ErrorCode.AMBIGUOUS_LOCAL_TIME -> R.string.workout_error_overlap
         ErrorCode.HIDDEN_EXERCISE -> R.string.workout_error_hidden
         ErrorCode.TOO_MANY_ITEMS -> R.string.workout_error_limit
+        ErrorCode.TOO_MANY_SETS -> R.string.workout_error_sets_limit
         ErrorCode.NOT_FOUND -> R.string.workout_error_missing
         ErrorCode.STORAGE_FULL -> R.string.workout_error_full
         else -> R.string.workout_error_storage

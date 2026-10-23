@@ -13,6 +13,8 @@ import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.*
 import com.personal.lifelog.domain.ThemeMode
+import com.personal.lifelog.domain.*
+import com.personal.lifelog.data.local.BuiltinExercises
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.settings.SettingsViewModel
 import com.personal.lifelog.feature.sleep.SleepViewModel
@@ -74,6 +76,79 @@ class WorkoutUiTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithText("选择").fetchSemanticsNodes().size == 1 }
         compose.onNodeWithText("选择").performScrollTo().performClick()
         waitText("保存训练")
+    }
+
+    private fun screenshot(path: String) {
+        val evidence = File(path).absoluteFile
+        evidence.parentFile!!.mkdirs()
+        compose.runOnIdle {
+            val view = compose.activity.window.decorView
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            evidence.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            bitmap.recycle()
+        }
+    }
+
+    private fun seedStrength(sets: List<WorkoutSetDraft>): String = runBlocking {
+        val draft = WorkoutDraft(RecordIds.newId(), clock.millis(), zone.id,
+            listOf(WorkoutItemDraft(RecordIds.newId(), BuiltinExercises.entries[1].id, sets = sets)), "虚构示例：逐组训练")
+        (WorkoutRepository(db, WriteCoordinator(), clock).saveWorkout(draft) as DataResult.Success).value.session.id
+    }
+    private fun editBenchFromHome() {
+        waitText("卧推")
+        compose.onNodeWithText("卧推").performScrollTo().performClick()
+        waitText("1. 卧推 · 力量")
+        compose.onNodeWithText("编辑训练").performScrollTo().performClick()
+        waitText("保存训练")
+    }
+    private fun field(tag: String, text: String) {
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag(tag))
+        compose.onNodeWithTag(tag).performScrollTo().performTextClearance()
+        compose.onNodeWithTag(tag).performTextInput(text)
+    }
+
+    @Test fun strengthCopyCanBeEditedIndependentlyAndMiddleGroupDeletedWithScreenshot() {
+        val first = WorkoutSetDraft(RecordIds.newId(), 40125, 10)
+        val middle = WorkoutSetDraft(RecordIds.newId(), 0, 12)
+        val last = WorkoutSetDraft(RecordIds.newId(), repetitions = 8)
+        val id = seedStrength(listOf(first, middle, last))
+        editBenchFromHome()
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag("${first.id}-copy"))
+        compose.onNodeWithTag("${first.id}-copy").performScrollTo().performClick()
+        compose.onNodeWithText("保存训练").performClick()
+        waitText("第 4 组：8 次")
+        val copiedId = runBlocking { db.workouts().workout(id)!!.sorted().items.single().sets[1].id }
+        assertNotEquals(first.id, copiedId)
+        compose.onNodeWithText("编辑训练").performScrollTo().performClick(); waitText("保存训练")
+        field("$copiedId-kg", "45.5"); field("$copiedId-reps", "6")
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag("workout-set-$copiedId"))
+        screenshot("../artifacts/t09/strength-editor-host.png")
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag("${middle.id}-remove"))
+        compose.onNodeWithTag("${middle.id}-remove").performScrollTo().performClick()
+        compose.onNodeWithText("保存训练").performClick()
+        waitText("第 2 组：45.5 kg，6 次")
+        compose.onNodeWithText("第 1 组：40.125 kg，10 次").assertExists()
+        compose.onNodeWithText("第 3 组：8 次").assertExists()
+        val sets = runBlocking { db.workouts().workout(id)!!.sorted().items.single().sets }
+        assertEquals(listOf(first.id, copiedId, last.id), sets.map { it.id })
+        assertEquals(listOf(40125L, 45500L, null), sets.map { it.weightGrams })
+        assertEquals(listOf(10, 6, 8), sets.map { it.repetitions })
+        assertEquals(listOf(0, 1, 2), sets.map { it.sortOrder })
+        assertNull(runBlocking { db.workouts().set(middle.id) })
+        screenshot("../artifacts/t09/strength-sets-host.png")
+    }
+
+    @Test fun quickThreeBlankGroupsDoNotBecomeCompletedTrainingQuantity() {
+        val id = seedStrength(emptyList())
+        editBenchFromHome()
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasText("添加3个空白组"))
+        compose.onNodeWithText("添加3个空白组").performClick()
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasText("卧推 · 第 3 组"))
+        compose.onNodeWithText("卧推 · 第 3 组").assertExists()
+        compose.onNodeWithText("保存训练").performClick()
+        waitText("已记录此项目，训练量未填写")
+        assertTrue(runBlocking { db.workouts().workout(id)!!.items.single().sets.isEmpty() })
     }
 
     @Test fun realNavigationPickerSaveDetailEditAndMultiItemScreenshot() {

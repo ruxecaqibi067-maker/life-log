@@ -24,6 +24,7 @@ data class WorkoutEditorState(
     val done: Boolean = false,
     val error: ErrorCode? = null,
     val errorItemId: String? = null,
+    val errorSetId: String? = null,
 ) {
     val dirty get() = form != null && form != original
 }
@@ -70,7 +71,7 @@ class WorkoutEditorViewModel(
     fun change(form: WorkoutForm) {
         if (_state.value.busy || _state.value.done || _state.value.loading) return
         saved["form"] = form.saved()
-        _state.value = _state.value.copy(form = form, error = null, errorItemId = null)
+        _state.value = _state.value.copy(form = form, error = null, errorItemId = null, errorSetId = null)
     }
 
     fun add(definition: ExerciseDefinition) {
@@ -80,7 +81,7 @@ class WorkoutEditorViewModel(
         change(form.copy(items = form.items + WorkoutItemForm(RecordIds.newId(), definition.id, definition.name, definition.type)))
     }
 
-    /** T09 can update a single item's sets through this event while retaining IDs. */
+    /** Updates a full item; set text events below resolve IDs against the latest draft. */
     fun changeItem(item: WorkoutItemForm) {
         val form = _state.value.form ?: return
         change(form.copy(items = form.items.map { if (it.id == item.id) item else it }))
@@ -96,6 +97,47 @@ class WorkoutEditorViewModel(
         change(form.copy(items = items))
     }
 
+    private fun strengthItem(itemId: String): WorkoutItemForm? {
+        val state = _state.value
+        if (state.busy || state.done || state.loading) return null
+        return state.form?.items?.find { it.id == itemId && it.type == ExerciseType.STRENGTH }
+    }
+    fun addSets(itemId: String, count: Int = 1) {
+        val item = strengthItem(itemId) ?: return
+        if (count !in 1..3) return
+        if (item.sets.size + count > Rules.SETS_PER_ITEM_LIMIT) { fail(ErrorCode.TOO_MANY_SETS, itemId); return }
+        changeItem(item.copy(sets = item.sets + List(count) { WorkoutSetForm(RecordIds.newId()) }))
+    }
+    fun changeSetWeight(itemId: String, setId: String, value: String) = updateSet(itemId, setId) { it.copy(kilograms = value) }
+    fun changeSetRepetitions(itemId: String, setId: String, value: String) = updateSet(itemId, setId) { it.copy(repetitions = value) }
+    private fun updateSet(itemId: String, setId: String, update: (WorkoutSetForm) -> WorkoutSetForm) {
+        val item = strengthItem(itemId) ?: return
+        changeItem(item.copy(sets = item.sets.map { if (it.id == setId) update(it) else it }))
+    }
+    fun removeSet(itemId: String, setId: String) {
+        val item = strengthItem(itemId) ?: return
+        changeItem(item.copy(sets = item.sets.filterNot { it.id == setId }))
+    }
+    fun copySet(itemId: String, setId: String) {
+        val item = strengthItem(itemId) ?: return
+        val index = item.sets.indexOfFirst { it.id == setId }
+        if (index < 0 || item.sets[index].blank) return
+        if (item.sets.size >= Rules.SETS_PER_ITEM_LIMIT) { fail(ErrorCode.TOO_MANY_SETS, itemId); return }
+        val sets = item.sets.toMutableList()
+        sets.add(index + 1, sets[index].copy(id = RecordIds.newId()))
+        changeItem(item.copy(sets = sets))
+    }
+    fun copyLastSet(itemId: String) { strengthItem(itemId)?.sets?.lastOrNull()?.let { copySet(itemId, it.id) } }
+    fun moveSet(itemId: String, setId: String, delta: Int) {
+        val item = strengthItem(itemId) ?: return
+        val from = item.sets.indexOfFirst { it.id == setId }
+        val to = from + delta
+        if (from < 0 || to !in item.sets.indices) return
+        val sets = item.sets.toMutableList()
+        sets.add(to, sets.removeAt(from))
+        changeItem(item.copy(sets = sets))
+    }
+
     fun save() {
         val current = _state.value
         val form = current.form ?: return
@@ -103,12 +145,15 @@ class WorkoutEditorViewModel(
         if (form.items.isEmpty()) { fail(ErrorCode.EMPTY_WORKOUT); return }
         // Identify which repeated item contains an invalid number/note before aggregate validation.
         form.items.forEach { item ->
+            item.sets.forEach { set ->
+                try { set.draft() } catch (violation: DataViolation) { fail(violation.error.code, item.id, set.id); return }
+            }
             try { item.draft() } catch (violation: DataViolation) { fail(violation.error.code, item.id); return }
         }
         val draft = try { form.draft() } catch (violation: DataViolation) {
             fail(violation.error.code); return
         } catch (_: DateTimeException) { fail(ErrorCode.INVALID_LOCAL_TIME); return }
-        _state.value = current.copy(busy = true, error = null, errorItemId = null)
+        _state.value = current.copy(busy = true, error = null, errorItemId = null, errorSetId = null)
         viewModelScope.launch {
             try {
                 when (val result = repository.saveWorkout(draft)) {
@@ -119,7 +164,7 @@ class WorkoutEditorViewModel(
         }
     }
 
-    private fun fail(code: ErrorCode, itemId: String? = null) {
-        _state.value = _state.value.copy(error = code, errorItemId = itemId)
+    private fun fail(code: ErrorCode, itemId: String? = null, setId: String? = null) {
+        _state.value = _state.value.copy(error = code, errorItemId = itemId, errorSetId = setId)
     }
 }

@@ -10,6 +10,8 @@ import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.*
 import com.personal.lifelog.domain.ThemeMode
+import com.personal.lifelog.domain.*
+import com.personal.lifelog.data.local.BuiltinExercises
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.settings.SettingsViewModel
 import com.personal.lifelog.feature.sleep.SleepViewModel
@@ -110,5 +112,27 @@ class WorkoutDeviceTest {
         assertEquals("虚构自定义力量", runBlocking { db.workouts().allItems().single().nameSnapshot })
         assertTrue(runBlocking { db.workouts().allSets().isEmpty() })
         assertEquals(9, runBlocking { db.workouts().allExercises().size })
+    }
+
+    @Test fun strengthGroupEditsCanBeDiscardedAndEmptyAddedGroupsNeverPersist() {
+        val set = WorkoutSetDraft(RecordIds.newId(), 20000, 8)
+        val repository = WorkoutRepository(db, WriteCoordinator(), clock)
+        val record = runBlocking { (repository.saveWorkout(WorkoutDraft(RecordIds.newId(), clock.millis(), zone.id,
+            listOf(WorkoutItemDraft(RecordIds.newId(), BuiltinExercises.entries[1].id, sets = listOf(set))))) as DataResult.Success).value }
+        waitText("卧推")
+        compose.onNodeWithText("卧推").performScrollTo().performClick(); waitText("第 1 组：20 kg，8 次")
+        compose.onNodeWithText("编辑训练").performScrollTo().performClick(); waitText("保存训练")
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag("${set.id}-kg"))
+        compose.onNodeWithTag("${set.id}-kg").performScrollTo().performTextClearance()
+        compose.onNodeWithTag("${set.id}-kg").performTextInput("25.125")
+        compose.onNodeWithContentDescription("返回").performClick()
+        waitText("放弃未保存的训练修改？")
+        compose.onNodeWithText("放弃修改").performClick(); waitText("第 1 组：20 kg，8 次")
+        assertEquals(record, runBlocking { repository.workout(record.session.id) })
+        compose.onNodeWithText("编辑训练").performScrollTo().performClick(); waitText("保存训练")
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasText("添加3个空白组"))
+        compose.onNodeWithText("添加3个空白组").performClick()
+        compose.onNodeWithText("保存训练").performClick(); waitText("第 1 组：20 kg，8 次")
+        assertEquals(listOf(set.id), runBlocking { db.workouts().allSets().map { it.id } })
     }
 }

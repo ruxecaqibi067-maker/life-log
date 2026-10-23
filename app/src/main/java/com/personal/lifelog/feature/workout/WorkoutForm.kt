@@ -22,8 +22,7 @@ data class WorkoutItemForm(
     val seconds: String = "",
     val kilometers: String = "",
     val note: String = "",
-    // T09 edits this existing per-set model; basic edits must never discard it.
-    val sets: List<WorkoutSetDraft> = emptyList(),
+    val sets: List<WorkoutSetForm> = emptyList(),
 ) {
     fun draft(): WorkoutItemDraft {
         val duration = if (minutes.isBlank() && seconds.isBlank()) null else {
@@ -37,7 +36,7 @@ data class WorkoutItemForm(
             Rules.positive(total, "durationSeconds")
         }
         return WorkoutItemDraft(id, exerciseId, duration, Units.kilometersToMeters(kilometers),
-            Rules.text(note, Rules.NOTE_LIMIT), sets)
+            Rules.text(note, Rules.NOTE_LIMIT), sets.map { it.draft() })
     }
 }
 
@@ -63,11 +62,7 @@ data class WorkoutForm(
             putString("id", row.id); putString("exercise", row.exerciseId); putString("name", row.name)
             putString("type", row.type.name); putString("minutes", row.minutes); putString("seconds", row.seconds)
             putString("km", row.kilometers); putString("note", row.note)
-            putParcelableArrayList("sets", ArrayList(row.sets.map { set -> Bundle().apply {
-                putString("id", set.id)
-                set.weightGrams?.let { putLong("weight", it) }
-                set.repetitions?.let { putInt("reps", it) }
-            } }))
+            putParcelableArrayList("sets", ArrayList(row.sets.map(WorkoutSetForm::saved)))
         } }))
     }
 
@@ -84,7 +79,7 @@ data class WorkoutForm(
                     item.durationSeconds?.let { if (it < 60) "" else (it / 60).toString() }.orEmpty(),
                     item.durationSeconds?.let { if (it % 60 == 0L) "" else (it % 60).toString() }.orEmpty(),
                     item.distanceMeters?.let { BigDecimal.valueOf(it, 3).stripTrailingZeros().toPlainString() }.orEmpty(),
-                    item.note.orEmpty(), row.sets.map { WorkoutSetDraft(it.id, it.weightGrams, it.repetitions) })
+                    item.note.orEmpty(), row.sets.map { WorkoutSetForm.from(WorkoutSetDraft(it.id, it.weightGrams, it.repetitions)) })
             })
 
         @Suppress("DEPRECATION")
@@ -95,11 +90,7 @@ data class WorkoutForm(
                 WorkoutItemForm(row.getString("id")!!, row.getString("exercise")!!, row.getString("name")!!,
                     ExerciseType.valueOf(row.getString("type")!!), row.getString("minutes")!!,
                     row.getString("seconds")!!, row.getString("km")!!, row.getString("note")!!,
-                    row.getParcelableArrayList<Bundle>("sets").orEmpty().map { set ->
-                        WorkoutSetDraft(set.getString("id")!!,
-                            if (set.containsKey("weight")) set.getLong("weight") else null,
-                            if (set.containsKey("reps")) set.getInt("reps") else null)
-                    })
+                    row.getParcelableArrayList<Bundle>("sets").orEmpty().map(WorkoutSetForm::restore))
             })
     }
 }
