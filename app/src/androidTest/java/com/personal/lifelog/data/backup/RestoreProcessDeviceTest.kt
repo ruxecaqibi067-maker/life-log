@@ -33,7 +33,9 @@ class RestoreProcessDeviceTest {
         org.junit.Assume.assumeTrue("Requires explicit process-matrix arguments", action != null)
         val point = RestoreFaultPoint.valueOf(args.getString("restorePoint")!!)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val root = File(context.filesDir, "restore-process-qa")
+        // Android may expose filesDir through /data/user/0 while BackupFiles uses
+        // its canonical /data/data path. Keep this isolated fixture canonical too.
+        val root = File(context.filesDir, "restore-process-qa").canonicalFile
         val name = "restore-process-qa.db"
         if (action == "interrupt") {
             BackupFiles(context.filesDir).remove(root)
