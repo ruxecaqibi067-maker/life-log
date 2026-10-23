@@ -40,7 +40,7 @@ import com.personal.lifelog.feature.meal.MealEditorScreen
 import com.personal.lifelog.feature.meal.MealEditorViewModel
 import com.personal.lifelog.feature.review.ReviewScreen
 import com.personal.lifelog.feature.review.ReviewViewModel
-import com.personal.lifelog.feature.settings.SettingsScreen
+import com.personal.lifelog.feature.settings.SettingsRoute
 import com.personal.lifelog.feature.settings.SettingsViewModel
 import java.time.Clock
 import java.time.ZoneId
@@ -77,8 +77,6 @@ fun LifelogApp(
     val currentRoute = backStackEntry?.destination?.route
     val today by homeViewModel.today.collectAsStateWithLifecycle()
     val timeline by homeViewModel.timeline.collectAsStateWithLifecycle()
-    val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
-    val themeError by settingsViewModel.themeError.collectAsStateWithLifecycle()
 
     // T04's contract: pages that resume with draft tickets call maintain. The shell
     // performs the general abandoned-ticket sweep once per app composition; failures
@@ -161,10 +159,8 @@ fun LifelogApp(
                 )
             }
             composable(LifelogRoutes.SETTINGS) {
-                SettingsScreen(
-                    themeMode = themeMode,
-                    themeWriteFailed = themeError != null,
-                    onThemeSelected = settingsViewModel::setTheme,
+                SettingsRoute(
+                    viewModel = settingsViewModel,
                     onOpenExercises = { navController.navigateSingle(LifelogRoutes.EXERCISES) },
                     onBack = { navController.navigateUp() },
                 )

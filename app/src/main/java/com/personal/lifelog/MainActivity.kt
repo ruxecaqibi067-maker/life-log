@@ -25,7 +25,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val container = (application as App).container
             val settingsViewModel: SettingsViewModel = viewModel {
-                SettingsViewModel(container.settings)
+                SettingsViewModel(
+                    settings = container.settings,
+                    backups = container.backupRestore,
+                    zoneIdProvider = container.zoneIdProvider,
+                )
             }
             val homeViewModel: HomeViewModel = viewModel {
                 HomeViewModel(

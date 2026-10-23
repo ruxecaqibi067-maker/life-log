@@ -12,6 +12,7 @@ import com.personal.lifelog.data.repository.SnapshotRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
+import com.personal.lifelog.feature.settings.BackupRestoreController
 import java.time.Clock
 import java.time.ZoneId
 
@@ -36,5 +37,9 @@ class AppContainer(
     val backupImporter: BackupImporter by lazy { BackupImporter(appContext.filesDir, clock) }
     val restoreEngine: RestoreEngine by lazy {
         RestoreEngine(database, writes, snapshots, backupExporter, backupImporter, appContext.filesDir, clock)
+    }
+    /** Survives Activity/ViewModel recreation; owns in-memory preview tokens only. */
+    val backupRestore: BackupRestoreController by lazy {
+        BackupRestoreController(backupExporter, backupImporter, restoreEngine, clock)
     }
 }
