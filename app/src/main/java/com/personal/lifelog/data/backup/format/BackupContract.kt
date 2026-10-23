@@ -20,6 +20,8 @@ fun fail(code: BackupError): Nothing = throw BackupException(code)
 fun requireBackup(value: Boolean, code: BackupError = BackupError.INVALID_DATA) { if (!value) fail(code) }
 fun backupError(t: Exception): BackupError = when (t) {
     is BackupException -> t.code
+    is java.util.zip.ZipException, is EOFException -> BackupError.INVALID_ARCHIVE
+    is android.util.MalformedJsonException, is java.nio.charset.CharacterCodingException -> BackupError.INVALID_DATA
     is SecurityException -> BackupError.ACCESS_DENIED
     is DataViolation, is IllegalArgumentException, is org.json.JSONException -> BackupError.INVALID_DATA
     is android.database.sqlite.SQLiteFullException -> BackupError.STORAGE_FULL

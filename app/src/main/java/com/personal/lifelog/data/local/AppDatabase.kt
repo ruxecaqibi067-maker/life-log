@@ -9,6 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.data.local.dao.MetadataDao
 import com.personal.lifelog.data.local.dao.RecordDao
+import com.personal.lifelog.data.local.dao.RestoreDao
 import com.personal.lifelog.data.local.dao.WorkoutDao
 import com.personal.lifelog.data.local.entity.*
 import java.time.Clock
@@ -25,6 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun records(): RecordDao
     abstract fun workouts(): WorkoutDao
     abstract fun metadata(): MetadataDao
+    abstract fun restore(): RestoreDao
 
     companion object {
         const val NAME = "life-log.db"

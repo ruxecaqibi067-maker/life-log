@@ -94,6 +94,12 @@ object BackupValidation {
     suspend fun photo(file: File, asset: MediaAsset, l: BackupLimits) {
         val actual = digest(file)
         requireBackup(actual.byteSize == asset.byteSize && actual.sha256 == asset.sha256, BackupError.HASH_MISMATCH)
+        java.io.RandomAccessFile(file, "r").use { jpeg ->
+            requireBackup(jpeg.length() >= 4, BackupError.INVALID_PHOTO)
+            requireBackup(jpeg.readUnsignedShort() == 0xffd8, BackupError.INVALID_PHOTO)
+            jpeg.seek(jpeg.length() - 2)
+            requireBackup(jpeg.readUnsignedShort() == 0xffd9, BackupError.INVALID_PHOTO)
+        }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.path, bounds)
         requireBackup(bounds.outMimeType == "image/jpeg" && bounds.outWidth == asset.width && bounds.outHeight == asset.height,

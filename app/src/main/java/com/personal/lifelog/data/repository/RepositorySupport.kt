@@ -28,6 +28,13 @@ internal suspend fun <T> write(
 } catch (_: SQLiteException) {
     // No record contents or raw SQL exceptions cross into presentation code.
     DataResult.Failure(DataError(ErrorCode.STORAGE))
+} catch (_: java.io.IOException) {
+    // Startup recovery must fail closed without allowing an ordinary editor write to crash the UI.
+    DataResult.Failure(DataError(ErrorCode.STORAGE_UNAVAILABLE))
+} catch (_: SecurityException) {
+    DataResult.Failure(DataError(ErrorCode.STORAGE_UNAVAILABLE))
+} catch (_: android.system.ErrnoException) {
+    DataResult.Failure(DataError(ErrorCode.STORAGE_UNAVAILABLE))
 }
 
 internal fun updatedAt(now: Long, created: Long, previous: Long = created): Long = maxOf(now, created, previous)

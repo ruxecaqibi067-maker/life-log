@@ -69,7 +69,7 @@ class BackupImporter(private val filesRoot: File, private val clock: Clock,
 
     /** Lock out discard/expiry, rehash the staged source and re-run every check immediately before use. */
     internal suspend fun <T> withValidated(token: StagingToken, block: suspend (VerifiedArchive) -> T): T = mutex.withLock {
-        val entry = tokens[token.id]?.takeIf { it.token === token } ?: fail(BackupError.EXPIRED_TOKEN)
+        val entry = tokens[token.id]?.takeIf { it.token === token && it.directory.isDirectory } ?: fail(BackupError.EXPIRED_TOKEN)
         if (clock.millis() !in entry.created until entry.expires) {
             tokens.remove(token.id); files.remove(entry.directory); fail(BackupError.EXPIRED_TOKEN)
         }

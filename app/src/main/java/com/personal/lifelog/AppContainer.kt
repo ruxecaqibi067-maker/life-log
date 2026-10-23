@@ -3,6 +3,7 @@ package com.personal.lifelog
 import android.content.Context
 import com.personal.lifelog.data.backup.export.BackupExporter
 import com.personal.lifelog.data.backup.importer.BackupImporter
+import com.personal.lifelog.data.backup.restore.RestoreEngine
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
@@ -21,7 +22,7 @@ class AppContainer(
     val zoneIdProvider: () -> ZoneId = ZoneId::systemDefault,
 ) {
     private val appContext = context.applicationContext
-    val writes = WriteCoordinator()
+    val writes = WriteCoordinator { restoreEngine.ensureRecovered() }
     internal val database: AppDatabase by lazy { AppDatabase.create(appContext, clock) }
     val records: RecordRepository by lazy { RecordRepository(database, writes, clock, zoneIdProvider) }
     val photos: PhotoStorage by lazy { PhotoStorage(appContext, database, records, writes, clock) }
@@ -33,4 +34,7 @@ class AppContainer(
         BackupExporter(snapshots, settings, writes, appContext.filesDir, clock, "0.1.0")
     }
     val backupImporter: BackupImporter by lazy { BackupImporter(appContext.filesDir, clock) }
+    val restoreEngine: RestoreEngine by lazy {
+        RestoreEngine(database, writes, snapshots, backupExporter, backupImporter, appContext.filesDir, clock)
+    }
 }

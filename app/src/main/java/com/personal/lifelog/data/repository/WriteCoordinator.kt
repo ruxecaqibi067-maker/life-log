@@ -9,7 +9,7 @@ import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
 /** One logical operation may compose repository writes without opening a gap for other writers. */
-class WriteCoordinator {
+class WriteCoordinator(private val beforeWrite: suspend () -> Unit = {}) {
     private val mutex = Mutex()
     private class Lease(val owner: WriteCoordinator) : AbstractCoroutineContextElement(Key) {
         companion object Key : CoroutineContext.Key<Lease>
@@ -22,7 +22,7 @@ class WriteCoordinator {
         return mutex.withLock {
             val lease = Lease(this)
             try {
-                withContext(lease) { coroutineScope { block() } }
+                withContext(lease) { coroutineScope { beforeWrite(); block() } }
             } finally {
                 lease.active = false
             }
