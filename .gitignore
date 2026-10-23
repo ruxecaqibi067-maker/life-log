@@ -14,6 +14,7 @@ Thumbs.db
 # Signing material / secrets
 *.jks
 *.keystore
+*.p12
 keystore.properties
 signing.properties
 .env

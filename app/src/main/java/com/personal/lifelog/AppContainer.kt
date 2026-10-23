@@ -32,7 +32,8 @@ class AppContainer(
     val settings: SettingsRepository by lazy { SettingsRepository(database, writes, clock) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
     val backupExporter: BackupExporter by lazy {
-        BackupExporter(snapshots, settings, writes, appContext.filesDir, clock, "0.1.0")
+        val installedVersion = appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName.orEmpty()
+        BackupExporter(snapshots, settings, writes, appContext.filesDir, clock, installedVersion)
     }
     val backupImporter: BackupImporter by lazy { BackupImporter(appContext.filesDir, clock) }
     val restoreEngine: RestoreEngine by lazy {

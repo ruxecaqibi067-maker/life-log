@@ -1,9 +1,25 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
+
+// Only the private file path is configurable here; secrets never enter project properties.
+val releaseSigningPath = providers.environmentVariable("LIFELOG_SIGNING_PROPERTIES")
+    .orElse(providers.gradleProperty("lifelog.signingProperties")).orNull
+val releaseSigningFile = releaseSigningPath?.let { file(it) }
+val releaseSecrets = Properties().apply {
+    if (releaseSigningFile?.isFile == true) releaseSigningFile.inputStream().use { load(it) }
+}
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { !releaseSecrets.getProperty(it).isNullOrBlank() }
+val requestedVersionCode = providers.gradleProperty("releaseVersionCode").orElse("2").get().toInt()
+val requestedVersionName = providers.gradleProperty("releaseVersionName").orElse("0.1.1").get()
+require(requestedVersionCode > 0) { "versionCode must be positive" }
+require(requestedVersionName.matches(Regex("\\d+\\.\\d+\\.\\d+([-.][A-Za-z0-9.-]+)?"))) { "Invalid versionName" }
 
 android {
     namespace = "com.personal.lifelog"
@@ -14,8 +30,8 @@ android {
         applicationId = "com.personal.lifelog"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = requestedVersionCode
+        versionName = requestedVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -28,12 +44,23 @@ android {
         compose = true
     }
 
+    if (hasReleaseSigning) {
+        signingConfigs.create("localRelease") {
+            storeFile = file(releaseSecrets.getProperty("storeFile"))
+            storePassword = releaseSecrets.getProperty("storePassword")
+            keyAlias = releaseSecrets.getProperty("keyAlias")
+            keyPassword = releaseSecrets.getProperty("keyPassword")
+            storeType = "PKCS12"
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("localRelease")
         }
         create("qaRelease") {
             initWith(getByName("release"))
@@ -57,6 +84,17 @@ android {
         }
     }
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+}
+
+val requireReleaseSigning = tasks.register("requireReleaseSigning") {
+    doLast {
+        check(hasReleaseSigning && releaseSecrets.getProperty("storeFile")?.let { file(it).isFile } == true) {
+            "Release signing is missing. Set LIFELOG_SIGNING_PROPERTIES to the private signing.properties file."
+        }
+    }
+}
+tasks.configureEach {
+    if (name == "preReleaseBuild") dependsOn(requireReleaseSigning)
 }
 
 ksp {
