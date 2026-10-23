@@ -18,6 +18,7 @@ import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.domain.ThemeMode
@@ -75,11 +76,12 @@ class LifelogNavigationSmokeTest {
         val records = RecordRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
         val photos = PhotoStorage(context, db, records, writes, clock)
         val settingsViewModel = SettingsViewModel(SettingsRepository(db, WriteCoordinator(), clock))
+        val workouts = WorkoutRepository(db, writes, clock)
+        val timelineRepository = TimelineRepository(records, workouts)
         val homeViewModel = HomeViewModel(
             clock,
             { ZoneId.of("Asia/Shanghai") },
-            db.records()::datesWithRecords,
-            db.records()::mealsOn,
+            timelineRepository,
         )
         val sleepViewModel = SleepViewModel(records, clock) { ZoneId.of("Asia/Shanghai") }
         compose.setContent {
@@ -88,7 +90,8 @@ class LifelogNavigationSmokeTest {
                     homeViewModel = homeViewModel,
                     settingsViewModel = settingsViewModel,
                     sleepViewModel = sleepViewModel,
-                    workoutRepository = WorkoutRepository(db, writes, clock),
+                    workoutRepository = workouts,
+                    timelineRepository = timelineRepository,
                     records = records,
                     photos = photos,
                     clock = clock,
@@ -105,14 +108,14 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithText("记饮食").assertExists()
         // today -> review via bottom tab.
         compose.onNodeWithText("回顾").performClick()
-        compose.onNodeWithText("日期选择").assertExists()
+        compose.onNodeWithContentDescription("前一天").assertExists()
         // review -> settings via top bar, and settings content is reachable.
         compose.onNodeWithContentDescription("打开设置").performClick()
         compose.onNodeWithText("主题").assertExists()
         compose.onNodeWithText("备份与恢复").assertExists()
         // Back from settings returns to the tab that opened it (review).
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithText("日期选择").assertExists()
+        compose.onNodeWithContentDescription("前一天").assertExists()
         // Back to today, open settings from there, and return to today.
         compose.onNodeWithText("今天").performClick()
         compose.onNodeWithText("记饮食").assertExists()

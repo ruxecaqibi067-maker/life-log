@@ -28,6 +28,7 @@ import androidx.navigation.compose.rememberNavController
 import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
+import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.feature.exercise.ExerciseLibraryScreen
 import com.personal.lifelog.feature.exercise.ExerciseLibraryViewModel
@@ -38,6 +39,7 @@ import com.personal.lifelog.feature.meal.MealDetailViewModel
 import com.personal.lifelog.feature.meal.MealEditorScreen
 import com.personal.lifelog.feature.meal.MealEditorViewModel
 import com.personal.lifelog.feature.review.ReviewScreen
+import com.personal.lifelog.feature.review.ReviewViewModel
 import com.personal.lifelog.feature.settings.SettingsScreen
 import com.personal.lifelog.feature.settings.SettingsViewModel
 import java.time.Clock
@@ -68,13 +70,13 @@ fun LifelogApp(
     zoneIdProvider: () -> ZoneId,
     sleepViewModel: SleepViewModel,
     workoutRepository: WorkoutRepository,
+    timelineRepository: TimelineRepository,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val today by homeViewModel.today.collectAsStateWithLifecycle()
-    val hasRecordsToday by homeViewModel.hasRecordsToday.collectAsStateWithLifecycle()
-    val todayMeals by homeViewModel.todayMeals.collectAsStateWithLifecycle()
+    val timeline by homeViewModel.timeline.collectAsStateWithLifecycle()
     val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
     val themeError by settingsViewModel.themeError.collectAsStateWithLifecycle()
 
@@ -129,32 +131,33 @@ fun LifelogApp(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
         ) {
             composable(LifelogRoutes.TODAY) {
-                val workouts: WorkoutDayViewModel = viewModel {
-                    WorkoutDayViewModel(workoutRepository, createSavedStateHandle(), clock, zoneIdProvider)
-                }
-                val workoutDay by workouts.state.collectAsStateWithLifecycle()
                 HomeScreen(
                     today = today,
-                    hasRecordsToday = hasRecordsToday,
-                    todayMeals = todayMeals,
+                    timeline = timeline,
+                    photos = photos,
                     onOpenSettings = { navController.navigateSingle(LifelogRoutes.SETTINGS) },
                     onRecordMeal = { navController.navigate(LifelogRoutes.mealEditor()) },
-                    onOpenMeal = { id -> navController.navigate(LifelogRoutes.mealDetail(id)) },
-                    onOpenSleep = { navController.navigateSingle(LifelogRoutes.SLEEP_HISTORY) },
+                    onOpenSleepHistory = { navController.navigateSingle(LifelogRoutes.SLEEP_HISTORY) },
                     onRecordWorkout = { navController.navigate(LifelogRoutes.workoutEditor()) },
-                    sleepViewModel = sleepViewModel,
+                    onOpenWorkoutHistory = { navController.navigate(LifelogRoutes.WORKOUT_HISTORY) },
+                    onOpenMeal = { id -> navController.navigate(LifelogRoutes.mealDetail(id)) },
                     onEditSleep = { navController.navigate(LifelogRoutes.sleepEditor(it)) },
-                    workoutContent = {
-                        WorkoutHomeSection(workoutDay,
-                            onHistory = { navController.navigate(LifelogRoutes.WORKOUT_HISTORY) },
-                            onOpen = { navController.navigate(LifelogRoutes.workoutDetail(it)) },
-                            onRetry = { workouts.selectDate(workoutDay.date) })
-                    },
+                    onOpenWorkout = { id -> navController.navigate(LifelogRoutes.workoutDetail(id)) },
+                    onRetryTimeline = homeViewModel::retry,
+                    sleepViewModel = sleepViewModel,
                 )
             }
             composable(LifelogRoutes.REVIEW) {
+                val reviewViewModel: ReviewViewModel = viewModel {
+                    ReviewViewModel(timelineRepository, createSavedStateHandle(), clock, zoneIdProvider)
+                }
                 ReviewScreen(
+                    viewModel = reviewViewModel,
+                    photos = photos,
                     onOpenSettings = { navController.navigateSingle(LifelogRoutes.SETTINGS) },
+                    onOpenMeal = { id -> navController.navigate(LifelogRoutes.mealDetail(id)) },
+                    onOpenSleep = { id -> navController.navigate(LifelogRoutes.sleepEditor(id)) },
+                    onOpenWorkout = { id -> navController.navigate(LifelogRoutes.workoutDetail(id)) },
                 )
             }
             composable(LifelogRoutes.SETTINGS) {

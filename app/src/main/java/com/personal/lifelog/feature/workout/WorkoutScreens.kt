@@ -188,13 +188,6 @@ private fun WorkoutNumber(value: String, label: Int, tag: String, enabled: Boole
 }
 
 @Composable
-fun WorkoutHomeSection(state: WorkoutDayState, onHistory: () -> Unit, onOpen: (String) -> Unit, onRetry: () -> Unit) {
-    Text(stringResource(R.string.workout_today), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 12.dp))
-    TextButton(onHistory) { Text(stringResource(R.string.workout_history)) }
-    WorkoutDayRows(state, onOpen, onRetry)
-}
-
-@Composable
 fun WorkoutHistoryScreen(viewModel: WorkoutDayViewModel, onBack: () -> Unit, onOpen: (String) -> Unit, onAdd: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current

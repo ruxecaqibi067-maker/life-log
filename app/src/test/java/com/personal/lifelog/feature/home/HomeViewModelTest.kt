@@ -1,7 +1,9 @@
 package com.personal.lifelog.feature.home
 
 import com.personal.lifelog.data.local.entity.MealRecord
+import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.domain.Satiety
+import com.personal.lifelog.domain.TimelineEntry
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -11,12 +13,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -37,19 +46,24 @@ class HomeViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun timelineRepository(
+        meals: (String) -> Flow<List<MealRecord>> = { flowOf(emptyList()) },
+    ) = TimelineRepository(
+        datesWithRecordsFlow = { flowOf(emptyList()) },
+        mealsOn = meals,
+        sleepsOn = { flowOf(emptyList()) },
+        workoutsOn = { flowOf(emptyList()) },
+    )
+
     private fun viewModel(
         zone: ZoneId,
-        dates: () -> Flow<List<String>>,
-        meals: (String) -> Flow<List<MealRecord>> = { flowOf(emptyList()) },
-    ) = HomeViewModel(clock, { zone }, dates, meals)
+        repository: TimelineRepository = timelineRepository(),
+    ) = HomeViewModel(clock, { zone }, repository)
 
     @Test
     fun todayUsesInjectedZoneNotSystemDefault() {
-        val shanghai = viewModel(ZoneId.of("Asia/Shanghai"), dates = { flowOf(emptyList()) })
-        assertEquals(LocalDate.of(2026, 10, 23), shanghai.today.value)
-
-        val utc = viewModel(ZoneId.of("UTC"), dates = { flowOf(emptyList()) })
-        assertEquals(LocalDate.of(2026, 10, 22), utc.today.value)
+        assertEquals(LocalDate.of(2026, 10, 23), viewModel(ZoneId.of("Asia/Shanghai")).today.value)
+        assertEquals(LocalDate.of(2026, 10, 22), viewModel(ZoneId.of("UTC")).today.value)
     }
 
     @Test
@@ -58,30 +72,13 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             otherClock,
             { ZoneId.of("Asia/Shanghai") },
-            { flowOf(emptyList()) },
-            { flowOf(emptyList()) },
+            timelineRepository(),
         )
         assertEquals(LocalDate.of(2020, 1, 1), viewModel.today.value)
     }
 
     @Test
-    fun hasRecordsTodayReflectsDatabaseDateIndex() {
-        assertEquals(false, viewModel(ZoneId.of("Asia/Shanghai"), dates = { flowOf(emptyList()) }).hasRecordsToday.value)
-        assertEquals(true, viewModel(ZoneId.of("Asia/Shanghai"), dates = { flowOf(listOf("2026-10-23")) }).hasRecordsToday.value)
-        assertEquals(
-            false,
-            viewModel(ZoneId.of("Asia/Shanghai"), dates = { flowOf(listOf("2026-10-20", "2026-10-22")) }).hasRecordsToday.value,
-        )
-    }
-
-    @Test
-    fun hasRecordsTodayIsNullUntilFirstRead() {
-        // A flow that never emits keeps the shell from claiming an empty day.
-        assertEquals(null, viewModel(ZoneId.of("Asia/Shanghai"), dates = { emptyFlow() }).hasRecordsToday.value)
-    }
-
-    @Test
-    fun todayMealsOnlyExposesMealsForTheDerivedLocalDate() {
+    fun timelineQueriesThePersistedLocalDateAndExposesSavedEntries() {
         val meal = MealRecord(
             id = "7e9d4c8b-2f1a-4e6b-9c3d-0a1b2c3d4e5f",
             occurredAtUtcMs = 1_792_670_400_000,
@@ -96,17 +93,66 @@ class HomeViewModelTest {
         var requestedDate: String? = null
         val viewModel = viewModel(
             ZoneId.of("Asia/Shanghai"),
-            { flowOf(listOf("2026-10-23")) },
-            meals = { date ->
+            timelineRepository(meals = { date ->
                 requestedDate = date
                 flowOf(listOf(meal))
-            },
+            }),
         )
 
         assertEquals("2026-10-23", requestedDate)
-        assertEquals(1, viewModel.todayMeals.value.size)
-        assertEquals("牛肉面", viewModel.todayMeals.value.single().text)
-        assertEquals(Satiety.SEVEN, viewModel.todayMeals.value.single().satiety)
-        assertEquals(false, viewModel.todayMeals.value.single().hasPhoto)
+        val state = viewModel.timeline.value
+        assertFalse(state.loading)
+        assertFalse(state.failed)
+        assertEquals(LocalDate.of(2026, 10, 23), state.date)
+        val entry = state.entries.single() as TimelineEntry.Meal
+        assertEquals("牛肉面", entry.text)
+        assertEquals(Satiety.SEVEN, entry.satiety)
+    }
+
+    @Test
+    fun timelineIsLoadingBeforeTheFirstRead() {
+        // A flow that never emits keeps the screen from claiming an empty day.
+        val viewModel = viewModel(
+            ZoneId.of("Asia/Shanghai"),
+            timelineRepository(meals = { emptyFlow() }),
+        )
+        assertTrue(viewModel.timeline.value.loading)
+        assertFalse(viewModel.timeline.value.failed)
+        assertTrue(viewModel.timeline.value.entries.isEmpty())
+    }
+
+    @Test
+    fun failedReadIsReportedAsFailureNotAnEmptyDay() {
+        val viewModel = viewModel(
+            ZoneId.of("Asia/Shanghai"),
+            timelineRepository(meals = { flow { throw IllegalStateException("synthetic read failure") } }),
+        )
+        val state = viewModel.timeline.value
+        assertFalse(state.loading)
+        assertTrue(state.failed)
+        assertTrue(state.entries.isEmpty())
+    }
+
+    @Test
+    fun localDateUpdatesRollOverAtInjectedLocalMidnight() = runTest {
+        val mutableClock = MutableClock(Instant.parse("2026-10-22T15:59:30Z")) // 23:59:30 Shanghai
+        val values = mutableListOf<LocalDate>()
+        val job = launch {
+            localDateUpdates(mutableClock, { ZoneId.of("Asia/Shanghai") }).collect { values += it }
+        }
+        runCurrent()
+        assertEquals(listOf(LocalDate.of(2026, 10, 22)), values)
+
+        mutableClock.now = Instant.parse("2026-10-22T16:00:01Z") // 00:00:01 on Oct 23
+        advanceTimeBy(31_000)
+        runCurrent()
+        assertEquals(LocalDate.of(2026, 10, 23), values.last())
+        job.cancel()
+    }
+
+    private class MutableClock(var now: Instant, private val zone: ZoneId = ZoneOffset.UTC) : Clock() {
+        override fun getZone(): ZoneId = zone
+        override fun withZone(zone: ZoneId): Clock = Clock.fixed(now, zone)
+        override fun instant(): Instant = now
     }
 }

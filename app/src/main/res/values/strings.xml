@@ -13,12 +13,6 @@
     <string name="home_quick_meal">记饮食</string>
     <string name="home_quick_workout">记运动</string>
     <string name="home_timeline_title">今日时间线</string>
-    <string name="home_timeline_dev_note">时间线整合将在后续任务包接入</string>
-    <string name="home_timeline_has_records_note">今天已有记录，完整时间线将在后续任务包接入</string>
-
-    <!-- 回顾 -->
-    <string name="review_date_placeholder">日期选择</string>
-    <string name="review_dev_note">日期选择与时间线将在后续任务包接入</string>
 
     <!-- 设置 -->
     <string name="settings_theme">主题</string>
@@ -35,7 +29,6 @@
     <!-- 公共状态组件 -->
     <string name="empty_timeline_title">这一天还没有记录</string>
     <string name="empty_timeline_hint">保存的饮食、作息和运动会按时间显示在这里</string>
-    <string name="empty_review_hint">选择日期后，这里会显示当天的记录</string>
     <string name="saving">保存中…</string>
     <string name="retry">重试</string>
 
@@ -97,7 +90,4 @@
     <string name="meal_error_save_failed">保存失败，请重试</string>
     <string name="meal_error_delete_failed">删除失败，记录未删除，请重试</string>
     <string name="meal_error_load_failed">记录读取失败，请重试</string>
-    <string name="meal_home_section">今天的饮食</string>
-    <string name="meal_home_other_note">作息与运动的时间线将在后续任务包接入</string>
-    <string name="meal_open_detail">查看饮食记录</string>
 </resources>

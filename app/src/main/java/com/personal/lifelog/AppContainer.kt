@@ -6,6 +6,7 @@ import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.SnapshotRepository
+import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import java.time.Clock
@@ -23,6 +24,7 @@ class AppContainer(
     val records: RecordRepository by lazy { RecordRepository(database, writes, clock, zoneIdProvider) }
     val photos: PhotoStorage by lazy { PhotoStorage(appContext, database, records, writes, clock) }
     val workouts: WorkoutRepository by lazy { WorkoutRepository(database, writes, clock) }
+    val timeline: TimelineRepository by lazy { TimelineRepository(records, workouts) }
     val settings: SettingsRepository by lazy { SettingsRepository(database, writes, clock) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
 }

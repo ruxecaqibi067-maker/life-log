@@ -85,16 +85,6 @@ data class MealDetailUiState(
     val deleted: Boolean = false,
 )
 
-/** Home row model; T10 replaces this with the unified timeline model. */
-data class MealListItem(
-    val id: String,
-    val text: String?,
-    val satiety: Satiety?,
-    val occurredAtUtcMs: Long,
-    val zoneId: String,
-    val hasPhoto: Boolean,
-)
-
 internal fun MealRecord.toDetail(): MealDetail = MealDetail(
     id = id,
     text = text,
@@ -102,15 +92,6 @@ internal fun MealRecord.toDetail(): MealDetail = MealDetail(
     occurredAtUtcMs = occurredAtUtcMs,
     zoneId = zoneId,
     photoId = photoId,
-)
-
-internal fun MealRecord.toListItem(): MealListItem = MealListItem(
-    id = id,
-    text = text,
-    satiety = satiety,
-    occurredAtUtcMs = occurredAtUtcMs,
-    zoneId = zoneId,
-    hasPhoto = photoId != null,
 )
 
 /** UI-side early check; [Rules] and RecordRepository repeat it as the authority. */

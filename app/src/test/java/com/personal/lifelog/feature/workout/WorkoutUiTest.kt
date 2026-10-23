@@ -54,13 +54,14 @@ class WorkoutUiTest {
         runBlocking { db.workouts().allExercises() }
         val writes = WriteCoordinator()
         val records = RecordRepository(db, writes, clock) { zone }
-        val home = HomeViewModel(clock, { zone }, db.records()::datesWithRecords, db.records()::mealsOn)
+        val workouts = WorkoutRepository(db, writes, clock)
+        val timelineRepository = TimelineRepository(records, workouts)
+        val home = HomeViewModel(clock, { zone }, timelineRepository)
         val settings = SettingsViewModel(SettingsRepository(db, writes, clock))
         val sleep = SleepViewModel(records, clock) { zone }
-        val workouts = WorkoutRepository(db, writes, clock)
         val photos = PhotoStorage(context, db, records, writes, clock)
         compose.setContent { LifeLogTheme(ThemeMode.LIGHT) {
-            LifelogApp(home, settings, records, photos, clock, { zone }, sleep, workouts)
+            LifelogApp(home, settings, records, photos, clock, { zone }, sleep, workouts, timelineRepository)
         } }
     }
     @After fun close() { db.close() }

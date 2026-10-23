@@ -31,8 +31,7 @@ class MainActivity : ComponentActivity() {
                 HomeViewModel(
                     container.clock,
                     container.zoneIdProvider,
-                    container.records::datesWithRecords,
-                    container.records::mealsOn,
+                    container.timeline,
                 )
             }
             val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
@@ -62,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     clock = container.clock,
                     zoneIdProvider = container.zoneIdProvider,
                     workoutRepository = container.workouts,
+                    timelineRepository = container.timeline,
                 )
             }
         }

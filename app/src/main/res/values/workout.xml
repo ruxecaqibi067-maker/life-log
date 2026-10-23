@@ -3,7 +3,6 @@
     <string name="workout_edit">编辑训练</string>
     <string name="workout_detail">训练详情</string>
     <string name="workout_history">训练记录 / 补录</string>
-    <string name="workout_today">今日训练</string>
     <string name="workout_add">添加项目</string>
     <string name="workout_optional">选好项目即可保存，数值和备注都选填。</string>
     <string name="workout_note">整次训练备注（选填，最多1000字）</string>

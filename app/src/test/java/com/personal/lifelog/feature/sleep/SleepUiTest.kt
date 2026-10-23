@@ -55,9 +55,11 @@ class SleepUiTest {
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).addCallback(AppDatabase.creationCallback(clock)).build()
         val writes = WriteCoordinator()
         val repository = RecordRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
+        val workouts = WorkoutRepository(db, writes, clock)
+        val timelineRepository = TimelineRepository(repository, workouts)
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
-                val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, repository::datesWithRecords, repository::mealsOn) }
+                val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, timelineRepository) }
                 val settings = vm(SettingsViewModel::class.java) { SettingsViewModel(SettingsRepository(db, writes, clock)) }
                 val sleep = vm(SleepViewModel::class.java) { SleepViewModel(repository, clock) { ZoneId.of("Asia/Shanghai") } }
                 LifelogApp(
@@ -68,7 +70,8 @@ class SleepUiTest {
                     photos = PhotoStorage(context, db, repository, writes, clock),
                     clock = clock,
                     zoneIdProvider = { ZoneId.of("Asia/Shanghai") },
-                    workoutRepository = WorkoutRepository(db, writes, clock),
+                    workoutRepository = workouts,
+                    timelineRepository = timelineRepository,
                 )
             }
         }

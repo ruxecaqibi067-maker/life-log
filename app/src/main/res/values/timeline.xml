@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 统一时间线 -->
+    <string name="timeline_summary_meal">饮食 %1$d 条</string>
+    <string name="timeline_summary_sleep">作息 %1$d 段</string>
+    <string name="timeline_summary_workout">训练 %1$d 场 · %2$d 个动作</string>
+    <string name="timeline_kind_sleep">作息</string>
+    <string name="timeline_kind_workout">训练</string>
+    <string name="timeline_sleep_range">%1$s → %2$s</string>
+    <string name="timeline_sleep_active">未结束</string>
+    <string name="timeline_sleep_duration">卧床 %1$d小时%2$d分</string>
+    <string name="timeline_sleep_duration_seconds">卧床 %1$d秒</string>
+    <string name="timeline_workout_detail">训练 · %1$d 个动作</string>
+    <string name="timeline_open_meal">查看饮食记录</string>
+    <string name="timeline_open_sleep">查看作息记录</string>
+    <string name="timeline_open_workout">查看训练记录</string>
+    <string name="timeline_loading">正在读取记录…</string>
+    <string name="timeline_load_failed">记录读取失败，请重试</string>
+
+    <!-- 回顾 -->
+    <string name="review_previous_day">前一天</string>
+    <string name="review_next_day">后一天</string>
+    <string name="review_today">回到今天</string>
+    <string name="review_recorded_dates">有记录的日期</string>
+    <string name="review_recorded_dates_title">有记录的日期</string>
+    <string name="review_dates_loading">正在读取日期…</string>
+    <string name="review_dates_empty">还没有任何记录</string>
+    <string name="review_dates_failed">日期列表读取失败</string>
+    <string name="review_close">关闭</string>
+</resources>

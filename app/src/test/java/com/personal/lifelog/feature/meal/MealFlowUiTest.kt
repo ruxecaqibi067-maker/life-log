@@ -18,6 +18,7 @@ import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
+import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.domain.ThemeMode
@@ -93,14 +94,14 @@ class MealFlowUiTest {
             syncDirectory = { check(it.isDirectory) },
         )
         val settingsViewModel = SettingsViewModel(SettingsRepository(db, WriteCoordinator(), clock))
+        val workoutRepository = WorkoutRepository(db, writes, clock)
+        val timelineRepository = TimelineRepository(records, workoutRepository)
         val homeViewModel = HomeViewModel(
             clock,
             { zone },
-            db.records()::datesWithRecords,
-            db.records()::mealsOn,
+            timelineRepository,
         )
         val sleepViewModel = SleepViewModel(records, clock) { zone }
-        val workoutRepository = WorkoutRepository(db, writes, clock)
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
                 LifelogApp(
@@ -108,6 +109,7 @@ class MealFlowUiTest {
                     settingsViewModel = settingsViewModel,
                     sleepViewModel = sleepViewModel,
                     workoutRepository = workoutRepository,
+                    timelineRepository = timelineRepository,
                     records = records,
                     photos = photos,
                     clock = clock,
@@ -162,7 +164,7 @@ class MealFlowUiTest {
         compose.onNodeWithTag("meal_text_input").performTextInput("牛肉面")
         compose.onNodeWithTag("meal_save_button").performClick()
         compose.waitUntil(10_000) { mealCount() == 1 }
-        waitForText("今天的饮食")
+        waitForText("今日时间线")
         assertEquals("牛肉面", onlyMeal()?.text)
         assertEquals(null, onlyMeal()?.photoId)
 
