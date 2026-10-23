@@ -1,6 +1,7 @@
 package com.personal.lifelog
 
 import android.content.Context
+import com.personal.lifelog.data.backup.export.BackupExporter
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
@@ -27,4 +28,7 @@ class AppContainer(
     val timeline: TimelineRepository by lazy { TimelineRepository(records, workouts) }
     val settings: SettingsRepository by lazy { SettingsRepository(database, writes, clock) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
+    val backupExporter: BackupExporter by lazy {
+        BackupExporter(snapshots, settings, writes, appContext.filesDir, clock, "0.1.0")
+    }
 }
