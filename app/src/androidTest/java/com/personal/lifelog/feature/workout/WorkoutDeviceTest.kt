@@ -107,7 +107,7 @@ class WorkoutDeviceTest {
         compose.onNodeWithText("添加项目").performScrollTo().performClick(); waitText("新增项目")
         compose.onNodeWithText("新增项目").performClick()
         compose.onNodeWithText("项目名称").performTextInput("虚构自定义力量")
-        compose.onNodeWithText("力量", useUnmergedTree = true).performClick()
+        compose.onNode(hasText("力量") and hasAnyAncestor(isDialog()), useUnmergedTree = true).performClick()
         compose.onNodeWithText("保存").performClick(); waitText("保存训练")
         compose.onNodeWithText("保存训练").performClick(); waitText("虚构自定义力量")
         assertEquals("虚构自定义力量", runBlocking { db.workouts().allItems().single().nameSnapshot })

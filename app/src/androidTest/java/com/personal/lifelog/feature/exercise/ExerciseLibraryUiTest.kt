@@ -60,7 +60,7 @@ class ExerciseLibraryUiTest {
         screen { selected = it }
         compose.onNodeWithText("新增项目").performClick()
         compose.onNodeWithText("项目名称").performTextInput("  虚构弹力带  ")
-        compose.onNodeWithText("力量", useUnmergedTree = true).performClick()
+        compose.onNode(hasText("力量") and hasAnyAncestor(isDialog()), useUnmergedTree = true).performClick()
         compose.onNodeWithText("保存").performClick()
         compose.waitUntil(10_000) { selected != null }
         assertEquals("虚构弹力带", selected!!.name)
@@ -99,7 +99,7 @@ class ExerciseLibraryUiTest {
         screen()
         compose.onNodeWithText("新增项目").performClick()
         compose.onNodeWithText("项目名称").performTextInput("   ")
-        compose.onNodeWithText("其他", useUnmergedTree = true).performClick()
+        compose.onNode(hasText("其他") and hasAnyAncestor(isDialog()), useUnmergedTree = true).performClick()
         compose.onNodeWithText("保存").performClick()
         compose.waitUntil(10_000) { vm.error.value == ErrorCode.INVALID_NAME }
         compose.onNodeWithText("请输入去除首尾空白后 1–40 字的名称").assertExists()
