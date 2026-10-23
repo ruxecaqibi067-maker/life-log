@@ -46,6 +46,7 @@ import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.sleep.SleepEditorViewModel
 import com.personal.lifelog.feature.sleep.SleepEditorScreen
 import com.personal.lifelog.feature.sleep.SleepHistoryScreen
+import com.personal.lifelog.feature.workout.*
 
 /**
  * Single-activity navigation shell. The bottom bar only shows on the two tab
@@ -128,6 +129,10 @@ fun LifelogApp(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
         ) {
             composable(LifelogRoutes.TODAY) {
+                val workouts: WorkoutDayViewModel = viewModel {
+                    WorkoutDayViewModel(workoutRepository, createSavedStateHandle(), clock, zoneIdProvider)
+                }
+                val workoutDay by workouts.state.collectAsStateWithLifecycle()
                 HomeScreen(
                     today = today,
                     hasRecordsToday = hasRecordsToday,
@@ -139,6 +144,12 @@ fun LifelogApp(
                     onRecordWorkout = { navController.navigate(LifelogRoutes.workoutEditor()) },
                     sleepViewModel = sleepViewModel,
                     onEditSleep = { navController.navigate(LifelogRoutes.sleepEditor(it)) },
+                    workoutContent = {
+                        WorkoutHomeSection(workoutDay,
+                            onHistory = { navController.navigate(LifelogRoutes.WORKOUT_HISTORY) },
+                            onOpen = { navController.navigate(LifelogRoutes.workoutDetail(it)) },
+                            onRetry = { workouts.selectDate(workoutDay.date) })
+                    },
                 )
             }
             composable(LifelogRoutes.REVIEW) {
@@ -229,11 +240,34 @@ fun LifelogApp(
                 arguments = listOf(LifelogRoutes.workoutIdArgument),
             ) { entry ->
                 val workoutId = entry.arguments?.getString(LifelogRoutes.ARG_WORKOUT_ID)
-                DevPlaceholderScreen(
-                    title = stringResource(R.string.home_quick_workout),
-                    route = LifelogRoutes.workoutEditor(workoutId),
-                    onBack = { navController.navigateUp() },
+                val editor: WorkoutEditorViewModel = viewModel {
+                    WorkoutEditorViewModel(workoutRepository, createSavedStateHandle(), clock, zoneIdProvider, workoutId)
+                }
+                val exercises: ExerciseLibraryViewModel = viewModel(key = "workout-picker") {
+                    ExerciseLibraryViewModel(workoutRepository, createSavedStateHandle(), selecting = true)
+                }
+                WorkoutEditorScreen(editor, editing = workoutId != null,
+                    onFinished = { navController.popBackStack() },
+                    picker = { onBack, onSelected -> ExerciseLibraryScreen(exercises, onBack, onSelected) },
                 )
+            }
+            composable(LifelogRoutes.WORKOUT_HISTORY) {
+                val history: WorkoutDayViewModel = viewModel {
+                    WorkoutDayViewModel(workoutRepository, createSavedStateHandle(), clock, zoneIdProvider)
+                }
+                WorkoutHistoryScreen(history, onBack = { navController.navigateUp() },
+                    onOpen = { navController.navigate(LifelogRoutes.workoutDetail(it)) },
+                    onAdd = { navController.navigate(LifelogRoutes.workoutEditor()) })
+            }
+            composable(LifelogRoutes.WORKOUT_DETAIL_PATTERN, arguments = listOf(LifelogRoutes.workoutIdArgument)) { entry ->
+                val id = entry.arguments?.getString(LifelogRoutes.ARG_WORKOUT_ID)
+                if (id == null) {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                } else {
+                    val detail: WorkoutDetailViewModel = viewModel { WorkoutDetailViewModel(workoutRepository, id) }
+                    WorkoutDetailScreen(detail, onBack = { navController.popBackStack() },
+                        onEdit = { navController.navigate(LifelogRoutes.workoutEditor(it)) })
+                }
             }
         }
     }

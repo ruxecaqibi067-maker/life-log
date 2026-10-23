@@ -133,7 +133,7 @@ class LifelogNavigationSmokeTest {
     }
 
     @Test
-    fun reservedEditorRoutesShowPlaceholderAndReturn() {
+    fun recordEditorsAndHistoryOpenAndReturn() {
         setAppContent()
         // T05 replaced the meal placeholder with the real editor.
         compose.onNodeWithText("记饮食").performClick()
@@ -146,9 +146,12 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithContentDescription("返回").performClick()
 
         compose.onNodeWithText("记运动").performClick()
-        compose.onNodeWithText("导航路由：workout/edit", substring = true).assertExists()
+        compose.onNodeWithText("保存训练").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
+        compose.onNodeWithText("训练记录 / 补录").performClick()
+        compose.onNodeWithText("前一天").assertExists()
+        compose.onNodeWithContentDescription("返回").performClick()
     }
 
     @Test

@@ -78,6 +78,7 @@ fun HomeScreen(
     onRecordWorkout: () -> Unit,
     sleepViewModel: SleepViewModel,
     onEditSleep: (String) -> Unit,
+    workoutContent: @Composable () -> Unit = {},
 ) {
     val sleepStatus by sleepViewModel.status.collectAsStateWithLifecycle()
     val sleepBusy by sleepViewModel.busy.collectAsStateWithLifecycle()
@@ -120,6 +121,7 @@ fun HomeScreen(
                     .verticalScroll(rememberScrollState()),
             ) {
                 SleepHomeStatus(sleepViewModel, onOpenSleep, onEditSleep)
+                workoutContent()
                 Text(
                     text = stringResource(R.string.home_timeline_title),
                     modifier = Modifier.padding(vertical = 12.dp),

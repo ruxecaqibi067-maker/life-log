@@ -25,6 +25,8 @@ object LifelogRoutes {
     const val SETTINGS = "settings"
     const val SLEEP_HISTORY = "sleep/history"
     const val EXERCISES = "exercises"
+    const val WORKOUT_HISTORY = "workout/history"
+    const val WORKOUT_DETAIL = "workout/detail"
 
     // Reserved editor routes; placeholder screens exist today, real editors arrive later.
     const val MEAL_EDIT = "meal/edit"
@@ -44,12 +46,14 @@ object LifelogRoutes {
     const val MEAL_DETAIL_PATTERN = "$MEAL_DETAIL?$ARG_MEAL_ID={$ARG_MEAL_ID}"
     const val SLEEP_EDIT_PATTERN = "$SLEEP_EDIT?$ARG_SLEEP_ID={$ARG_SLEEP_ID}"
     const val WORKOUT_EDIT_PATTERN = "$WORKOUT_EDIT?$ARG_WORKOUT_ID={$ARG_WORKOUT_ID}"
+    const val WORKOUT_DETAIL_PATTERN = "$WORKOUT_DETAIL?$ARG_WORKOUT_ID={$ARG_WORKOUT_ID}"
 
     /** Optional record UUIDs are URL-encoded by the navigation library when navigating. */
     fun mealEditor(id: String? = null): String = editorRoute(MEAL_EDIT, ARG_MEAL_ID, id)
     fun mealDetail(id: String): String = "$MEAL_DETAIL?$ARG_MEAL_ID=$id"
     fun sleepEditor(id: String? = null): String = editorRoute(SLEEP_EDIT, ARG_SLEEP_ID, id)
     fun workoutEditor(id: String? = null): String = editorRoute(WORKOUT_EDIT, ARG_WORKOUT_ID, id)
+    fun workoutDetail(id: String): String = "$WORKOUT_DETAIL?$ARG_WORKOUT_ID=$id"
 
     private fun editorRoute(base: String, arg: String, id: String?): String =
         if (id == null) base else "$base?$arg=$id"
