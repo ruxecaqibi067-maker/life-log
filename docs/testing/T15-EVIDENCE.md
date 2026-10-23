@@ -38,7 +38,7 @@
 .\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleQaRelease :app:lintQaRelease --console=plain --max-workers=2
 .\gradlew.bat :app:connectedDebugAndroidTest --console=plain --max-workers=2
 .\docs\testing\restore-process-matrix.ps1
-python scripts\verify_backup.py artifacts\t15\scale-fixture.zip artifacts\t15\qa-export.zip
+python scripts\verify_backup.py artifacts\t15\qa-export.zip artifacts\t15\qa-final-export.zip --ignore-export-clock
 ```
 
 - `artifacts/t15/verified-check.log`：最终依赖修复后的主机与候选构建日志。
@@ -49,6 +49,7 @@ python scripts\verify_backup.py artifacts\t15\scale-fixture.zip artifacts\t15\qa
 - `artifacts/t13/device-process/*-interrupt.log`、`*-recover.log`：每个真实进程终止点与重开验证；批次汇总在 `artifacts/t15/`。
 - `artifacts/t15/qa-preview.xml/png`、`qa-result.xml/png`、`qa-export-complete.xml`、`qa-populated-home.xml/png`、`qa-reopen.xml/png`：真实系统文件选择器、预览、恢复、导出和强停重开截图。
 - `artifacts/t15/qa-roundtrip.json`：QA 从规模 ZIP 恢复，再经系统 SAF 导出；数据 JSON 完整语义、200 张照片 SHA-256 和数量完全一致；未忽略任何设置字段。
+- `qa-final-roundtrip.json`：最终依赖更新后的 QA 重新安装并经 SAF 导出，与冻结的 `qa-export.zip` 对比通过；仅忽略导出操作自身会改变的设置导出时间/更新时间。单测再次运行会生成不同随机 ID 的 `scale-fixture.zip`，不要把后来生成的夹具与旧安装数据直接比较。
 
 设备操作：向模拟器 Download 放入合成 ZIP；QA 设置 → 从备份恢复 → 系统 Downloads 选 ZIP → 核对预览 → 覆盖并恢复 → 等待恢复完成 → 导出备份 → 系统保存 → 等待成功再拉取 ZIP 比较。强停后重开，未结束作息仍在。最终候选依赖更新后的重复冒烟结果另记 handoff。
 
@@ -57,6 +58,7 @@ python scripts\verify_backup.py artifacts\t15\scale-fixture.zip artifacts\t15\qa
 1. Compose 间接引入 Espresso 3.5.0，在 API 37 报 InputManager.getInstance 缺失；显式使用 3.7.0。[上游已确认](https://github.com/android/android-test/issues/2507)。
 2. 目标 APK 的旧 serialization-core 与 Room 测试 serializer 不兼容，出现 AbstractMethodError；目标 APK 显式对齐 core 1.9.0，未引入业务 JSON serializer。[上游兼容性讨论](https://github.com/Kotlin/kotlinx.serialization/issues/2968)。
 3. 进程矩阵的测试目录使用 Android 路径别名，被 BackupFiles 的规范路径校验拒绝；修正测试夹具为 canonicalFile，保留生产路径限制。
+4. 设备项目类型选择同时匹配弹窗与背景列表文字；将两处测试限定在弹窗中。独占前台的 connected 复测 XML 为 12 项、0 失败/错误、1 项专用参数用例跳过；该用例随后在九个真实进程终止阶段全部通过。
 
 荣耀冷启动、文字/点选保存、照片保存的 10 次原始数据和 P90 均未测量。模拟器的 `am start -W TotalTime` 仅到 Activity 绘制，既不是荣耀结果，也不证明主按钮可响应，因此不用于判定 2 秒/300 毫秒/2 秒目标。
 
