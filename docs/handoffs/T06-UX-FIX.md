@@ -38,7 +38,9 @@
 | 月末/闰年/系统时区/旧数据往返 | 1月31日换2月为28/29日；上海以外的 Kolkata/Auckland/纽约时区；旧时区转换后确认同分钟仍原样保存两端毫秒；重复/缺口时间 | `SleepWheelModelTest`、`SleepPickerDeviceTest` |
 | 大字体/重建 | 2倍 Compose 字体：选择器改到2月28日后恢复 SavedInstanceState，所选值仍在；取消不写回；保存可滚动触达；旧 SavedStateHandle 草稿回归通过 | `editor-large-font.png`、`wheel-large-font.png`、设备测试 |
 | schema与备份格式 | 无差异；既有备份导出/导入/恢复回归包含在217项中 | `git diff main -- app/schemas`、主机测试 |
-| 长期签名 release 构建 | 源码提交后执行并在下方补记 | `artifacts/t16/v0.1.2-3/` |
+| 长期签名 release 构建 | 从干净 `0b3709b` 执行 Build-Release.ps1；assembleRelease/lintRelease成功，4分31秒，Lint 0错误/13警告；非调试、R8及资源压缩 | `artifacts/t16/v0.1.2-3/` |
+| 正式包覆盖安装 | 模拟器原长期签名0.1.1/2 → 0.1.2/3，`adb install -r`成功，无卸载/清数据；appId仍10240、firstInstallTime仍2026-10-23 12:26:19；启动后旧未结束作息仍显示 | `install-upgrade.log`、`before/after-upgrade-package.txt` |
+| 签名版系统大字体/Activity重建 | 在打开滚轮时将模拟器系统font_scale从1.0改为2.0，Activity重建后对话框及所选分钟不变，确认/取消可见；完成后恢复原字体并取消未保存补录 | `release-recreation.json`、`release-picker-before/after-recreate.xml`、`release-wheel-system-font2.png` |
 
 13项debug Lint警告含现有10项版本提示、2项存储空间API建议，以及新增的 `ConfigurationScreenWidthHeight`（滚轮对话框高度限制）。没有关闭规则或增设 baseline；原ISO短横线警告随技术输入资源移除。
 
@@ -48,6 +50,8 @@
 - `screenshots/wheel.png`：正常字体、5个原生滚轮、24小时制、确认与取消。
 - `screenshots/editor-large-font.png`、`screenshots/wheel-large-font.png`：两倍字体下的表单与选择操作。
 - `screenshots/unfinished.png`：旧未结束记录，不展示/伪造起床时间。
+- `screenshots/release-editor.png`、`screenshots/release-wheel.png`：真正安装的长期签名release界面，无测试Activity替代。
+- `screenshots/release-wheel-system-font2.png`：长期签名版真实系统两倍字体及Activity重建后界面。
 
 截图由设备 UiAutomation 直接取得，等待平台对话框进出动画完成后保存原始PNG；没有裁剪/修改。设备时间为模拟器原样时钟，批次日期按 Asia/Shanghai 记录。
 
@@ -58,7 +62,29 @@
 
 ## 发布与主管整合
 
-- 实现提交及长期签名APK校验在交付后续补记；最终HEAD以对话回报为准。
+- 实现提交 `0b3709ba7faeb70a9c28ac50e7bdde5cf4ac7e78`；最终HEAD以对话回报为准，后续只补证据文档。
 - 使用既有 Git 外 `%LOCALAPPDATA%\LifeLogAndroid\signing\signing.properties`，不生成/替换密钥，不输出密码。
+- APK：`artifacts/t16/v0.1.2-3/life-log-0.1.2-3-release.apk`；SHA-256 `74d95bd894ce0bd01139c39866a15fabbee09098fc0f873ffa5c3254bd1e784d`；证书SHA-256 `d7f28734119f923ef9aa7434bf4ed8a4305e6092f54e4ab88a8be70f2143c747`，与旧版完全一致。release.json记录干净构建源码提交、包名、版本和证书，apksigner验签通过。
 - 未连接荣耀200 Pro；当前证据为主机与模拟器，仍须在荣耀/MagicOS确认真实滚轮手感、系统大字体及覆盖升级。
 - 主管从 main 审查 `fix/sleep-wheel-picker` 的 diff，核对新增交互与旧数据不变用例，再整合并安排实机更新。中央 STATUS 与原 T06 历史交接均未改写。
+
+设备测试的完整复现命令（临时后缀仅用于保护已装正式包）：
+
+```powershell
+.\gradlew.bat -I artifacts/sleep-wheel/isolated-device.init.gradle :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.personal.lifelog.feature.sleep.SleepPickerDeviceTest' --console=plain --max-workers=2
+.\scripts\Build-Release.ps1 -SigningProperties "$env:LOCALAPPDATA\LifeLogAndroid\signing\signing.properties" -VersionCode 3 -VersionName 0.1.2
+```
+
+忽略目录中的 `isolated-device.init.gradle` 内容为：
+
+```groovy
+allprojects {
+    plugins.withId('com.android.application') {
+        extensions.getByName('androidComponents').finalizeDsl { android ->
+            android.buildTypes.getByName('debug').applicationIdSuffix = '.sleepfix'
+        }
+    }
+}
+```
+
+该脚本没有被写入项目构建配置；普通 debug、长期签名release、schema/备份保持原包名和契约。最终签名APK与截图/日志另提供在主目录忽略的 `artifacts/sleep-wheel-fix-0.1.2-3/` 方便主管读取，权威源码仍为修复分支。
