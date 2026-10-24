@@ -1,11 +1,11 @@
 # 安装、更新与备份
 
-当前为已签名的验收版本。荣耀 200 Pro 的系统相机/图库、MagicOS、重启和性能仍需补测；签名成功不等于第一版全部验收通过。
+当前为「随手记」0.1.2 / versionCode 3 长期签名测试候选，面向 Android 9 及以上手机、不限品牌。配置和依赖层面的支持范围见 [COMPATIBILITY.md](COMPATIBILITY.md)；不同品牌的系统相机/图库、文件选择器、重启及性能仍需实测。
 
 ## 手机上安装
 
-1. 用手机打开 [实机测试下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.1-test.1)，下载 `life-log-0.1.1-2-release.apk`。也可从电脑下载后经 USB 复制到手机；[首次实机测试清单](testing/HONOR_PHONE_TEST.md) 给出具体步骤。
-2. 在手机文件管理器打开 APK；系统询问时允许这个安装来源。安装后打开「生活随记」。不需要账号。
+1. 用手机打开 [下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.2-test.1)，下载 `随手记-0.1.2.apk`；也可先在电脑下载，再经 USB 复制到手机。[手机测试清单](testing/ANDROID_PHONE_TEST.md) 给出具体步骤。
+2. 在手机文件管理器打开 APK；系统询问时允许这个安装来源。安装后打开「随手记」。不需要账号。
 3. 首次只使用虚构记录，验证饮食、作息、运动、照片和备份流程。完整检查表在 `docs/ACCEPTANCE.md`。
 
 正式包名固定为 `com.personal.lifelog`。`.qa` 包是独立候选测试安装，里面的数据不会自动出现在正式包中；需要经设置中的 ZIP 备份迁移。

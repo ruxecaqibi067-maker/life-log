@@ -1,6 +1,6 @@
 # 第一版任务包索引
 
-当前阶段：**T01–T16 实现链已整合，进入荣耀实机测试**。状态以 [主管进度板](STATUS.md) 和 [本轮验收报告](reviews/V1_PHONE_CANDIDATE.md) 为准；T15/T16 尚缺荣耀、性能与最终使用证据。
+当前阶段：**T01–T16 实现链已整合，进入 Android 9 及以上手机的实机测试**。状态以 [主管进度板](STATUS.md) 和 [本轮验收报告](reviews/V1_PHONE_CANDIDATE.md) 为准；T15/T16 尚缺荣耀、性能与最终使用证据。
 
 项目根目录：`C:\Users\user1\Desktop\workspace\NEW TRY\life-log-android`。
 
