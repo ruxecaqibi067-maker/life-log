@@ -1,6 +1,7 @@
 package com.personal.lifelog.ui.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
@@ -10,11 +11,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
@@ -48,6 +53,7 @@ import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.sleep.SleepEditorViewModel
 import com.personal.lifelog.feature.sleep.SleepEditorScreen
 import com.personal.lifelog.feature.sleep.SleepHistoryScreen
+import com.personal.lifelog.feature.sleep.BedtimeScreen
 import com.personal.lifelog.feature.workout.*
 
 /**
@@ -75,6 +81,15 @@ fun LifelogApp(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val isBedtime = currentRoute == LifelogRoutes.BEDTIME
+    val bedtimeRequest by sleepViewModel.bedtimeRequest.collectAsStateWithLifecycle()
+    LaunchedEffect(bedtimeRequest, currentRoute) {
+        bedtimeRequest?.let { id ->
+            sleepViewModel.consumeBedtimeRequest(id)
+            // A write finishing after the user left Today must not interrupt another form.
+            if (currentRoute == LifelogRoutes.TODAY) navController.navigateSingle(LifelogRoutes.BEDTIME)
+        }
+    }
     val today by homeViewModel.today.collectAsStateWithLifecycle()
     val timeline by homeViewModel.timeline.collectAsStateWithLifecycle()
 
@@ -86,6 +101,8 @@ fun LifelogApp(
     }
 
     Scaffold(
+        containerColor = if (isBedtime) Color.Black else MaterialTheme.colorScheme.background,
+        contentWindowInsets = if (isBedtime) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
         bottomBar = {
             if (currentRoute == LifelogRoutes.TODAY || currentRoute == LifelogRoutes.REVIEW) {
                 NavigationBar {
@@ -126,8 +143,11 @@ fun LifelogApp(
         NavHost(
             navController = navController,
             startDestination = LifelogRoutes.TODAY,
-            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+            modifier = Modifier.padding(bottom = if (isBedtime) 0.dp else innerPadding.calculateBottomPadding()),
         ) {
+            composable(LifelogRoutes.BEDTIME) {
+                BedtimeScreen(clock, zoneIdProvider, onBack = { navController.popBackStack() })
+            }
             composable(LifelogRoutes.TODAY) {
                 HomeScreen(
                     today = today,

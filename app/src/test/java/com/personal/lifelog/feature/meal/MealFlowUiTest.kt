@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
@@ -140,6 +141,8 @@ class MealFlowUiTest {
         compose.onNodeWithTag("meal_save_button").performClick()
         waitForText("整合测试午饭")
         compose.onNodeWithText("准备睡了").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("bedtime-screen").fetchSemanticsNodes().isNotEmpty() }
+        androidx.test.espresso.Espresso.pressBack()
         waitForText("起床了")
         compose.onNodeWithContentDescription("打开设置").performClick()
         compose.onNodeWithText("运动项目管理").performScrollTo().performClick()

@@ -24,6 +24,7 @@ object LifelogRoutes {
     const val REVIEW = "review"
     const val SETTINGS = "settings"
     const val SLEEP_HISTORY = "sleep/history"
+    const val BEDTIME = "sleep/bedtime"
     const val EXERCISES = "exercises"
     const val WORKOUT_HISTORY = "workout/history"
     const val WORKOUT_DETAIL = "workout/detail"

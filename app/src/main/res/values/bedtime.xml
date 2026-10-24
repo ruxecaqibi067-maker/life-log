@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="bedtime_messages">
+        <item>好好睡觉，好好生活。</item>
+        <item>今天先到这里，剩下的事明天慢慢来。</item>
+        <item>把今天轻轻放下，晚安。</item>
+        <item>不用着急，现在可以安心休息了。</item>
+        <item>无论今天怎样，都可以先休息一下。</item>
+        <item>愿今夜安静，愿你睡得舒服。</item>
+        <item>给自己一点温柔，也给自己一点休息。</item>
+        <item>明天还有新的风景，今晚先好好休息。</item>
+    </string-array>
+</resources>
