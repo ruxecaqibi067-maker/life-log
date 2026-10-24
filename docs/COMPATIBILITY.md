@@ -15,7 +15,8 @@
 | 最低系统 | minSdk 28，即 Android 9；低于此版本不能安装 |
 | targetSdk | 36，是适配行为目标，不是最高可安装版本；未设置 maxSdk |
 | 品牌 | 无厂商/品牌白名单，未使用荣耀、华为或其他厂商专有 API |
-| CPU 架构 | APK 无内置 native .so、无 ABI 过滤或按架构拆包；本项目 DEX 不限定 ARM/ARM64/x86 架构 |
+| CPU 架构 | 无 ABI 过滤或按架构拆包；AndroidX 图形库打包 ARM64、ARMv7、x86、x86_64 四种 ABI，覆盖常见手机架构 |
+| 内存页对齐 | 内置图形库的 ELF LOAD 段及 APK ZIP 的 16 KB 静态对齐检查通过；不是 16 KB 手机实测 |
 | Google 服务 | 生产依赖与实现不依赖 Google Play services、账号或 Play 商店 |
 | 网络 | 未声明 INTERNET；记录、回顾、备份恢复均在本地完成 |
 | 选图 | 系统 Photo Picker 可用时使用；否则回退到 ACTION_OPEN_DOCUMENT，不要求安装 Google 服务 |
@@ -39,6 +40,7 @@
 - [Android 官方 minSdk / targetSdk 说明](https://developer.android.com/guide/topics/manifest/uses-sdk-element)
 - [Android 官方硬件特性声明](https://developer.android.com/guide/topics/manifest/uses-feature-element)
 - [Android 官方 Photo Picker 回退说明](https://developer.android.com/training/data-storage/shared/photo-picker)
+- [Android 官方 16 KB 页支持与静态检查](https://developer.android.com/guide/practices/page-sizes)
 - 配置：`app/build.gradle.kts`、`app/src/main/AndroidManifest.xml`、`gradle/libs.versions.toml`。
 - 系统适配：`data/media/PhotoIntents.kt`、`feature/sleep/SleepDateTimePicker.kt`。
 
