@@ -3,6 +3,7 @@ package com.personal.lifelog.feature.review
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,11 +22,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,16 +31,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.feature.timeline.RecordedDatesState
 import com.personal.lifelog.feature.timeline.timelineSection
+import com.personal.lifelog.ui.components.ActionButton
+import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -68,12 +68,12 @@ fun ReviewScreen(
     val day by viewModel.day.collectAsStateWithLifecycle()
     val recorded by viewModel.recordedDates.collectAsStateWithLifecycle()
     var showDates by rememberSaveable { mutableStateOf(false) }
-    val context = LocalContext.current
+    val context = com.personal.lifelog.ui.components.rememberPickerContext()
     val dateLabel = reviewDateFormatter.format(selected)
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            RecordTopBar(
                 title = { Text(text = stringResource(R.string.nav_review)) },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
@@ -103,7 +103,7 @@ fun ReviewScreen(
                         contentDescription = stringResource(R.string.review_previous_day),
                     )
                 }
-                OutlinedButton(
+                SecondaryButton(
                     onClick = {
                         DatePickerDialog(
                             context,
@@ -124,8 +124,6 @@ fun ReviewScreen(
                     Text(
                         text = dateLabel,
                         modifier = Modifier.padding(start = 8.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 IconButton(onClick = viewModel::nextDay) {
@@ -135,14 +133,15 @@ fun ReviewScreen(
                     )
                 }
             }
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            FlowRow(
+                modifier = Modifier.padding(horizontal = LogDimens.page),
+                horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
+                verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
             ) {
-                TextButton(onClick = viewModel::goToToday) {
+                ActionButton(onClick = viewModel::goToToday) {
                     Text(stringResource(R.string.review_today))
                 }
-                TextButton(onClick = { showDates = true }) {
+                ActionButton(onClick = { showDates = true }) {
                     Text(stringResource(R.string.review_recorded_dates))
                 }
             }
@@ -150,7 +149,7 @@ fun ReviewScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = LogDimens.page, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 timelineSection(
@@ -196,7 +195,7 @@ private fun RecordedDatesDialog(
             when {
                 state.failed -> Column {
                     Text(stringResource(R.string.review_dates_failed))
-                    TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                    ActionButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
 
                 stored == null -> Text(stringResource(R.string.review_dates_loading))
@@ -205,7 +204,7 @@ private fun RecordedDatesDialog(
 
                 else -> LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
                     items(items = dates, key = { it.toString() }) { date ->
-                        TextButton(
+                        ActionButton(
                             onClick = { onSelect(date) },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -225,7 +224,7 @@ private fun RecordedDatesDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.review_close)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.review_close)) }
         },
     )
 }

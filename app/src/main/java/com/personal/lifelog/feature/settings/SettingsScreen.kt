@@ -2,6 +2,7 @@ package com.personal.lifelog.feature.settings
 
 import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,29 +30,33 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.personal.lifelog.R
 import com.personal.lifelog.data.backup.format.BackupError
 import com.personal.lifelog.data.backup.importer.BackupPreview
 import com.personal.lifelog.data.backup.restore.RecoveryStatus
 import com.personal.lifelog.domain.ThemeMode
+import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.RecordCard
+import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -90,7 +96,7 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            RecordTopBar(
                 title = { Text(stringResource(R.string.nav_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -108,29 +114,16 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = LogDimens.page, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(LogDimens.group),
         ) {
             SectionLabel(stringResource(R.string.settings_theme))
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                ThemeChoice.values().forEachIndexed { index, choice ->
-                    SegmentedButton(
-                        selected = themeMode == choice.mode,
-                        onClick = { onThemeSelected(choice.mode) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = ThemeChoice.values().size),
-                        modifier = Modifier
-                            .weight(1f)
-                            .minimumInteractiveComponentSize(),
-                    ) {
-                        Text(stringResource(choice.labelRes))
-                    }
-                }
-            }
+            ThemeSelector(themeMode, onThemeSelected)
             if (themeWriteFailed) {
                 ErrorState(message = stringResource(R.string.settings_theme_error))
             }
 
-            OutlinedButton(onClick = onOpenExercises, modifier = Modifier.fillMaxWidth()) {
+            SecondaryButton(onClick = onOpenExercises, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Filled.FitnessCenter, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(stringResource(R.string.settings_exercises))
@@ -142,7 +135,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            OutlinedButton(
+            SecondaryButton(
                 onClick = onExportBackup,
                 enabled = canStartBackup,
                 modifier = Modifier.fillMaxWidth(),
@@ -158,7 +151,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            OutlinedButton(
+            SecondaryButton(
                 onClick = onSelectBackup,
                 enabled = canStartBackup,
                 modifier = Modifier.fillMaxWidth(),
@@ -167,7 +160,7 @@ fun SettingsScreen(
                 Spacer(Modifier.size(8.dp))
                 Text(stringResource(R.string.settings_backup_restore))
             }
-            OutlinedButton(
+            SecondaryButton(
                 onClick = onExportRollback,
                 enabled = canStartBackup,
                 modifier = Modifier.fillMaxWidth(),
@@ -204,7 +197,7 @@ fun SettingsScreen(
             SectionLabel(stringResource(R.string.settings_about))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
             ) {
                 Icon(
                     imageVector = Icons.Filled.Info,
@@ -236,6 +229,40 @@ private enum class ThemeChoice(val mode: ThemeMode, val labelRes: Int) {
     SYSTEM(ThemeMode.SYSTEM, R.string.theme_system),
     LIGHT(ThemeMode.LIGHT, R.string.theme_light),
     DARK(ThemeMode.DARK, R.string.theme_dark),
+}
+
+/** Keep full labels and touch targets when the three-way control cannot fit. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeSelector(themeMode: ThemeMode, onSelected: (ThemeMode) -> Unit) {
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth < 300.dp || fontScale > 1.2f) {
+            RecordCard {
+                ThemeChoice.entries.forEach { choice ->
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = LogDimens.touch)
+                            .selectable(themeMode == choice.mode, role = Role.RadioButton,
+                                onClick = { onSelected(choice.mode) }).padding(horizontal = LogDimens.gap),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = themeMode == choice.mode, onClick = null)
+                        Text(stringResource(choice.labelRes), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        } else {
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                ThemeChoice.entries.forEachIndexed { index, choice ->
+                    SegmentedButton(selected = themeMode == choice.mode, onClick = { onSelected(choice.mode) },
+                        shape = SegmentedButtonDefaults.itemShape(index, ThemeChoice.entries.size),
+                        modifier = Modifier.weight(1f).heightIn(min = LogDimens.touch)) {
+                        Text(stringResource(choice.labelRes))
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -274,7 +301,7 @@ private fun BackupProgressCard(
         showProgress = true,
     ) {
         if (operation in CANCELABLE_OPERATIONS) {
-            TextButton(onClick = onCancel, enabled = !cancelling) {
+            ActionButton(onClick = onCancel, enabled = !cancelling) {
                 Text(stringResource(if (cancelling) R.string.backup_cancelling else R.string.backup_cancel))
             }
         }
@@ -352,12 +379,13 @@ private fun BackupPreviewDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            ActionButton(onClick = onConfirm, colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.error)) {
                 Text(stringResource(R.string.backup_confirm_replace))
             }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) {
+            ActionButton(onClick = onCancel) {
                 Text(stringResource(R.string.backup_cancel))
             }
         },
@@ -389,7 +417,7 @@ private fun BackupResultCard(
             icon = Icons.Filled.CheckCircle,
             success = true,
         ) {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         is BackupOutcome.ExportFailed -> BackupStatusCard(
@@ -400,23 +428,23 @@ private fun BackupResultCard(
             isError = true,
         ) {
             if (outcome.error == BackupError.RECOVERY_REQUIRED) {
-                TextButton(onClick = onRetryRecovery) {
+                ActionButton(onClick = onRetryRecovery) {
                     Text(stringResource(R.string.backup_retry_recovery))
                 }
             } else {
-                TextButton(onClick = onExportBackup) {
+                ActionButton(onClick = onExportBackup) {
                     Text(stringResource(R.string.backup_retry_export))
                 }
             }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         BackupOutcome.ExportCancelled -> BackupStatusCard(
             title = stringResource(R.string.backup_export_cancelled_title),
             body = stringResource(R.string.backup_export_cancelled_body),
         ) {
-            TextButton(onClick = onExportBackup) { Text(stringResource(R.string.backup_retry_export)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onExportBackup) { Text(stringResource(R.string.backup_retry_export)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         is BackupOutcome.PreflightFailed -> BackupStatusCard(
@@ -426,23 +454,23 @@ private fun BackupResultCard(
             icon = Icons.Filled.Warning,
             isError = true,
         ) {
-            TextButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         BackupOutcome.PreflightCancelled -> BackupStatusCard(
             title = stringResource(R.string.backup_preflight_cancelled_title),
             body = stringResource(R.string.backup_preflight_cancelled_body),
         ) {
-            TextButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         BackupOutcome.PreviewCancelled -> BackupStatusCard(
             title = stringResource(R.string.backup_preview_cancelled_title),
             body = stringResource(R.string.backup_preview_cancelled_body),
         ) {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         is BackupOutcome.RestoreSucceeded -> BackupStatusCard(
@@ -452,10 +480,10 @@ private fun BackupResultCard(
             icon = Icons.Filled.CheckCircle,
             success = true,
         ) {
-            TextButton(onClick = onExportRollback) {
+            ActionButton(onClick = onExportRollback) {
                 Text(stringResource(R.string.settings_backup_rollback_export))
             }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         is BackupOutcome.RestoreCleanupPending -> BackupStatusCard(
@@ -464,19 +492,19 @@ private fun BackupResultCard(
                 restoreCountsLine(outcome.counts),
             icon = Icons.Filled.Warning,
         ) {
-            TextButton(onClick = onRetryRecovery) { Text(stringResource(R.string.backup_retry_cleanup)) }
-            TextButton(onClick = onExportRollback) {
+            ActionButton(onClick = onRetryRecovery) { Text(stringResource(R.string.backup_retry_cleanup)) }
+            ActionButton(onClick = onExportRollback) {
                 Text(stringResource(R.string.settings_backup_rollback_export))
             }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         BackupOutcome.RestoreCancelled -> BackupStatusCard(
             title = stringResource(R.string.backup_restore_cancelled_title),
             body = stringResource(R.string.backup_restore_cancelled_body),
         ) {
-            TextButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         is BackupOutcome.RestoreFailed -> BackupStatusCard(
@@ -486,8 +514,8 @@ private fun BackupResultCard(
             icon = Icons.Filled.Warning,
             isError = true,
         ) {
-            TextButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onSelectBackup) { Text(stringResource(R.string.backup_choose_again)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         is BackupOutcome.RecoveryRequired -> BackupStatusCard(
@@ -497,7 +525,7 @@ private fun BackupResultCard(
             icon = Icons.Filled.Warning,
             isError = true,
         ) {
-            TextButton(onClick = onRetryRecovery) { Text(stringResource(R.string.backup_retry_recovery)) }
+            ActionButton(onClick = onRetryRecovery) { Text(stringResource(R.string.backup_retry_recovery)) }
         }
 
         is BackupOutcome.RecoveryCompleted -> {
@@ -518,7 +546,7 @@ private fun BackupResultCard(
                 icon = Icons.Filled.CheckCircle,
                 success = true,
             ) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+                ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
             }
         }
 
@@ -533,7 +561,7 @@ private fun BackupResultCard(
             icon = Icons.Filled.CheckCircle,
             success = true,
         ) {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         is BackupOutcome.RollbackExportFailed -> BackupStatusCard(
@@ -544,23 +572,23 @@ private fun BackupResultCard(
             isError = true,
         ) {
             when (outcome.error) {
-                BackupError.RECOVERY_REQUIRED -> TextButton(onClick = onRetryRecovery) {
+                BackupError.RECOVERY_REQUIRED -> ActionButton(onClick = onRetryRecovery) {
                     Text(stringResource(R.string.backup_retry_recovery))
                 }
                 BackupError.EXPIRED_TOKEN -> Unit
-                else -> TextButton(onClick = onExportRollback) {
+                else -> ActionButton(onClick = onExportRollback) {
                     Text(stringResource(R.string.backup_retry))
                 }
             }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
 
         BackupOutcome.RollbackExportCancelled -> BackupStatusCard(
             title = stringResource(R.string.backup_rollback_export_cancelled_title),
             body = stringResource(R.string.backup_rollback_export_cancelled_body),
         ) {
-            TextButton(onClick = onExportRollback) { Text(stringResource(R.string.backup_retry)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
+            ActionButton(onClick = onExportRollback) { Text(stringResource(R.string.backup_retry)) }
+            ActionButton(onClick = onDismiss) { Text(stringResource(R.string.backup_dismiss)) }
         }
     }
 }
@@ -578,17 +606,21 @@ private fun BackupStatusCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = MaterialTheme.shapes.large,
+        color = when { isError -> MaterialTheme.colorScheme.errorContainer
+            success -> MaterialTheme.colorScheme.primaryContainer
+            else -> MaterialTheme.colorScheme.surfaceContainerLow },
+        contentColor = when { isError -> MaterialTheme.colorScheme.onErrorContainer
+            success -> MaterialTheme.colorScheme.onPrimaryContainer
+            else -> MaterialTheme.colorScheme.onSurface },
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(LogDimens.page),
+            verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
             ) {
                 if (showProgress) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -612,7 +644,7 @@ private fun BackupStatusCard(
             if (error != null) {
                 Text(
                     text = error,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
             }

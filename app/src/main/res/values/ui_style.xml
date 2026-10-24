@@ -1,0 +1,10 @@
+<resources>
+    <string name="meal_photo_placeholder">拍张照片，记下这一餐</string>
+    <!-- Explicit styles follow the app choice even when system night mode differs. -->
+    <style name="Theme.LifeLog.Picker.Light" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#365E50</item>
+    </style>
+    <style name="Theme.LifeLog.Picker.Dark" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">#9CCFBE</item>
+    </style>
+</resources>

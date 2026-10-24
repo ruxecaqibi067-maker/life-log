@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -23,8 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,6 +40,9 @@ import com.personal.lifelog.feature.sleep.SleepHomeStatus
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.timeline.TimelineUiState
 import com.personal.lifelog.feature.timeline.timelineSection
+import com.personal.lifelog.ui.components.ActionButton
+import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -79,13 +79,13 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            RecordTopBar(
                 title = {
                     Column {
                         Text(text = stringResource(R.string.nav_today))
                         Text(
                             text = homeDateFormatter.format(today),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -110,7 +110,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = LogDimens.page, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 item(key = "sleep-status") {
@@ -126,9 +126,9 @@ fun HomeScreen(
                         Text(
                             text = stringResource(R.string.home_timeline_title),
                             modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleSmall,
                         )
-                        TextButton(onClick = onOpenWorkoutHistory) {
+                        ActionButton(onClick = onOpenWorkoutHistory) {
                             Text(stringResource(R.string.workout_history))
                         }
                     }
@@ -143,8 +143,8 @@ fun HomeScreen(
                 )
             }
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(horizontal = LogDimens.page, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
             ) {
                 QuickActionCard(
                     label = stringResource(R.string.home_quick_meal),
@@ -191,8 +191,8 @@ private fun QuickActionCard(
     Surface(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 76.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.heightIn(min = 88.dp),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Column(
@@ -205,7 +205,7 @@ private fun QuickActionCard(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(26.dp),
+                modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(

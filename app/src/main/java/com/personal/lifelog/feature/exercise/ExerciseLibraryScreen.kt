@@ -25,9 +25,15 @@ import com.personal.lifelog.R
 import com.personal.lifelog.data.local.entity.ExerciseDefinition
 import com.personal.lifelog.domain.ErrorCode
 import com.personal.lifelog.domain.ExerciseType
+import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.PrimaryButton
+import com.personal.lifelog.ui.components.RecordCard
+import com.personal.lifelog.ui.components.RecordTextField
+import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.SavingIndicator
+import com.personal.lifelog.ui.theme.LogDimens
 
 /** T08 passes onSelected to use the same library as a picker. Hidden rows are never selectable. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,7 +57,7 @@ fun ExerciseLibraryScreen(
     }
     Scaffold(
         topBar = {
-            TopAppBar(
+            RecordTopBar(
                 title = { Text(stringResource(if (onSelected == null) R.string.settings_exercises else R.string.exercise_select)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, enabled = !busy) {
@@ -63,21 +69,21 @@ fun ExerciseLibraryScreen(
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).imePadding(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(LogDimens.page),
+            verticalArrangement = Arrangement.spacedBy(LogDimens.group),
         ) {
             item {
-                OutlinedTextField(
+                RecordTextField(
                     value = state.query, onValueChange = viewModel::search,
                     label = { Text(stringResource(R.string.exercise_search)) },
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
             }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = !state.recentOnly, onClick = { viewModel.showRecent(false) },
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                    FilterChip(modifier = Modifier.heightIn(min = LogDimens.touch), selected = !state.recentOnly, onClick = { viewModel.showRecent(false) },
                         label = { Text(stringResource(R.string.exercise_all)) })
-                    FilterChip(selected = state.recentOnly, onClick = { viewModel.showRecent(true) },
+                    FilterChip(modifier = Modifier.heightIn(min = LogDimens.touch), selected = state.recentOnly, onClick = { viewModel.showRecent(true) },
                         label = { Text(stringResource(R.string.exercise_recent)) })
                 }
                 if (onSelected == null) {
@@ -89,7 +95,7 @@ fun ExerciseLibraryScreen(
                         Text(stringResource(R.string.exercise_show_hidden))
                     }
                 }
-                Button(onClick = viewModel::add, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                PrimaryButton(onClick = viewModel::add, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.exercise_add))
                 }
             }
@@ -114,8 +120,8 @@ fun ExerciseLibraryScreen(
             properties = DialogProperties(dismissOnBackPress = !busy, dismissOnClickOutside = false),
             title = { Text(stringResource(if (input.isNew) R.string.exercise_add else R.string.exercise_rename)) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                    RecordTextField(
                         value = input.name, onValueChange = viewModel::changeName, enabled = !busy,
                         singleLine = true, label = { Text(stringResource(R.string.exercise_name)) },
                         supportingText = { Text(stringResource(R.string.exercise_name_hint)) },
@@ -141,18 +147,18 @@ fun ExerciseLibraryScreen(
                         Text(stringResource(requireNotNull(input.type).labelRes()))
                         Text(stringResource(R.string.exercise_type_fixed), style = MaterialTheme.typography.bodySmall)
                     }
-                    if (typeRequired) Text(stringResource(R.string.exercise_choose_type), color = MaterialTheme.colorScheme.error)
-                    if (error != null) Text(stringResource(exerciseError(error)), color = MaterialTheme.colorScheme.error)
+                    if (typeRequired) ErrorState(stringResource(R.string.exercise_choose_type))
+                    if (error != null) ErrorState(stringResource(exerciseError(error)))
                     if (busy) SavingIndicator()
                 }
             },
             confirmButton = {
-                TextButton(onClick = { viewModel.save { onSelected?.invoke(it) } }, enabled = !busy) {
+                ActionButton(onClick = { viewModel.save { onSelected?.invoke(it) } }, enabled = !busy) {
                     Text(stringResource(R.string.exercise_save))
                 }
             },
             dismissButton = {
-                TextButton(onClick = dismiss, enabled = !busy) { Text(stringResource(R.string.exercise_cancel)) }
+                ActionButton(onClick = dismiss, enabled = !busy) { Text(stringResource(R.string.exercise_cancel)) }
             },
         )
     }
@@ -162,12 +168,12 @@ fun ExerciseLibraryScreen(
             title = { Text(stringResource(R.string.exercise_discard_title)) },
             text = { Text(stringResource(R.string.exercise_discard_hint)) },
             confirmButton = {
-                TextButton(onClick = { confirmDiscard = false; viewModel.dismissEditor() }) {
+                ActionButton(onClick = { confirmDiscard = false; viewModel.dismissEditor() }) {
                     Text(stringResource(R.string.exercise_discard))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.exercise_keep_editing)) }
+                ActionButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.exercise_keep_editing)) }
             },
         )
     }
@@ -182,8 +188,8 @@ private fun ExerciseRow(
     onEdit: () -> Unit,
     onToggleHidden: () -> Unit,
 ) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    RecordCard(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(row.name, style = MaterialTheme.typography.titleMedium)
             Text(stringResource(row.type.labelRes()), style = MaterialTheme.typography.labelLarge)
             Text(stringResource(row.type.fieldsRes()), style = MaterialTheme.typography.bodySmall)
@@ -194,14 +200,14 @@ private fun ExerciseRow(
                 style = MaterialTheme.typography.bodySmall,
             )
             if (row.lastUsedAtUtcMs != null) Text(stringResource(R.string.exercise_used), style = MaterialTheme.typography.labelSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.exercise_rename)) }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                ActionButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.exercise_rename)) }
                 if (onSelected == null) {
-                    TextButton(onClick = onToggleHidden, enabled = !busy) {
+                    ActionButton(onClick = onToggleHidden, enabled = !busy) {
                         Text(stringResource(if (row.isHidden) R.string.exercise_enable else R.string.exercise_hide))
                     }
                 } else {
-                    Button(onClick = { onSelected(row) }, enabled = !busy && !row.isHidden) {
+                    PrimaryButton(onClick = { onSelected(row) }, enabled = !busy && !row.isHidden) {
                         Text(stringResource(R.string.exercise_pick))
                     }
                 }

@@ -1,26 +1,26 @@
 package com.personal.lifelog.ui.navigation
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,14 +47,14 @@ import com.personal.lifelog.feature.review.ReviewScreen
 import com.personal.lifelog.feature.review.ReviewViewModel
 import com.personal.lifelog.feature.settings.SettingsRoute
 import com.personal.lifelog.feature.settings.SettingsViewModel
+import com.personal.lifelog.feature.sleep.BedtimeScreen
+import com.personal.lifelog.feature.sleep.SleepEditorScreen
+import com.personal.lifelog.feature.sleep.SleepEditorViewModel
+import com.personal.lifelog.feature.sleep.SleepHistoryScreen
+import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.feature.workout.*
 import java.time.Clock
 import java.time.ZoneId
-import com.personal.lifelog.feature.sleep.SleepViewModel
-import com.personal.lifelog.feature.sleep.SleepEditorViewModel
-import com.personal.lifelog.feature.sleep.SleepEditorScreen
-import com.personal.lifelog.feature.sleep.SleepHistoryScreen
-import com.personal.lifelog.feature.sleep.BedtimeScreen
-import com.personal.lifelog.feature.workout.*
 
 /**
  * Single-activity navigation shell. The bottom bar only shows on the two tab
@@ -82,6 +82,7 @@ fun LifelogApp(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val isBedtime = currentRoute == LifelogRoutes.BEDTIME
+    com.personal.lifelog.ui.components.SyncLegacySystemBarBackground(isBedtime)
     val bedtimeRequest by sleepViewModel.bedtimeRequest.collectAsStateWithLifecycle()
     LaunchedEffect(bedtimeRequest, currentRoute) {
         bedtimeRequest?.let { id ->
@@ -105,7 +106,7 @@ fun LifelogApp(
         contentWindowInsets = if (isBedtime) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
         bottomBar = {
             if (currentRoute == LifelogRoutes.TODAY || currentRoute == LifelogRoutes.REVIEW) {
-                NavigationBar {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                     NavigationBarItem(
                         selected = currentRoute == LifelogRoutes.TODAY,
                         onClick = { navController.navigateTopLevel(LifelogRoutes.TODAY) },

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,6 +31,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.personal.lifelog.R
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.Clock
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -70,15 +72,15 @@ fun BedtimeScreen(clock: Clock, zoneIdProvider: () -> ZoneId, onBack: () -> Unit
             maxLines = 1,
             softWrap = false,
         )
-        val quoteTop = maxHeight / 2 + clockHeight / 2 + 28.dp
+        val quoteTop = maxHeight / 2 + clockHeight / 2 + LogDimens.section
         Column(
-            modifier = Modifier.fillMaxWidth().padding(top = quoteTop, start = 28.dp, end = 28.dp, bottom = 24.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = quoteTop, start = LogDimens.section, end = LogDimens.section, bottom = LogDimens.section)
                 .verticalScroll(rememberScrollState()).testTag("bedtime-messages"),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(LogDimens.page),
         ) {
             selected.forEach { index ->
-                Text(messages[index], color = Color(0xFF999999), fontSize = 16.sp, lineHeight = 26.sp, textAlign = TextAlign.Center)
+                Text(messages[index], color = Color(0xFF999999), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
             }
         }
     }

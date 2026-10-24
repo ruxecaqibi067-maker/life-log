@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.EventNote
 import androidx.compose.material.icons.filled.Bedtime
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,6 +49,8 @@ import com.personal.lifelog.domain.TimelineEntry
 import com.personal.lifelog.feature.meal.satietyDisplayText
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.RecordCard
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -229,18 +229,18 @@ private fun TimelineCard(
     secondary: String?,
     time: String,
 ) {
-    OutlinedCard(
+    RecordCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.large,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClickLabel = onClickLabel, onClick = onClick)
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(LogDimens.card),
+            horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             leading()
@@ -292,7 +292,7 @@ private fun MealLeading(photoId: String?, photos: PhotoStorage) {
     Box(
         modifier = Modifier
             .size(48.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .semantics { contentDescription = alt },
         contentAlignment = Alignment.Center,

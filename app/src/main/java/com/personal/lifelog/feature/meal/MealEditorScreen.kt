@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,12 +18,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -33,14 +31,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -62,10 +56,15 @@ import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PickMealPhoto
 import com.personal.lifelog.data.media.TakeMealPhoto
 import com.personal.lifelog.domain.Satiety
+import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.PrimaryButton
+import com.personal.lifelog.ui.components.RecordTextField
+import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -129,7 +128,7 @@ fun MealEditorScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            RecordTopBar(
                 title = {
                     Text(
                         stringResource(
@@ -193,7 +192,7 @@ fun MealEditorScreen(
             title = { Text(stringResource(R.string.meal_discard_title)) },
             text = { Text(stringResource(R.string.meal_discard_message)) },
             confirmButton = {
-                TextButton(
+                ActionButton(
                     onClick = {
                         showDiscard = false
                         viewModel.discard()
@@ -201,7 +200,7 @@ fun MealEditorScreen(
                 ) { Text(stringResource(R.string.meal_discard_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscard = false }) {
+                ActionButton(onClick = { showDiscard = false }) {
                     Text(stringResource(R.string.meal_discard_continue))
                 }
             },
@@ -218,7 +217,7 @@ fun MealEditorScreen(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
+                ActionButton(
                     onClick = {
                         pickerState.selectedDateMillis?.let { millis ->
                             viewModel.onDateChanged(
@@ -230,7 +229,7 @@ fun MealEditorScreen(
                 ) { Text(stringResource(R.string.meal_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                ActionButton(onClick = { showDatePicker = false }) {
                     Text(stringResource(R.string.meal_cancel))
                 }
             },
@@ -248,7 +247,7 @@ fun MealEditorScreen(
             title = { Text(stringResource(R.string.meal_time_of_day_label)) },
             text = { TimePicker(state = pickerState) },
             confirmButton = {
-                TextButton(
+                ActionButton(
                     onClick = {
                         viewModel.onTimeChanged(LocalTime.of(pickerState.hour, pickerState.minute))
                         showTimePicker = false
@@ -256,7 +255,7 @@ fun MealEditorScreen(
                 ) { Text(stringResource(R.string.meal_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
+                ActionButton(onClick = { showTimePicker = false }) {
                     Text(stringResource(R.string.meal_cancel))
                 }
             },
@@ -284,7 +283,7 @@ private fun MealForm(
             .padding(innerPadding)
             .imePadding()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = LogDimens.page, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         PhotoSection(
@@ -297,7 +296,7 @@ private fun MealForm(
             ErrorState(message = stringResource(error.messageRes()))
         }
 
-        OutlinedTextField(
+        RecordTextField(
             value = state.text,
             onValueChange = onTextChanged,
             modifier = Modifier
@@ -312,24 +311,24 @@ private fun MealForm(
             maxLines = 8,
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
             Text(
                 text = stringResource(R.string.meal_satiety_label),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.titleSmall,
             )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
                 satietyOptions.forEach { value ->
                     FilterChip(
                         selected = state.satiety == value,
                         onClick = { onToggleSatiety(value) },
                         label = { Text(stringResource(satietyLabelRes(value))) },
                         enabled = !state.saving,
-                        modifier = Modifier.testTag("meal_satiety_${value.name}"),
+                        modifier = Modifier.heightIn(min = LogDimens.touch).testTag("meal_satiety_${value.name}"),
                     )
                 }
             }
             if (state.satiety == Satiety.CUSTOM) {
-                OutlinedTextField(
+                RecordTextField(
                     value = state.satietyText,
                     onValueChange = onSatietyTextChanged,
                     modifier = Modifier
@@ -344,16 +343,16 @@ private fun MealForm(
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
             Text(
                 text = stringResource(R.string.meal_time_label),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.titleSmall,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onShowDatePicker, enabled = !state.saving) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                SecondaryButton(onClick = onShowDatePicker, enabled = !state.saving) {
                     Text(state.date.format(editorDateFormatter))
                 }
-                OutlinedButton(onClick = onShowTimePicker, enabled = !state.saving) {
+                SecondaryButton(onClick = onShowTimePicker, enabled = !state.saving) {
                     Text(state.time.format(editorTimeFormatter))
                 }
             }
@@ -371,7 +370,7 @@ private fun MealForm(
             ErrorState(message = stringResource(error.messageRes()))
         }
 
-        Button(
+        PrimaryButton(
             onClick = onSave,
             enabled = !state.saving && state.photoStatus != MealPhotoStatus.PROCESSING,
             modifier = Modifier
@@ -404,7 +403,7 @@ private fun PhotoSection(
     val busy = state.saving || state.photoStatus == MealPhotoStatus.PROCESSING
     Surface(
         modifier = Modifier.fillMaxWidth().height(232.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Column(Modifier.fillMaxSize()) {
@@ -422,7 +421,7 @@ private fun PhotoSection(
 
                     state.photoStatus == MealPhotoStatus.PROCESSING -> Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
                     ) {
                         CircularProgressIndicator()
                         Text(
@@ -436,25 +435,36 @@ private fun PhotoSection(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+
+                    else -> Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
+                    ) {
+                        Icon(Icons.Filled.Restaurant, contentDescription = null,
+                            modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.meal_photo_placeholder),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
             ) {
                 if (state.photoPreview != null) {
-                    TextButton(onClick = onTakePhoto, enabled = !busy) {
+                    ActionButton(onClick = onTakePhoto, enabled = !busy) {
                         Text(stringResource(R.string.meal_photo_take))
                     }
-                    TextButton(onClick = onPickPhoto, enabled = !busy) {
+                    ActionButton(onClick = onPickPhoto, enabled = !busy) {
                         Text(stringResource(R.string.meal_photo_replace))
                     }
-                    TextButton(onClick = onRemovePhoto, enabled = !busy) {
+                    ActionButton(onClick = onRemovePhoto, enabled = !busy) {
                         Text(stringResource(R.string.meal_photo_remove))
                     }
                 } else {
-                    OutlinedButton(onClick = onTakePhoto, enabled = !busy) {
+                    SecondaryButton(onClick = onTakePhoto, enabled = !busy) {
                         Text(
                             stringResource(
                                 if (state.captureTicket != null) {
@@ -465,11 +475,11 @@ private fun PhotoSection(
                             ),
                         )
                     }
-                    OutlinedButton(onClick = onPickPhoto, enabled = !busy) {
+                    SecondaryButton(onClick = onPickPhoto, enabled = !busy) {
                         Text(stringResource(R.string.meal_photo_pick))
                     }
                     if (state.captureTicket != null) {
-                        TextButton(onClick = onRemovePhoto, enabled = !busy) {
+                        ActionButton(onClick = onRemovePhoto, enabled = !busy) {
                             Text(stringResource(R.string.meal_photo_remove))
                         }
                     }

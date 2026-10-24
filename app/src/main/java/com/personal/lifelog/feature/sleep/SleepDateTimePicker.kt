@@ -13,22 +13,24 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.personal.lifelog.R
+import com.personal.lifelog.ui.components.ActionButton
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
@@ -60,16 +62,16 @@ fun SleepDateTimePicker(
     val offset = offsets.getOrNull((preferred + occurrence) % offsets.size.coerceAtLeast(1))
     Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
-            modifier = Modifier.padding(16.dp).widthIn(max = 560.dp).fillMaxWidth()
+            modifier = Modifier.padding(LogDimens.page).widthIn(max = 560.dp).fillMaxWidth()
                 .heightIn(max = (LocalConfiguration.current.screenHeightDp - 48).coerceAtLeast(240).dp),
             shape = MaterialTheme.shapes.extraLarge,
         ) {
             Column(Modifier.padding(20.dp)) {
                 Text(stringResource(title), style = MaterialTheme.typography.headlineSmall)
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(top = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
                     Text(chineseSleepTime(local), style = MaterialTheme.typography.bodyLarge)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
                         Wheel(R.string.sleep_year, year, 1, 9999, Modifier.weight(1.4f)) { year = it; day = day.coerceAtMost(YearMonth.of(year, month).lengthOfMonth()) }
                         Wheel(R.string.sleep_month, month, 1, 12, Modifier.weight(1f)) { month = it; day = day.coerceAtMost(YearMonth.of(year, month).lengthOfMonth()) }
                         Wheel(R.string.sleep_day, local.dayOfMonth, 1, YearMonth.of(year, month).lengthOfMonth(), Modifier.weight(1f)) { day = it }
@@ -90,8 +92,8 @@ fun SleepDateTimePicker(
                     }
                 }
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onCancel) { Text(stringResource(R.string.sleep_cancel)) }
-                    TextButton(onClick = { offset?.let { onConfirm(local, it) } }, enabled = offset != null) {
+                    ActionButton(onClick = onCancel) { Text(stringResource(R.string.sleep_cancel)) }
+                    ActionButton(onClick = { offset?.let { onConfirm(local, it) } }, enabled = offset != null) {
                         Text(stringResource(R.string.sleep_confirm))
                     }
                 }

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,12 +25,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,8 +44,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.personal.lifelog.R
+import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.theme.LogDimens
 import java.time.ZoneId
 
 /**
@@ -73,7 +73,7 @@ fun MealDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            RecordTopBar(
                 title = { Text(stringResource(R.string.meal_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, enabled = !state.deleting) {
@@ -135,7 +135,7 @@ fun MealDetailScreen(
             title = { Text(stringResource(R.string.meal_delete_title)) },
             text = { Text(stringResource(R.string.meal_delete_message)) },
             confirmButton = {
-                TextButton(
+                ActionButton(
                     onClick = {
                         confirmDelete = false
                         viewModel.delete()
@@ -144,7 +144,7 @@ fun MealDetailScreen(
                 ) { Text(stringResource(R.string.meal_delete_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) {
+                ActionButton(onClick = { confirmDelete = false }) {
                     Text(stringResource(R.string.meal_cancel))
                 }
             },
@@ -164,13 +164,13 @@ private fun MealDetailContent(
             .fillMaxSize()
             .padding(innerPadding)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = LogDimens.page, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (meal.photoId != null) {
             Surface(
                 modifier = Modifier.fillMaxWidth().height(260.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
                 when {
@@ -231,7 +231,7 @@ private fun MealDetailContent(
             ErrorState(message = stringResource(error.messageRes()))
         }
 
-        OutlinedButton(
+        SecondaryButton(
             onClick = onDelete,
             enabled = !state.deleting,
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),

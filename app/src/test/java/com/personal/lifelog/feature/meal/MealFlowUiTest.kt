@@ -143,6 +143,8 @@ class MealFlowUiTest {
         compose.onNodeWithTag("meal_text_input").performTextInput("整合测试午饭")
         compose.onNodeWithTag("meal_save_button").performClick()
         waitForText("整合测试午饭")
+        // The same text is still present in the outgoing editor while save/navigation finishes.
+        waitForText("准备睡了")
         compose.onNodeWithText("准备睡了").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("bedtime-screen").fetchSemanticsNodes().isNotEmpty() }
         androidx.test.espresso.Espresso.pressBack()

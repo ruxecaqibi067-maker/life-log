@@ -13,7 +13,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.personal.lifelog.R
 import com.personal.lifelog.ui.components.DevBadge
+import com.personal.lifelog.ui.components.RecordTopBar
 
 /**
  * Honest shell for editor routes reserved by T03: it clearly marks the page as
@@ -38,7 +38,7 @@ fun DevPlaceholderScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            RecordTopBar(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
