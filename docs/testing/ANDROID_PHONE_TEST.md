@@ -4,7 +4,7 @@
 
 ## 1. 下载与安装
 
-用手机浏览器打开 [本轮下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.2-test.1)，在 Assets 中下载 `随手记-0.1.2.apk`。如链接打开较慢，可先在电脑下载，再经 USB 复制到手机。
+用手机浏览器打开 [本轮下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.2-test.1)，在 Assets 中下载 `suishouji-0.1.2.apk`。如链接打开较慢，可先在电脑下载，再经 USB 复制到手机。
 
 1. 在手机文件管理器中打开 APK，按系统提示允许本次安装来源，完成后打开「随手记」。不需要账号或开发者模式。
 2. 若已安装旧版，先在旧 App 的设置中导出备份，再直接覆盖安装；不要先卸载或清除数据。

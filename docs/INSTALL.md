@@ -4,7 +4,7 @@
 
 ## 手机上安装
 
-1. 用手机打开 [下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.2-test.1)，下载 `随手记-0.1.2.apk`；也可先在电脑下载，再经 USB 复制到手机。[手机测试清单](testing/ANDROID_PHONE_TEST.md) 给出具体步骤。
+1. 用手机打开 [下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.2-test.1)，下载 `suishouji-0.1.2.apk`；也可先在电脑下载，再经 USB 复制到手机。[手机测试清单](testing/ANDROID_PHONE_TEST.md) 给出具体步骤。
 2. 在手机文件管理器打开 APK；系统询问时允许这个安装来源。安装后打开「随手记」。不需要账号。
 3. 首次只使用虚构记录，验证饮食、作息、运动、照片和备份流程。完整检查表在 `docs/ACCEPTANCE.md`。
 

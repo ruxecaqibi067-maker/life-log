@@ -6,12 +6,12 @@
 
 ## 下载与安装
 
-- [下载随手记 0.1.2](<https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.2-test.1/%E9%9A%8F%E6%89%8B%E8%AE%B0-0.1.2.apk>)
+- [下载随手记 0.1.2](<https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.2-test.1/suishouji-0.1.2.apk>)
 - [版本下载页与更新说明](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.2-test.1)
 - [手机测试清单](docs/testing/ANDROID_PHONE_TEST.md)
 - [安装、覆盖更新与备份](docs/INSTALL.md)
 
-下载文件为 **随手记-0.1.2.apk**，安装后显示名称为「随手记」。版本 0.1.2 / versionCode 3，长期签名 release 构建。无需开发者模式；已有旧版请先导出备份，直接覆盖安装，保留原有数据。App 暂无自动检查更新或更新提醒。
+下载文件为 **suishouji-0.1.2.apk**，安装后显示名称为「随手记」。版本 0.1.2 / versionCode 3，长期签名 release 构建。无需开发者模式；已有旧版请先导出备份，直接覆盖安装，保留原有数据。App 暂无自动检查更新或更新提醒。
 
 ## 0.1.2 更新
 
@@ -53,3 +53,5 @@ Kotlin + Compose Material3 + Room，单 app 模块，手动 AppContainer。最�
 代码、文档、Wrapper 和 Room schema 纳入 Git；照片、用户备份、私钥和密码不入 Git。一个工作目录一个写入对话，并行使用独立 worktree；开工先读 [AGENTS.md](AGENTS.md)。
 
 更新：2026-10-24（Asia/Shanghai）。当前为实机测试候选；不同品牌、系统相机/文件选择器、真实性能及一周自用仍需反馈。
+
+GitHub 会过滤中文附件文件名，所以附件使用拼音文件名；下载页入口和安装后名称均为「随手记」。

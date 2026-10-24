@@ -21,9 +21,9 @@ try {
     & .\gradlew.bat :app:assembleRelease :app:lintRelease "-PreleaseVersionCode=$VersionCode" `
         "-PreleaseVersionName=$VersionName" --console=plain --max-workers=2 *> (Join-Path $out 'build.log')
     if ($LASTEXITCODE -ne 0) { throw "Release build failed. Inspect $out/build.log" }
-    # Keep the script readable by Windows PowerShell while producing the Chinese download name.
+    # Keep the product name readable by Windows PowerShell; GitHub strips non-ASCII asset filenames.
     $applicationName = "$([char]0x968F)$([char]0x624B)$([char]0x8BB0)"
-    $downloadName = "$applicationName-$VersionName.apk"
+    $downloadName = "suishouji-$VersionName.apk"
     $apk = Join-Path $out $downloadName
     $builtApk = 'app/build/outputs/apk/release/app-release.apk'
     Copy-Item -LiteralPath $builtApk -Destination $apk
