@@ -3,7 +3,7 @@
 ## 产品与当前阶段
 
 - 产品名「随手记」，面向 Android 9 及以上手机，不限品牌，本地离线使用；荣耀 200 Pro 仍为优先实机验证设备。
-- 已发布 0.1.2 / versionCode 3；本轮 T05 饱腹感及 T06 睡前页已整合为 T17 的源码前置，尚未发布新安装包。以 docs/STATUS.md、docs/reviews/T05-T06_T17_BASELINE.md 和 docs/COMPATIBILITY.md 为准；主机、模拟器与多品牌实机证据分开记录。
+- 当前交付 0.1.3 / versionCode 4，已整合 T05 饱腹感、T06 睡前页和 T17 视觉统一。以 docs/STATUS.md、docs/reviews/V0.1.3_RELEASE.md 和 docs/COMPATIBILITY.md 为准；数据库/备份为 v2，主机、模拟器与多品牌实机证据分开记录。
 - 当前用户指定主管对话负责规划、任务细化与验收，实现由其他对话按任务包执行。
 - 用户新指令优先于本文件；不要为普通实现选择额外制造审批步骤。
 
