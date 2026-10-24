@@ -25,18 +25,23 @@ try {
     $applicationName = "$([char]0x968F)$([char]0x624B)$([char]0x8BB0)"
     $downloadName = "$applicationName-$VersionName.apk"
     $apk = Join-Path $out $downloadName
-    Copy-Item -LiteralPath 'app/build/outputs/apk/release/app-release.apk' -Destination $apk
+    $builtApk = 'app/build/outputs/apk/release/app-release.apk'
+    Copy-Item -LiteralPath $builtApk -Destination $apk
     $signer = Join-Path $Sdk 'build-tools/35.0.0/apksigner.bat'
     $signature = & $signer verify --verbose --print-certs $apk 2>&1
     if ($LASTEXITCODE -ne 0) { throw 'APK signature verification failed.' }
     $signature | Out-File (Join-Path $out 'signature.txt') -Encoding utf8
-    $badging = & (Join-Path $Sdk 'build-tools/35.0.0/aapt.exe') dump badging $apk 2>&1
+    # Legacy Windows aapt cannot open a Unicode filename. Inspect the identical build output.
+    $badging = & (Join-Path $Sdk 'build-tools/35.0.0/aapt.exe') dump badging $builtApk 2>&1
     if ($LASTEXITCODE -ne 0) { throw 'APK manifest inspection failed.' }
     $manifest = $badging -join "`n"
     if ($manifest -notmatch "package: name='com.personal.lifelog' versionCode='$VersionCode' versionName='$([regex]::Escape($VersionName))'" -or
         $manifest -match 'application-debuggable') { throw 'Unexpected package, version or debuggable flag.' }
     $badging | Out-File (Join-Path $out 'badging.txt') -Encoding utf8
     $hash = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($hash -ne (Get-FileHash -LiteralPath $builtApk -Algorithm SHA256).Hash.ToLowerInvariant()) {
+        throw 'Download APK differs from inspected build output.'
+    }
     [IO.File]::WriteAllText((Join-Path $out 'SHA256SUMS.txt'), "$hash  $downloadName`n", [Text.UTF8Encoding]::new($false))
     $fingerprint = @($signature | Select-String '^Signer #1 certificate SHA-256 digest:')
     if ($fingerprint.Count -ne 1) { throw 'Cannot identify signing certificate.' }
