@@ -48,7 +48,7 @@ import com.personal.lifelog.data.media.PhotoError
 import com.personal.lifelog.data.media.PhotoResult
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.domain.TimelineEntry
-import com.personal.lifelog.feature.meal.satietyLabelRes
+import com.personal.lifelog.feature.meal.satietyDisplayText
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
 import java.time.Instant
@@ -165,7 +165,7 @@ private fun MealTimelineRow(
     onClick: () -> Unit,
 ) {
     val title = entry.text?.takeIf { it.isNotBlank() } ?: stringResource(R.string.meal_photo_only)
-    val secondary = entry.satiety?.let { stringResource(satietyLabelRes(it)) }
+    val secondary = satietyDisplayText(entry.satiety, entry.satietyText)
     TimelineCard(
         onClick = onClick,
         onClickLabel = stringResource(R.string.timeline_open_meal),

@@ -41,6 +41,62 @@ class RestoreEngineTest {
     }
     private fun afterCommit(point: RestoreFaultPoint) = point in listOf(RestoreFaultPoint.AFTER_COMMIT, RestoreFaultPoint.CLEANUP)
 
+    @Test fun notFullSatietySurvivesExportPreflightAndRestore() = runBlocking {
+        f.seed()
+        val mealId = id()
+        assertTrue(
+            f.records.saveMeal(
+                MealDraft(mealId, f.clock.millis(), "UTC", "下午加餐", Satiety.NOT_FULL),
+            ) is DataResult.Success,
+        )
+        val zip = f.zip()
+        val target = BackupFixture()
+        try {
+            val imp = BackupImporter(target.root, target.clock)
+            val ready = (imp.preflight(BackupSource { zip.inputStream() }) as BackupResult.Success).value
+            val service = RestoreEngine(
+                target.db, target.writes, target.snapshots, target.exporter, imp,
+                target.root, target.clock, syncDirectory = {}, availableBytes = { Long.MAX_VALUE },
+            )
+            assertTrue(service.restore(ready.token) is RestoreResult.Committed)
+            assertEquals(
+                Satiety.NOT_FULL,
+                target.snapshots.read().meals.single { it.id == mealId }.satiety,
+            )
+        } finally {
+            target.close()
+        }
+    }
+
+    @Test fun customSatietyTextSurvivesExportPreflightAndRestore() = runBlocking {
+        f.seed()
+        val mealId = id()
+        assertTrue(
+            f.records.saveMeal(
+                MealDraft(
+                    mealId, f.clock.millis(), "UTC", "自定义饱腹感", Satiety.CUSTOM,
+                    satietyText = "七分饱但还想吃",
+                ),
+            ) is DataResult.Success,
+        )
+        val zip = f.zip()
+        val target = BackupFixture()
+        try {
+            val imp = BackupImporter(target.root, target.clock)
+            val ready = (imp.preflight(BackupSource { zip.inputStream() }) as BackupResult.Success).value
+            val service = RestoreEngine(
+                target.db, target.writes, target.snapshots, target.exporter, imp,
+                target.root, target.clock, syncDirectory = {}, availableBytes = { Long.MAX_VALUE },
+            )
+            assertTrue(service.restore(ready.token) is RestoreResult.Committed)
+            val restored = target.snapshots.read().meals.single { it.id == mealId }
+            assertEquals(Satiety.CUSTOM, restored.satiety)
+            assertEquals("七分饱但还想吃", restored.satietyText)
+        } finally {
+            target.close()
+        }
+    }
+
     @Test fun completeRestoreRepeatAndRollbackUseFullPreflight() = runBlocking {
         val old = f.seed("虚构旧记录"); val incoming = g.seed("虚构新记录"); val zip = g.zip(); val service = engine()
         assertTrue(service.restore(token(zip)) is RestoreResult.Committed)

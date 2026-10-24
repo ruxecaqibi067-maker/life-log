@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.core.time.RecordTime
+import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.local.entity.MealRecord
 import com.personal.lifelog.data.local.entity.MediaAsset
@@ -255,6 +256,68 @@ class MealEditorViewModelTest {
         chosen.save()
         awaitSaved(chosen)
         assertEquals(Satiety.SEVEN, db.records().allMeals().first { it.text == "牛肉面" }.satiety)
+    }
+
+    @Test
+    fun notFullSatietySavesAndReloadsFromRoom() = runBlocking<Unit> {
+        val vm = editor()
+        awaitLoaded(vm)
+        vm.onTextChanged("下午加餐")
+        vm.toggleSatiety(Satiety.NOT_FULL)
+        vm.save()
+        awaitSaved(vm)
+
+        val meal = singleMeal()
+        assertEquals(Satiety.NOT_FULL, meal.satiety)
+
+        // Reopening the editor reads the persisted enum name back through Room.
+        val reopened = editor(meal.id)
+        val loaded = awaitLoaded(reopened)
+        assertEquals(Satiety.NOT_FULL, loaded.satiety)
+        assertEquals("下午加餐", loaded.text)
+    }
+
+    @Test
+    fun customSatietyRequiresTextAndPersistsDescription() = runBlocking<Unit> {
+        val vm = editor()
+        awaitLoaded(vm)
+        vm.onTextChanged("下午加餐")
+        vm.toggleSatiety(Satiety.CUSTOM)
+        vm.save()
+        assertEquals(MealUiError.SATIETY_TEXT_REQUIRED, vm.state.value.error)
+        assertTrue(db.records().allMeals().isEmpty())
+
+        vm.onSatietyTextChanged("  七分饱但还想吃  ")
+        vm.save()
+        awaitSaved(vm)
+
+        val meal = singleMeal()
+        assertEquals(Satiety.CUSTOM, meal.satiety)
+        assertEquals("七分饱但还想吃", meal.satietyText)
+
+        val reopened = editor(meal.id)
+        val loaded = awaitLoaded(reopened)
+        assertEquals(Satiety.CUSTOM, loaded.satiety)
+        assertEquals("七分饱但还想吃", loaded.satietyText)
+    }
+
+    @Test
+    fun customSatietyTextTooLongIsRejectedAndSwitchingToPresetClearsIt() = runBlocking<Unit> {
+        val vm = editor()
+        awaitLoaded(vm)
+        vm.onTextChanged("下午加餐")
+        vm.toggleSatiety(Satiety.CUSTOM)
+        vm.onSatietyTextChanged("字".repeat(Rules.SATIETY_TEXT_LIMIT + 1))
+        vm.save()
+        assertEquals(MealUiError.SATIETY_TEXT_TOO_LONG, vm.state.value.error)
+        assertTrue(db.records().allMeals().isEmpty())
+
+        vm.toggleSatiety(Satiety.SEVEN)
+        assertEquals("", vm.state.value.satietyText)
+        vm.save()
+        awaitSaved(vm)
+        assertEquals(Satiety.SEVEN, singleMeal().satiety)
+        assertNull(singleMeal().satietyText)
     }
 
     @Test

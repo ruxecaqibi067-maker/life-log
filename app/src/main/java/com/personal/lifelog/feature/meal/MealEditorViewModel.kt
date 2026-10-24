@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personal.lifelog.core.time.RecordTime
+import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.data.local.entity.MealRecord
 import com.personal.lifelog.data.media.PhotoError
 import com.personal.lifelog.data.media.PhotoResult
@@ -50,6 +51,7 @@ class MealEditorViewModel(
         const val KEY_LOADED = "meal.draft.loaded"
         const val KEY_TEXT = "meal.draft.text"
         const val KEY_SATIETY = "meal.draft.satiety"
+        const val KEY_SATIETY_TEXT = "meal.draft.satietyText"
         const val KEY_DATE = "meal.draft.date"
         const val KEY_TIME = "meal.draft.time"
         const val KEY_ZONE = "meal.draft.zone"
@@ -71,6 +73,7 @@ class MealEditorViewModel(
     private var zoneId: String = savedStateHandle.get<String>(KEY_ZONE) ?: zoneIdProvider().id
     private var originalText: String? = null
     private var originalSatiety: Satiety? = null
+    private var originalSatietyText: String? = null
     private var originalPhotoId: String? = null
     private var originalDate: LocalDate? = null
     private var originalTime: LocalTime? = null
@@ -87,6 +90,7 @@ class MealEditorViewModel(
             text = savedStateHandle.get<String>(KEY_TEXT) ?: "",
             satiety = savedStateHandle.get<String>(KEY_SATIETY)
                 ?.let { runCatching { Satiety.valueOf(it) }.getOrNull() },
+            satietyText = savedStateHandle.get<String>(KEY_SATIETY_TEXT) ?: "",
             date = savedStateHandle.get<String>(KEY_DATE)
                 ?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: initialLocal.toLocalDate(),
             time = savedStateHandle.get<String>(KEY_TIME)
@@ -110,7 +114,20 @@ class MealEditorViewModel(
     }
 
     fun toggleSatiety(value: Satiety) {
-        update { it.copy(satiety = if (it.satiety == value) null else value) }
+        update {
+            val next = if (it.satiety == value) null else value
+            val customText = if (it.satiety == Satiety.CUSTOM) it.satietyText else ""
+            it.copy(
+                satiety = next,
+                satietyText = if (next == Satiety.CUSTOM) customText else "",
+                error = null,
+            )
+        }
+    }
+
+    fun onSatietyTextChanged(value: String) {
+        if (value.length > 200) return
+        update { it.copy(satietyText = value, error = null) }
     }
 
     fun onDateChanged(value: LocalDate) = update { it.copy(date = value) }
@@ -317,6 +334,17 @@ class MealEditorViewModel(
             update { it.copy(error = error) }
             return
         }
+        val satietyText = if (current.satiety == Satiety.CUSTOM) current.satietyText.trim() else null
+        if (current.satiety == Satiety.CUSTOM && satietyText.isNullOrEmpty()) {
+            update { it.copy(error = MealUiError.SATIETY_TEXT_REQUIRED) }
+            return
+        }
+        if (satietyText != null &&
+            satietyText.codePointCount(0, satietyText.length) > Rules.SATIETY_TEXT_LIMIT
+        ) {
+            update { it.copy(error = MealUiError.SATIETY_TEXT_TOO_LONG) }
+            return
+        }
         val occurredAt = try {
             // An existing instant already disambiguates a repeated DST local time.
             // Editing text/photo must preserve that exact instant, including milliseconds.
@@ -333,6 +361,7 @@ class MealEditorViewModel(
             zoneId = current.zoneId,
             text = current.text,
             satiety = current.satiety,
+            satietyText = satietyText,
             photoId = if (current.newPhotoTicket != null) {
                 null
             } else if (current.photoRemoved) {
@@ -407,6 +436,7 @@ class MealEditorViewModel(
             originalZoneId = existing.zoneId
             originalText = existing.text
             originalSatiety = existing.satiety
+            originalSatietyText = existing.satietyText
             originalPhotoId = existing.photoId
             val local = Instant.ofEpochMilli(existing.occurredAtUtcMs).atZone(MealTimeDisplay.zone(existing.zoneId))
             originalDate = local.toLocalDate()
@@ -421,6 +451,7 @@ class MealEditorViewModel(
                     it.copy(
                         text = existing.text ?: "",
                         satiety = existing.satiety,
+                        satietyText = existing.satietyText ?: "",
                         date = originalDate ?: it.date,
                         time = originalTime ?: it.time,
                         zoneId = existing.zoneId,
@@ -544,6 +575,8 @@ class MealEditorViewModel(
         }
         return current.text.trim() != (originalText ?: "") ||
             current.satiety != originalSatiety ||
+            (if (current.satiety == Satiety.CUSTOM) current.satietyText.trim() else "") !=
+            (if (originalSatiety == Satiety.CUSTOM) originalSatietyText ?: "" else "") ||
             current.date != originalDate ||
             current.time != originalTime ||
             current.newPhotoTicket != null ||
@@ -556,6 +589,7 @@ class MealEditorViewModel(
         val current = _state.value
         savedStateHandle[KEY_TEXT] = current.text
         savedStateHandle[KEY_SATIETY] = current.satiety?.name
+        savedStateHandle[KEY_SATIETY_TEXT] = current.satietyText
         savedStateHandle[KEY_DATE] = current.date.toString()
         savedStateHandle[KEY_TIME] = current.time.toString()
         savedStateHandle[KEY_ZONE] = current.zoneId
@@ -566,7 +600,7 @@ class MealEditorViewModel(
 
     private fun clearDraft() {
         listOf(
-            KEY_ID, KEY_LOADED, KEY_TEXT, KEY_SATIETY, KEY_DATE, KEY_TIME, KEY_ZONE,
+            KEY_ID, KEY_LOADED, KEY_TEXT, KEY_SATIETY, KEY_SATIETY_TEXT, KEY_DATE, KEY_TIME, KEY_ZONE,
             KEY_PHOTO_TICKET, KEY_CAPTURE_TICKET, KEY_PHOTO_REMOVED,
         ).forEach { savedStateHandle.remove<Any?>(it) }
     }

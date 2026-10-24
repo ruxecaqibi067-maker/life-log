@@ -66,14 +66,14 @@ class RepositoryTest {
         }
     }
 
-    @Test fun compiledDatabaseIdentityMatchesExportedV1Schema() = runBlocking<Unit> {
+    @Test fun compiledDatabaseIdentityMatchesExportedV2Schema() = runBlocking<Unit> {
         db.metadata().settingsNow()
-        val schema = JSONObject(File("schemas/com.personal.lifelog.data.local.AppDatabase/1.json").readText())
+        val schema = JSONObject(File("schemas/com.personal.lifelog.data.local.AppDatabase/2.json").readText())
         val expected = schema.getJSONObject("database").getString("identityHash")
         db.openHelper.readableDatabase.query("SELECT identity_hash FROM room_master_table WHERE id = 42").use {
             assertTrue(it.moveToFirst()); assertEquals(expected, it.getString(0))
         }
-        assertEquals(1, db.openHelper.readableDatabase.version)
+        assertEquals(2, db.openHelper.readableDatabase.version)
     }
 
     @Test fun mealAllowsOnlyTextOrPhotoAndDatesMoveOnEdit() = runBlocking<Unit> {
@@ -86,6 +86,31 @@ class RepositoryTest {
         assertEquals(first.createdAtUtcMs, updated.createdAtUtcMs)
         assertTrue(records.mealsOn("2026-10-22").first().isEmpty())
         assertEquals(listOf(mealId), records.mealsOn("2026-10-20").first().map { it.id })
+        assertEquals(1, db.records().allMeals().size)
+    }
+
+    @Test fun customSatietyRequiresShortTextAndPresetsRejectText() = runBlocking<Unit> {
+        val id = id()
+        failure(ErrorCode.INVALID_SATIETY, records.saveMeal(MealDraft(id, clock.millis(), "UTC", "记录", Satiety.CUSTOM)))
+        failure(
+            ErrorCode.INVALID_SATIETY,
+            records.saveMeal(
+                MealDraft(id, clock.millis(), "UTC", "记录", Satiety.CUSTOM, satietyText = "字".repeat(41)),
+            ),
+        )
+        failure(
+            ErrorCode.INVALID_SATIETY,
+            records.saveMeal(MealDraft(id, clock.millis(), "UTC", "记录", Satiety.SEVEN, satietyText = "不允许")),
+        )
+        failure(
+            ErrorCode.INVALID_SATIETY,
+            records.saveMeal(MealDraft(id, clock.millis(), "UTC", "记录", satietyText = "不允许")),
+        )
+        val saved = records.saveMeal(
+            MealDraft(id, clock.millis(), "UTC", "记录", Satiety.CUSTOM, satietyText = "  七分饱但还想吃  "),
+        ).value()
+        assertEquals("七分饱但还想吃", saved.satietyText)
+        assertEquals("七分饱但还想吃", records.meal(id)?.satietyText)
         assertEquals(1, db.records().allMeals().size)
     }
 

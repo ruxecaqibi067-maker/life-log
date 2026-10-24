@@ -150,7 +150,7 @@ class TimelineUiTest {
         mealId = seedPhotoMeal(
             text = "牛肉面",
             occurredAtUtcMs = utc("2026-10-23T04:10:00Z"),
-            satiety = Satiety.SEVEN,
+            satiety = Satiety.NOT_FULL,
         )
 
         workoutId = RecordIds.newId()
@@ -232,6 +232,7 @@ class TimelineUiTest {
     @Test
     fun homeAndReviewShowOneSavedTimelineWithQuickJumpAndEmptyPastDates() {
         waitText("牛肉面")
+        compose.onNodeWithText("没吃饱").assertExists()
         compose.onNodeWithText("饮食 1 条 · 作息 1 段 · 训练 1 场 · 2 个动作").assertExists()
         compose.onNodeWithText("卧床 7小时20分", substring = true).assertExists()
         compose.onNodeWithText("卧推、跑步").assertExists()
@@ -248,6 +249,7 @@ class TimelineUiTest {
         // Every unified row opens the existing detail/edit/delete path.
         compose.onNodeWithText("牛肉面").performClick()
         waitText("饮食详情")
+        waitText("没吃饱")
         compose.onNodeWithContentDescription("返回").performClick()
         waitText("今日时间线")
 

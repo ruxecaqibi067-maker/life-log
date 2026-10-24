@@ -24,6 +24,8 @@ data class MealRecord(
     val photoId: String?,
     val createdAtUtcMs: Long,
     val updatedAtUtcMs: Long,
+    /** Present only when [satiety] is [Satiety.CUSTOM]. */
+    val satietyText: String? = null,
 )
 
 @Entity(tableName = "SleepRecord", indices = [Index("archiveLocalDate"), Index(value = ["activeSlot"], unique = true)])

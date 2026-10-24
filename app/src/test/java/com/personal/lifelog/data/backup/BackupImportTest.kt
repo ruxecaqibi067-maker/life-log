@@ -3,6 +3,7 @@ package com.personal.lifelog.data.backup
 import android.app.Application
 import com.personal.lifelog.data.backup.format.*
 import com.personal.lifelog.data.backup.importer.*
+import com.personal.lifelog.domain.Satiety
 import kotlinx.coroutines.*
 import org.json.*
 import org.junit.*
@@ -63,7 +64,7 @@ class BackupImportTest {
     @Test fun invalidDataMatrixIsRejectedWithoutWrites() = runBlocking {
         val before = f.seed(); val photos = mediaDigest(); val zip = f.zip()
         val edits: List<(JSONObject) -> Unit> = listOf(
-            { it.put("dataVersion", 2) },
+            { it.put("dataVersion", 3) },
             { it.getJSONArray("meals").getJSONObject(0).put("photoId", id()) },
             { it.getJSONArray("meals").put(it.getJSONArray("meals").getJSONObject(0)) },
             { it.getJSONArray("sets").getJSONObject(0).put("repetitions", 0) },
@@ -71,6 +72,14 @@ class BackupImportTest {
             { it.getJSONArray("items").getJSONObject(0).put("exerciseId", id()) },
             { it.getJSONArray("items").getJSONObject(0).put("typeSnapshot", "ALIEN") },
             { it.getJSONArray("meals").getJSONObject(0).put("localDate", "2026-01-01") },
+            { it.getJSONArray("meals").getJSONObject(0).put("satiety", "ALIEN") },
+            { it.getJSONArray("meals").getJSONObject(0).put("satiety", "CUSTOM") },
+            { it.getJSONArray("meals").getJSONObject(0).put("satietyText", "预设值不能带描述") },
+            {
+                it.getJSONArray("meals").getJSONObject(0)
+                    .put("satiety", "CUSTOM")
+                    .put("satietyText", "字".repeat(41))
+            },
             { it.getJSONArray("sleeps").getJSONObject(0).put("endZoneId", "UTC") },
             { it.getJSONObject("settings").remove("themeMode") },
             { it.getJSONArray("exercises").getJSONObject(0).put("isHidden", "false") },
@@ -82,6 +91,70 @@ class BackupImportTest {
             assertEquals(before, f.snapshots.read()); assertEquals(photos, mediaDigest())
             assertEquals(0, File(f.root, "backup-import").listFiles()!!.size)
         }
+    }
+
+    @Test fun notFullSatietyIsAcceptedAndLegacyValuesStillRead() = runBlocking {
+        val seeded = f.seed()
+        val mealId = seeded.meals.single().id
+        val zip = f.zip()
+        val newValue = editData(zip, File(f.root, "not-full.zip")) { data ->
+            data.getJSONArray("meals").getJSONObject(0).put("satiety", "NOT_FULL")
+        }
+
+        // The new option is valid data and keeps its meaning through JSON decoding.
+        val checked = BackupArchive().verify(newValue, BackupFiles(f.root).mkdir("verify-not-full"))
+        assertEquals(Satiety.NOT_FULL, checked.data.meals.single { it.id == mealId }.satiety)
+        val service = importer()
+        val ready = service.preflight(source(newValue)) as BackupResult.Success
+        service.discard(ready.value.token)
+
+        // A backup written before this option existed still decodes its original name.
+        val legacyChecked = BackupArchive().verify(zip, BackupFiles(f.root).mkdir("verify-legacy"))
+        assertEquals(Satiety.SEVEN, legacyChecked.data.meals.single { it.id == mealId }.satiety)
+        val legacy = importer()
+        val legacyReady = legacy.preflight(source(zip)) as BackupResult.Success
+        legacy.discard(legacyReady.value.token)
+        Unit
+    }
+
+    @Test fun customSatietyTextRoundTripsAndVersionOneArchivesStillRead() = runBlocking {
+        val seeded = f.seed()
+        val mealId = seeded.meals.single().id
+        val zip = f.zip()
+
+        val customZip = editData(zip, File(f.root, "custom.zip")) { data ->
+            data.getJSONArray("meals").getJSONObject(0)
+                .put("satiety", "CUSTOM")
+                .put("satietyText", "七分饱但还想吃")
+        }
+        val custom = BackupArchive().verify(customZip, BackupFiles(f.root).mkdir("verify-custom")).data
+            .meals.single { it.id == mealId }
+        assertEquals(Satiety.CUSTOM, custom.satiety)
+        assertEquals("七分饱但还想吃", custom.satietyText)
+        val service = importer()
+        val ready = service.preflight(source(customZip)) as BackupResult.Success
+        service.discard(ready.value.token)
+
+        // A v1 archive has no satietyText field and must decode to null, not fail.
+        val v1Data = editData(zip, File(f.root, "v1-data.zip")) { data ->
+            data.put("dataVersion", 1)
+            val meals = data.getJSONArray("meals")
+            for (i in 0 until meals.length()) meals.getJSONObject(i).remove("satietyText")
+        }
+        val entries = zipEntries(v1Data)
+        entries["manifest.json"] = JSONObject(String(entries.getValue("manifest.json"), Charsets.UTF_8))
+            .put("formatVersion", 1)
+            .toString()
+            .toByteArray()
+        val v1Zip = writeZip(File(f.root, "v1.zip"), entries)
+        val legacy = BackupArchive().verify(v1Zip, BackupFiles(f.root).mkdir("verify-v1")).data
+            .meals.single { it.id == mealId }
+        assertEquals(Satiety.SEVEN, legacy.satiety)
+        assertNull(legacy.satietyText)
+        val legacyService = importer()
+        val legacyReady = legacyService.preflight(source(v1Zip)) as BackupResult.Success
+        legacyService.discard(legacyReady.value.token)
+        Unit
     }
 
     @Test fun hashesMissingPhotosVersionsAndGarbageAreRejected() = runBlocking {

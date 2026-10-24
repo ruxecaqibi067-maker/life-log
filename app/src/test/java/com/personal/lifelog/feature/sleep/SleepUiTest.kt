@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.test.espresso.Espresso.pressBack
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -38,6 +41,7 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class SleepUiTest {
     @get:Rule val compose = createComposeRule()
+    private val restoration = StateRestorationTester(compose)
     private lateinit var db: AppDatabase
     private val store = ViewModelStore()
     private var now = Instant.parse("2026-10-22T15:50:00Z")
@@ -57,7 +61,7 @@ class SleepUiTest {
         val repository = RecordRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
         val workouts = WorkoutRepository(db, writes, clock)
         val timelineRepository = TimelineRepository(repository, workouts)
-        compose.setContent {
+        restoration.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
                 val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, timelineRepository) }
                 val settings = vm(SettingsViewModel::class.java) { SettingsViewModel(SettingsRepository(db, writes, clock)) }
@@ -84,6 +88,10 @@ class SleepUiTest {
 
     @Test fun oneTapPersistsStartAndFinishAndUndoAndDeleteHaveSafeCancelPaths() {
         compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        compose.onNodeWithTag("bedtime-screen").assertExists()
+        assertNull(rows().single().endedAtUtcMs)
+        pressBack()
         awaitText("起床了")
         assertNull(rows().single().endedAtUtcMs)
         assertEquals(1, rows().single().activeSlot)
@@ -106,6 +114,36 @@ class SleepUiTest {
         compose.onNodeWithText("确认").performClick()
         awaitText("准备睡了")
         assertTrue(rows().isEmpty())
+    }
+
+    @Test fun bedtimeRestorationKeepsItsMessagesAndReturningDoesNotFinishOrDuplicateSleep() {
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        val initial = rows().single()
+        compose.onNodeWithTag("bedtime-messages").onChildren().assertCountEquals(3)
+        val messages = compose.onNodeWithTag("bedtime-messages").onChildren().fetchSemanticsNodes()
+            .map { it.config[SemanticsProperties.Text].single().text }
+        restoration.emulateSavedInstanceStateRestore()
+        awaitText("23:50")
+        assertEquals(messages, compose.onNodeWithTag("bedtime-messages").onChildren().fetchSemanticsNodes()
+            .map { it.config[SemanticsProperties.Text].single().text })
+        assertEquals(initial, rows().single())
+        pressBack()
+        awaitText("起床了")
+        assertEquals(initial, rows().single())
+        compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
+    }
+
+    @Test fun failedStartStaysOnHomeAndRetryEntersBedtimeOnlyAfterDatabaseCommit() {
+        db.openHelper.writableDatabase.execSQL("CREATE TEMP TRIGGER fail_sleep BEFORE INSERT ON SleepRecord BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END")
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("无法读写作息记录，请重试；输入仍保留。")
+        compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
+        assertTrue(rows().isEmpty())
+        db.openHelper.writableDatabase.execSQL("DROP TRIGGER fail_sleep")
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        assertEquals(1, rows().size)
     }
 
     @Test fun supplementShowsCompleteDatesAndDurationAndEditingMovesArchive() {

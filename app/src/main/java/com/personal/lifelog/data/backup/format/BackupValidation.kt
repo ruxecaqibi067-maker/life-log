@@ -29,6 +29,7 @@ object BackupValidation {
             times(it.createdAtUtcMs, it.updatedAtUtcMs)
             requireBackup(it.localDate == RecordTime.localDate(it.occurredAtUtcMs, it.zoneId))
             requireBackup(Rules.text(it.text, Rules.MEAL_TEXT_LIMIT) == it.text)
+            requireBackup(Rules.satietyText(it.satiety, it.satietyText) == it.satietyText)
             requireBackup(it.text != null || it.photoId != null)
         }
         val sleeps = d.sleeps.sortedBy { it.startedAtUtcMs }

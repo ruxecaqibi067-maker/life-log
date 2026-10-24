@@ -14,7 +14,9 @@ import java.nio.charset.CodingErrorAction
 
 /** Explicit v1 wire fields. Derived keys and local media generations never enter the archive. */
 object BackupJson {
-    const val VERSION = 1
+    const val VERSION = 2
+    /** v1 archives predate custom satiety and remain readable (satietyText is absent). */
+    const val MIN_SUPPORTED_VERSION = 1
     private const val IMPORT_GENERATION = "00000000-0000-0000-0000-000000000000"
     fun encode(data: DataSnapshot): JSONObject = JSONObject().put("dataVersion", VERSION)
         .put("meals", JSONArray(data.meals.map { encode(it) }))
@@ -27,7 +29,7 @@ object BackupJson {
         .put("settings", encode(data.settings))
 
     fun decode(json: JSONObject): DataSnapshot {
-        requireBackup(json.int("dataVersion") == VERSION, BackupError.UNSUPPORTED_VERSION)
+        requireBackup(json.int("dataVersion") in MIN_SUPPORTED_VERSION..VERSION, BackupError.UNSUPPORTED_VERSION)
         return DataSnapshot(
             meals = json.array("meals").objects().map(::decodeMealRecord),
             sleeps = json.array("sleeps").objects().map(::decodeSleepRecord),
@@ -47,6 +49,7 @@ object BackupJson {
         .put("localDate", v.localDate)
         .put("text", v.text ?: JSONObject.NULL)
         .put("satiety", v.satiety?.name ?: JSONObject.NULL)
+        .put("satietyText", v.satietyText ?: JSONObject.NULL)
         .put("photoId", v.photoId ?: JSONObject.NULL)
         .put("createdAtUtcMs", v.createdAtUtcMs)
         .put("updatedAtUtcMs", v.updatedAtUtcMs)
@@ -57,6 +60,7 @@ object BackupJson {
         localDate = j.string("localDate"),
         text = j.nullableString("text"),
         satiety = j.nullableString("satiety")?.let { Satiety.valueOf(it) },
+        satietyText = j.optionalNullableString("satietyText"),
         photoId = j.nullableString("photoId"),
         createdAtUtcMs = j.long("createdAtUtcMs"),
         updatedAtUtcMs = j.long("updatedAtUtcMs"),
@@ -209,7 +213,7 @@ object BackupJson {
             JSONObject().put("path", it.path).put("byteSize", it.byteSize).put("sha256", it.sha256)
         }))
     fun decodeManifest(j: JSONObject): BackupManifest {
-        requireBackup(j.int("formatVersion") == VERSION, BackupError.UNSUPPORTED_VERSION)
+        requireBackup(j.int("formatVersion") in MIN_SUPPORTED_VERSION..VERSION, BackupError.UNSUPPORTED_VERSION)
         val counts = j.obj("counts")
         return BackupManifest(j.string("appVersion"), j.long("exportedAtUtcMs"),
             listOf("meals", "sleeps", "exercises", "sessions", "items", "sets", "media").associateWith { counts.int(it) },
@@ -269,6 +273,9 @@ internal fun JSONObject.boolean(key: String): Boolean = required(key) as? Boolea
 internal fun JSONObject.obj(key: String): JSONObject = required(key) as? JSONObject ?: fail(BackupError.INVALID_DATA)
 internal fun JSONObject.array(key: String): JSONArray = required(key) as? JSONArray ?: fail(BackupError.INVALID_DATA)
 internal fun JSONObject.nullableString(key: String): String? = if (required(key) === JSONObject.NULL) null else string(key)
+/** Optional in v2; absent v1 archives decode it as null instead of failing. */
+internal fun JSONObject.optionalNullableString(key: String): String? =
+    if (!has(key) || get(key) === JSONObject.NULL) null else string(key)
 internal fun JSONObject.nullableLong(key: String): Long? = if (required(key) === JSONObject.NULL) null else long(key)
 internal fun JSONObject.nullableInt(key: String): Int? = if (required(key) === JSONObject.NULL) null else int(key)
 internal fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { get(it) as? JSONObject ?: fail(BackupError.INVALID_DATA) }

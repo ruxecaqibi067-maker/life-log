@@ -176,6 +176,7 @@ fun MealEditorScreen(
                 innerPadding = innerPadding,
                 onTextChanged = viewModel::onTextChanged,
                 onToggleSatiety = viewModel::toggleSatiety,
+                onSatietyTextChanged = viewModel::onSatietyTextChanged,
                 onShowDatePicker = { showDatePicker = true },
                 onShowTimePicker = { showTimePicker = true },
                 onTakePhoto = viewModel::beginCapture,
@@ -269,6 +270,7 @@ private fun MealForm(
     innerPadding: androidx.compose.foundation.layout.PaddingValues,
     onTextChanged: (String) -> Unit,
     onToggleSatiety: (Satiety) -> Unit,
+    onSatietyTextChanged: (String) -> Unit,
     onShowDatePicker: () -> Unit,
     onShowTimePicker: () -> Unit,
     onTakePhoto: () -> Unit,
@@ -316,14 +318,29 @@ private fun MealForm(
                 style = MaterialTheme.typography.labelLarge,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Satiety.entries.forEach { value ->
+                satietyOptions.forEach { value ->
                     FilterChip(
                         selected = state.satiety == value,
                         onClick = { onToggleSatiety(value) },
                         label = { Text(stringResource(satietyLabelRes(value))) },
                         enabled = !state.saving,
+                        modifier = Modifier.testTag("meal_satiety_${value.name}"),
                     )
                 }
+            }
+            if (state.satiety == Satiety.CUSTOM) {
+                OutlinedTextField(
+                    value = state.satietyText,
+                    onValueChange = onSatietyTextChanged,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("meal_satiety_custom_input"),
+                    enabled = !state.saving,
+                    label = { Text(stringResource(R.string.meal_satiety_custom_label)) },
+                    supportingText = { Text(stringResource(R.string.meal_satiety_custom_hint)) },
+                    isError = state.error == MealUiError.SATIETY_TEXT_TOO_LONG,
+                    singleLine = true,
+                )
             }
         }
 
