@@ -38,7 +38,7 @@ OpenAI 官方 API 模型目录列出 `gpt-6.1-sol` 的上下文窗口为1.05M to
 2. 让新对话工作在项目目录 `C:\Users\user1\Desktop\workspace\NEW TRY\life-log-android`。
 3. 复制该任务文件开头的提示词；它应先读AGENTS、本包、相关需求技术章节与直接前置交接。
 4. 实现对话检查Git状态和前置提交，建立任务分支，按完成条件推进。
-5. 完成后把简短交接摘要交回主管；完整信息已在 `docs/handoffs/Txx.md`，无需复制所有日志。
+5. 完成后把简短交接摘要交回主管；完整信息已在 `docs/handoffs/Txx-简要说明.md`，无需复制所有日志。
 
 推荐的通用提示词（替换Txx）：
 
@@ -47,7 +47,7 @@ OpenAI 官方 API 模型目录列出 `gpt-6.1-sol` 的上下文窗口为1.05M to
 先读 AGENTS.md、docs/WORKFLOW.md、docs/tasks/Txx.md 与其中列出的直接前置交接。
 核对实际代码和Git状态，然后实现本任务，运行对应检查并修复问题。
 当前对话负责实现，不扩展第一版范围；中央STATUS由主管维护。
-将代码与 docs/handoffs/Txx.md 一起提交，回报分支、提交、检查结果、未验证项及下一任务所需信息。
+将代码与 docs/handoffs/Txx-简要说明.md 一起提交，回报分支、提交、检查结果、未验证项及下一任务所需信息。
 不存在的工具、没有执行的检查和未连接的真机项目不能写成通过。
 ```
 
@@ -105,7 +105,7 @@ T02数据契约接受后，部分功能有并行空间，例如照片服务与�
 
 ## 7. 交接与主管接受
 
-实现对话填写 [交接模板](handoffs/TEMPLATE.md)，各自保存 `docs/handoffs/Txx.md`。最少要有：
+实现对话填写 [交接模板](handoffs/TEMPLATE-交接模板.md)，各自保存 `docs/handoffs/Txx-简要说明.md`。最少要有：
 
 1. 范围与实际行为；分支、实现提交、最终HEAD。
 2. 修改文件和共享契约变化；schema/格式版本影响。

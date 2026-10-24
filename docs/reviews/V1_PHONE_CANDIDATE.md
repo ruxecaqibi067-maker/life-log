@@ -11,7 +11,7 @@
 ## 整合与审查
 
 - 前次 main 为 `00af64c`（T01–T07）；本次源交付 HEAD 为 `c6f784e`，T08–T16 形成连续提交链，无遗漏分支、无合并冲突、开工时工作区干净。
-- T08 `a0622a4`、T09 `edb9bc0`、T10 `6eafcfc`、T11 `153cb40`、T12 `4d1b6a5`、T13 `cb9d626`、T14 `9770bac`、T15 `bd8ce7a`、T16 `c6f784e` 均为整合分支祖先。交接见 `docs/handoffs/Txx.md`。
+- T08 `a0622a4`、T09 `edb9bc0`、T10 `6eafcfc`、T11 `153cb40`、T12 `4d1b6a5`、T13 `cb9d626`、T14 `9770bac`、T15 `bd8ce7a`、T16 `c6f784e` 均为整合分支祖先。交接见 `docs/handoffs/Txx-简要说明.md`。
 - 核对各任务 diff、入口接线、时间线查询、组 ID/精度/空值、备份路径和流式限制、恢复锁/提交标记/照片 generation、明确确认与取消、签名和交付脚本，并运行下列回归检查。
 - Room v1 schema 与 T02 `11f773d` 保持一致；备份格式为 v1。未升级数据格式，无破坏性迁移。
 - 提交文件扫描未发现私钥、密码、常见 token、APK、用户备份或照片；签名资料继续位于 Git 外。此前 `archive/shared-workspace-before-t07` 和所有任务 worktree 保留。
