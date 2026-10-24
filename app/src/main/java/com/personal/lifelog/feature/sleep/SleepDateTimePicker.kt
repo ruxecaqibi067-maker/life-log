@@ -1,6 +1,8 @@
 package com.personal.lifelog.feature.sleep
 
+import android.content.Context
 import android.os.Build
+import android.view.ContextThemeWrapper
 import android.view.ViewGroup
 import android.widget.NumberPicker
 import androidx.compose.foundation.layout.*
@@ -12,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -101,6 +104,7 @@ fun SleepDateTimePicker(
 private fun Wheel(label: Int, value: Int, min: Int, max: Int, modifier: Modifier, onValue: (Int) -> Unit) {
     val name = stringResource(label)
     val color = MaterialTheme.colorScheme.onSurface.toArgb()
+    val darkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val textPixels = with(LocalDensity.current) { 20.sp.toPx() }
     val height = (144 * LocalDensity.current.fontScale.coerceAtLeast(1f)).dp
     Column(modifier.testTag("sleep-wheel-$name").semantics {
@@ -108,9 +112,9 @@ private fun Wheel(label: Int, value: Int, min: Int, max: Int, modifier: Modifier
         setProgress { onValue(it.roundToInt().coerceIn(min, max)); true }
     }, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(name, style = MaterialTheme.typography.labelLarge)
-        AndroidView(
+        key(darkTheme) { AndroidView(
             modifier = Modifier.fillMaxWidth().height(height),
-            factory = { context -> NumberPicker(context).apply {
+            factory = { context -> createSleepWheel(context, darkTheme).apply {
                 descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
                 importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES
                 wrapSelectorWheel = false
@@ -128,6 +132,12 @@ private fun Wheel(label: Int, value: Int, min: Int, max: Int, modifier: Modifier
                     picker.textSize = textPixels
                 }
             },
-        )
+        ) }
     }
 }
+
+/** API 28 has no public textColor setter; the native theme must follow the app's explicit choice. */
+internal fun createSleepWheel(context: Context, darkTheme: Boolean): NumberPicker = NumberPicker(
+    ContextThemeWrapper(context, if (darkTheme) android.R.style.Theme_Material_NoActionBar
+        else android.R.style.Theme_Material_Light_NoActionBar),
+)

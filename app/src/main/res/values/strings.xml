@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">生活随记</string>
+    <string name="app_name">随手记</string>
 
     <!-- 主导航 -->
     <string name="nav_today">今天</string>
