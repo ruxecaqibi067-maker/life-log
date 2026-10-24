@@ -3,6 +3,8 @@ package com.personal.lifelog.ui
 import android.graphics.Bitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -35,7 +37,8 @@ class VisualFlowDeviceTest {
     private val mealText = "番茄鸡蛋面，今天吃得很舒服"
 
     private fun waitText(text: String) = compose.waitUntil(20_000) {
-        compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        try { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        catch (_: IllegalStateException) { false }
     }
     private fun click(text: String) {
         waitText(text)
@@ -50,7 +53,8 @@ class VisualFlowDeviceTest {
         compose.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
-        android.os.SystemClock.sleep(900)
+        // Entering immersive mode can briefly reveal transient system bars.
+        android.os.SystemClock.sleep(if (name.endsWith("bedtime")) 6_000 else 900)
         val bitmap = instrumentation.uiAutomation.takeScreenshot()
         val phase = InstrumentationRegistry.getArguments().getString("phase") ?: "after"
         val file = File(app.filesDir, "t17-$phase/$name.png")
@@ -174,11 +178,16 @@ class VisualFlowDeviceTest {
     private fun captureBedtimeAndUndo() {
         val original = runBlocking { container.snapshots.read().sleeps }
         runBlocking { container.settings.setTheme(ThemeMode.LIGHT) }
-        ActivityScenario.launch(MainActivity::class.java).use {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             waitText(mealText)
             click("准备睡了")
             compose.waitUntil(20_000) { compose.onAllNodesWithTag("bedtime-screen").fetchSemanticsNodes().isNotEmpty() }
             screenshot("bedtime")
+            scenario.onActivity { activity ->
+                val insets = ViewCompat.getRootWindowInsets(activity.window.decorView)!!
+                assertFalse(insets.isVisible(WindowInsetsCompat.Type.statusBars()))
+                assertFalse(insets.isVisible(WindowInsetsCompat.Type.navigationBars()))
+            }
             val active = runBlocking { container.records.activeSleep().first()!! }
             androidx.test.espresso.Espresso.pressBack()
             waitText("起床了")
@@ -246,9 +255,12 @@ class VisualFlowDeviceTest {
                 val restored = runBlocking { container.snapshots.read() }
                 assertEquals(initial.meals, restored.meals)
                 assertEquals(initial.sleeps, restored.sleeps)
+                assertEquals(initial.exercises, restored.exercises)
                 assertEquals(initial.sessions, restored.sessions)
                 assertEquals(initial.items, restored.items)
                 assertEquals(initial.sets, restored.sets)
+                assertEquals(initial.media, restored.media)
+                assertEquals(ThemeMode.SYSTEM, runBlocking { container.settings.settings().first().themeMode })
             }
         } finally {
             shell("settings put system font_scale 1.0")

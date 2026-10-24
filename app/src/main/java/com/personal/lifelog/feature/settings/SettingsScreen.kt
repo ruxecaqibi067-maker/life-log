@@ -245,6 +245,7 @@ private fun ThemeSelector(themeMode: ThemeMode, onSelected: (ThemeMode) -> Unit)
                             .selectable(themeMode == choice.mode, role = Role.RadioButton,
                                 onClick = { onSelected(choice.mode) }).padding(horizontal = LogDimens.gap),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
                     ) {
                         RadioButton(selected = themeMode == choice.mode, onClick = null)
                         Text(stringResource(choice.labelRes), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
