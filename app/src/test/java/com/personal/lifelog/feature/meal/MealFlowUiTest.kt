@@ -2,6 +2,8 @@ package com.personal.lifelog.feature.meal
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -21,6 +23,7 @@ import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
+import com.personal.lifelog.domain.Satiety
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.settings.SettingsViewModel
@@ -152,6 +155,89 @@ class MealFlowUiTest {
         compose.onNodeWithText("整合测试午饭").assertExists()
         assertEquals(1, mealCount())
         runBlocking { assertEquals(1, db.records().allSleeps().size) }
+    }
+
+    @Test
+    fun notFullSatietyIsOptionalAndFlowsThroughTimelineDetailAndEdit() {
+        setAppContent()
+        waitForText("这一天还没有记录")
+        compose.onNodeWithText("记饮食").performClick()
+
+        // All choices are present, and the new one is neither required nor selected.
+        compose.onNodeWithText("没吃饱").assertExists()
+        compose.onNodeWithTag("meal_satiety_NOT_FULL").assertIsNotSelected()
+        compose.onNodeWithText("5分饱").assertExists()
+        compose.onNodeWithText("7分饱").assertExists()
+        compose.onNodeWithText("9分饱").assertExists()
+        compose.onNodeWithText("撑了").assertExists()
+        compose.onNodeWithText("自定义").assertExists()
+
+        compose.onNodeWithTag("meal_satiety_NOT_FULL").performScrollTo().performClick()
+        compose.onNodeWithTag("meal_satiety_NOT_FULL").assertIsSelected()
+        compose.onNodeWithTag("meal_text_input").performTextInput("下午加餐")
+        compose.onNodeWithTag("meal_save_button").performScrollTo().performClick()
+        compose.waitUntil(10_000) { onlyMeal()?.satiety == Satiety.NOT_FULL }
+        waitForText("下午加餐")
+        waitForText("没吃饱")
+
+        compose.onNodeWithText("下午加餐").performClick()
+        waitForText("饮食详情")
+        waitForText("没吃饱")
+
+        // Tapping the selected chip again clears this optional field.
+        compose.onNodeWithContentDescription("编辑记录").performClick()
+        compose.waitUntil(10_000) {
+            runCatching { compose.onNodeWithTag("meal_satiety_NOT_FULL").assertIsSelected() }.isSuccess
+        }
+        compose.onNodeWithTag("meal_satiety_NOT_FULL").performScrollTo().performClick()
+        compose.onNodeWithTag("meal_satiety_NOT_FULL").assertIsNotSelected()
+        compose.onNodeWithTag("meal_save_button").performScrollTo().performClick()
+        compose.waitUntil(10_000) { onlyMeal()?.satiety == null }
+        waitForText("饮食详情")
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("没吃饱").fetchSemanticsNodes().isEmpty() }
+    }
+
+    @Test
+    fun customSatietyDescriptionFlowsThroughTimelineDetailAndEdit() {
+        setAppContent()
+        waitForText("这一天还没有记录")
+        compose.onNodeWithText("记饮食").performClick()
+
+        compose.onNodeWithTag("meal_satiety_CUSTOM").assertIsNotSelected()
+        compose.onNodeWithTag("meal_satiety_CUSTOM").performScrollTo().performClick()
+        compose.onNodeWithTag("meal_satiety_CUSTOM").assertIsSelected()
+        compose.onNodeWithTag("meal_satiety_custom_input").performScrollTo().assertExists()
+        compose.onNodeWithTag("meal_text_input").performTextInput("下午加餐")
+
+        // Custom requires a short description before it can be saved.
+        compose.onNodeWithTag("meal_save_button").performScrollTo().performClick()
+        waitForText("请填写自定义饱腹感描述")
+        assertEquals(0, mealCount())
+
+        compose.onNodeWithTag("meal_satiety_custom_input").performScrollTo().performTextInput("七分饱但还想吃")
+        compose.onNodeWithTag("meal_save_button").performScrollTo().performClick()
+        compose.waitUntil(10_000) {
+            onlyMeal()?.let { it.satiety == Satiety.CUSTOM && it.satietyText == "七分饱但还想吃" } == true
+        }
+        waitForText("下午加餐")
+        waitForText("七分饱但还想吃")
+
+        compose.onNodeWithText("下午加餐").performClick()
+        waitForText("饮食详情")
+        waitForText("七分饱但还想吃")
+
+        compose.onNodeWithContentDescription("编辑记录").performClick()
+        compose.waitUntil(10_000) {
+            runCatching {
+                compose.onNodeWithTag("meal_satiety_custom_input").assertTextContains("七分饱但还想吃")
+            }.isSuccess
+        }
+        compose.onNodeWithTag("meal_satiety_custom_input").performScrollTo().performTextClearance()
+        compose.onNodeWithTag("meal_satiety_custom_input").performTextInput("还是有点饿")
+        compose.onNodeWithTag("meal_save_button").performScrollTo().performClick()
+        compose.waitUntil(10_000) { onlyMeal()?.satietyText == "还是有点饿" }
+        waitForText("饮食详情")
+        waitForText("还是有点饿")
     }
 
     @Test

@@ -30,6 +30,8 @@ enum class MealUiError {
     SAVE_FAILED,
     DELETE_FAILED,
     LOAD_FAILED,
+    SATIETY_TEXT_REQUIRED,
+    SATIETY_TEXT_TOO_LONG,
 }
 
 enum class MealPhotoStatus { NONE, PROCESSING, READY, CAPTURE_PENDING, ERROR }
@@ -45,6 +47,8 @@ data class MealEditorUiState(
     val loadFailed: Boolean = false,
     val text: String = "",
     val satiety: Satiety? = null,
+    /** Draft text for [Satiety.CUSTOM]; ignored for every other selection. */
+    val satietyText: String = "",
     val date: LocalDate = LocalDate.now(),
     val time: LocalTime = LocalTime.now(),
     val zoneId: String = ZoneId.systemDefault().id,
@@ -68,6 +72,7 @@ data class MealDetail(
     val id: String,
     val text: String?,
     val satiety: Satiety?,
+    val satietyText: String?,
     val occurredAtUtcMs: Long,
     val zoneId: String,
     val photoId: String?,
@@ -89,6 +94,7 @@ internal fun MealRecord.toDetail(): MealDetail = MealDetail(
     id = id,
     text = text,
     satiety = satiety,
+    satietyText = satietyText,
     occurredAtUtcMs = occurredAtUtcMs,
     zoneId = zoneId,
     photoId = photoId,
@@ -117,6 +123,7 @@ internal fun DataError.toMealUiError(): MealUiError = when (code) {
     ErrorCode.INVALID_MEDIA,
     ErrorCode.IMMUTABLE_MEDIA,
     -> MealUiError.PHOTO_INVALID
+    ErrorCode.INVALID_SATIETY -> MealUiError.SATIETY_TEXT_REQUIRED
     else -> MealUiError.SAVE_FAILED
 }
 

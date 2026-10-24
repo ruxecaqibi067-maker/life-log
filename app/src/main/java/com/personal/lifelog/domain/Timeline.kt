@@ -26,6 +26,7 @@ sealed interface TimelineEntry {
         val zoneId: String,
         val text: String?,
         val satiety: Satiety?,
+        val satietyText: String?,
         val photoId: String?,
     ) : TimelineEntry {
         override val kind: TimelineKind get() = TimelineKind.MEAL
