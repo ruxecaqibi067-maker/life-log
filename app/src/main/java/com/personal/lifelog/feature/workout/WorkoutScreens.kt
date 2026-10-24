@@ -19,7 +19,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -31,6 +30,13 @@ import com.personal.lifelog.data.local.entity.WorkoutWithItems
 import com.personal.lifelog.domain.ErrorCode
 import com.personal.lifelog.domain.ExerciseType
 import com.personal.lifelog.feature.meal.MealTimeDisplay
+import com.personal.lifelog.ui.components.ActionButton
+import com.personal.lifelog.ui.components.PrimaryButton
+import com.personal.lifelog.ui.components.RecordCard
+import com.personal.lifelog.ui.components.RecordTextField
+import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.theme.LogDimens
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.ZoneId
@@ -59,37 +65,37 @@ fun WorkoutEditorScreen(
             // Persistent status/save controls stay visible even when a long form is scrolled.
             state.error?.let { error ->
                 if (state.errorSetId != null) Text(stringResource(R.string.workout_error_set_number),
-                    Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error)
+                    Modifier.padding(LogDimens.card), color = MaterialTheme.colorScheme.error)
                 else WorkoutError(error)
                 state.errorItemId?.let { id -> state.form?.items?.indexOfFirst { it.id == id }?.let { index ->
                     Text(stringResource(R.string.workout_item_error, index + 1, state.form!!.items[index].name),
-                        Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.error)
+                        Modifier.padding(horizontal = LogDimens.page), color = MaterialTheme.colorScheme.error)
                     state.errorSetId?.let { setId ->
                         val setIndex = state.form!!.items[index].sets.indexOfFirst { it.id == setId }
-                        Text(stringResource(R.string.workout_set_error, setIndex + 1), Modifier.padding(horizontal = 16.dp),
+                        Text(stringResource(R.string.workout_set_error, setIndex + 1), Modifier.padding(horizontal = LogDimens.page),
                             color = MaterialTheme.colorScheme.error)
                     }
                 } }
             }
-            if (state.loading) Text(stringResource(R.string.workout_loading), Modifier.padding(16.dp))
+            if (state.loading) Text(stringResource(R.string.workout_loading), Modifier.padding(LogDimens.page))
             val form = state.form
             if (form == null && !state.loading) {
-                TextButton(onClick = viewModel::load) { Text(stringResource(R.string.workout_retry)) }
+                ActionButton(onClick = viewModel::load) { Text(stringResource(R.string.workout_retry)) }
             }
             if (form != null) {
-                LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("workout-form"), contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("workout-form"), contentPadding = PaddingValues(LogDimens.page),
+                    verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
                     item {
                         Text(stringResource(R.string.workout_optional))
                         WorkoutTimeFields(form, !state.busy) { viewModel.change(it) }
-                        OutlinedTextField(form.note, { viewModel.change(form.copy(note = it)) },
+                        RecordTextField(form.note, { viewModel.change(form.copy(note = it)) },
                             Modifier.fillMaxWidth(), enabled = !state.busy,
                             label = { Text(stringResource(R.string.workout_note)) })
                     }
                     form.items.forEachIndexed { index, row ->
                         item(key = row.id) {
-                            OutlinedCard(Modifier.fillMaxWidth().testTag("workout-item-${row.id}")) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            RecordCard(Modifier.fillMaxWidth().testTag("workout-item-${row.id}")) {
+                                Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
                                     Text(itemHeading(index, row), style = MaterialTheme.typography.titleMedium)
                                     Row {
                                         IconButton({ viewModel.move(row.id, -1) }, enabled = !state.busy && index > 0) {
@@ -120,7 +126,7 @@ fun WorkoutEditorScreen(
                                         Text(if (row.sets.isEmpty()) stringResource(R.string.workout_no_quantity)
                                             else stringResource(R.string.workout_sets_entered, row.sets.count { !it.blank }))
                                     }
-                                    OutlinedTextField(row.note, { viewModel.changeItem(row.copy(note = it)) },
+                                    RecordTextField(row.note, { viewModel.changeItem(row.copy(note = it)) },
                                         Modifier.fillMaxWidth(), enabled = !state.busy,
                                         label = { Text(stringResource(R.string.workout_item_note)) })
                                 }
@@ -137,12 +143,12 @@ fun WorkoutEditorScreen(
                         }
                     }
                     item {
-                        OutlinedButton(viewModel::openPicker, enabled = !state.busy && form.items.size < 100,
+                        SecondaryButton(viewModel::openPicker, enabled = !state.busy && form.items.size < 100,
                             modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.workout_add)) }
                     }
                 }
-                Button(viewModel::save, enabled = !state.busy && !state.done,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                PrimaryButton(viewModel::save, enabled = !state.busy && !state.done,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = LogDimens.page, vertical = 8.dp)) {
                     Text(stringResource(if (state.busy) R.string.workout_busy else R.string.workout_save))
                 }
             }
@@ -150,20 +156,20 @@ fun WorkoutEditorScreen(
     }
     if (discard) AlertDialog(onDismissRequest = { discard = false },
         title = { Text(stringResource(R.string.workout_discard_question)) },
-        confirmButton = { TextButton(onClick = onFinished) { Text(stringResource(R.string.workout_discard)) } },
-        dismissButton = { TextButton({ discard = false }) { Text(stringResource(R.string.workout_keep)) } })
+        confirmButton = { ActionButton(onClick = onFinished) { Text(stringResource(R.string.workout_discard)) } },
+        dismissButton = { ActionButton({ discard = false }) { Text(stringResource(R.string.workout_keep)) } })
 }
 
 @Composable
 private fun WorkoutTimeFields(form: WorkoutForm, enabled: Boolean, change: (WorkoutForm) -> Unit) {
-    val context = LocalContext.current
+    val context = com.personal.lifelog.ui.components.rememberPickerContext()
     val local = form.local
-    TextButton(onClick = {
+    ActionButton(onClick = {
         DatePickerDialog(context, { _, year, month, day ->
             change(form.atLocal(local.withYear(year).withMonth(1).withDayOfMonth(1).withMonth(month + 1).withDayOfMonth(day)))
         }, local.year, local.monthValue - 1, local.dayOfMonth).show()
     }, enabled = enabled) { Text(stringResource(R.string.workout_date, local.toLocalDate().toString())) }
-    TextButton(onClick = {
+    ActionButton(onClick = {
         TimePickerDialog(context, { _, hour, minute ->
             change(form.atLocal(local.withHour(hour).withMinute(minute).withSecond(0).withNano(0)))
         }, local.hour, local.minute, true).show()
@@ -172,7 +178,7 @@ private fun WorkoutTimeFields(form: WorkoutForm, enabled: Boolean, change: (Work
     val offsets = ZoneId.of(form.zoneId).rules.getValidOffsets(local)
     if (offsets.size > 1) {
         Text(stringResource(R.string.workout_overlap))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
             offsets.forEach { offset ->
                 FilterChip(selected = form.offset == offset.id, onClick = { change(form.copy(offset = offset.id)) },
                     enabled = enabled, label = { Text(offset.id) })
@@ -183,25 +189,25 @@ private fun WorkoutTimeFields(form: WorkoutForm, enabled: Boolean, change: (Work
 
 @Composable
 private fun WorkoutNumber(value: String, label: Int, tag: String, enabled: Boolean, change: (String) -> Unit) {
-    OutlinedTextField(value, change, Modifier.fillMaxWidth().testTag(tag), enabled = enabled,
+    RecordTextField(value, change, Modifier.fillMaxWidth().testTag(tag), enabled = enabled,
         singleLine = true, label = { Text(stringResource(label)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
 }
 
 @Composable
 fun WorkoutHistoryScreen(viewModel: WorkoutDayViewModel, onBack: () -> Unit, onOpen: (String) -> Unit, onAdd: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val context = com.personal.lifelog.ui.components.rememberPickerContext()
     WorkoutPage(stringResource(R.string.workout_history), onBack) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp)) {
-            TextButton(onClick = {
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(LogDimens.page)) {
+            ActionButton(onClick = {
                 DatePickerDialog(context, { _, year, month, day -> viewModel.selectDate(LocalDate.of(year, month + 1, day)) },
                     state.date.year, state.date.monthValue - 1, state.date.dayOfMonth).show()
             }) { Text(stringResource(R.string.workout_date_select, state.date.toString())) }
             Row {
-                TextButton({ viewModel.selectDate(state.date.minusDays(1)) }) { Text(stringResource(R.string.workout_previous_day)) }
-                TextButton({ viewModel.selectDate(state.date.plusDays(1)) }) { Text(stringResource(R.string.workout_next_day)) }
+                ActionButton({ viewModel.selectDate(state.date.minusDays(1)) }) { Text(stringResource(R.string.workout_previous_day)) }
+                ActionButton({ viewModel.selectDate(state.date.plusDays(1)) }) { Text(stringResource(R.string.workout_next_day)) }
             }
-            OutlinedButton(onAdd) { Text(stringResource(R.string.workout_new)) }
+            SecondaryButton(onAdd) { Text(stringResource(R.string.workout_new)) }
             WorkoutDayRows(state, onOpen) { viewModel.selectDate(state.date) }
         }
     }
@@ -211,11 +217,11 @@ fun WorkoutHistoryScreen(viewModel: WorkoutDayViewModel, onBack: () -> Unit, onO
 private fun WorkoutDayRows(state: WorkoutDayState, onOpen: (String) -> Unit, onRetry: () -> Unit) {
     when {
         state.loading -> Text(stringResource(R.string.workout_loading))
-        state.failed -> { WorkoutError(ErrorCode.STORAGE_UNAVAILABLE); TextButton(onRetry) { Text(stringResource(R.string.workout_retry)) } }
-        state.rows.isEmpty() -> Text(stringResource(R.string.workout_empty), Modifier.padding(12.dp))
+        state.failed -> { WorkoutError(ErrorCode.STORAGE_UNAVAILABLE); ActionButton(onRetry) { Text(stringResource(R.string.workout_retry)) } }
+        state.rows.isEmpty() -> com.personal.lifelog.ui.components.EmptyState(stringResource(R.string.workout_empty))
         else -> state.rows.forEach { record ->
-            OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onOpen(record.session.id) }) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            RecordCard(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onOpen(record.session.id) }) {
+                Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(MealTimeDisplay.full(record.session.occurredAtUtcMs, record.session.zoneId))
                     Text(record.items.joinToString("、") { it.item.nameSnapshot })
                     record.session.note?.let { Text(it) }
@@ -232,22 +238,24 @@ fun WorkoutDetailScreen(viewModel: WorkoutDetailViewModel, onBack: () -> Unit, o
     LaunchedEffect(state.deleted) { if (state.deleted) onBack() }
     BackHandler(enabled = state.busy) { }
     WorkoutPage(stringResource(R.string.workout_detail), { if (!state.busy) onBack() }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(LogDimens.page),
+            verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
             if (state.loading) Text(stringResource(R.string.workout_loading))
             state.error?.let { WorkoutError(it) }
-            if (state.error != null && state.record == null) TextButton(viewModel::load) { Text(stringResource(R.string.workout_retry)) }
+            if (state.error != null && state.record == null) ActionButton(viewModel::load) { Text(stringResource(R.string.workout_retry)) }
             state.record?.let { record ->
                 WorkoutDetailContent(record)
-                Button({ onEdit(record.session.id) }, enabled = !state.busy) { Text(stringResource(R.string.workout_edit)) }
-                OutlinedButton({ deleting = true }, enabled = !state.busy) { Text(stringResource(R.string.workout_delete)) }
+                PrimaryButton({ onEdit(record.session.id) }, Modifier.fillMaxWidth(), enabled = !state.busy) { Text(stringResource(R.string.workout_edit)) }
+                SecondaryButton({ deleting = true }, Modifier.fillMaxWidth(), enabled = !state.busy,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.workout_delete)) }
             }
         }
     }
     if (deleting) AlertDialog(onDismissRequest = { deleting = false },
         title = { Text(stringResource(R.string.workout_delete_question)) },
-        confirmButton = { TextButton({ deleting = false; viewModel.delete() }) { Text(stringResource(R.string.workout_delete)) } },
-        dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.workout_cancel)) } })
+        confirmButton = { ActionButton({ deleting = false; viewModel.delete() },
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.workout_delete)) } },
+        dismissButton = { ActionButton({ deleting = false }) { Text(stringResource(R.string.workout_cancel)) } })
 }
 
 /** Read-only content shared by real detail and host screenshot checks. */
@@ -259,8 +267,8 @@ internal fun WorkoutDetailContent(record: WorkoutWithItems) {
     record.session.note?.let { Text(it) }
     record.items.forEachIndexed { index, entry ->
         val row = form.items[index]
-        OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        RecordCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(itemHeading(index, row), style = MaterialTheme.typography.titleMedium)
                 entry.item.durationSeconds?.let { duration ->
                     // Integer minutes + remaining seconds display every stored second exactly.
@@ -291,7 +299,7 @@ private fun itemHeading(index: Int, row: WorkoutItemForm) = stringResource(R.str
 
 @Composable
 private fun WorkoutError(code: ErrorCode) {
-    Text(stringResource(when (code) {
+    com.personal.lifelog.ui.components.ErrorState(stringResource(when (code) {
         ErrorCode.EMPTY_WORKOUT -> R.string.workout_error_empty
         ErrorCode.INVALID_NUMBER -> R.string.workout_error_number
         ErrorCode.TEXT_TOO_LONG -> R.string.workout_error_note
@@ -303,13 +311,13 @@ private fun WorkoutError(code: ErrorCode) {
         ErrorCode.NOT_FOUND -> R.string.workout_error_missing
         ErrorCode.STORAGE_FULL -> R.string.workout_error_full
         else -> R.string.workout_error_storage
-    }), Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error)
+    }))
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WorkoutPage(title: String, onBack: () -> Unit, content: @Composable (PaddingValues) -> Unit) {
-    Scaffold(topBar = { TopAppBar(title = { Text(title) }, navigationIcon = {
+    Scaffold(topBar = { RecordTopBar(title = { Text(title) }, navigationIcon = {
         IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
     }) }, content = content)
 }
