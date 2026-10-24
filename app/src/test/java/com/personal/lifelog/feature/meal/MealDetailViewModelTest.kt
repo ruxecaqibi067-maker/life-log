@@ -90,19 +90,26 @@ class MealDetailViewModelTest {
         root.deleteRecursively()
     }
 
-    private suspend fun seed(text: String?, satiety: Satiety? = null, withPhoto: Boolean = false) =
+    private suspend fun seed(
+        text: String?,
+        satiety: Satiety? = null,
+        withPhoto: Boolean = false,
+        satietyText: String? = null,
+    ) =
         if (withPhoto) {
             val prepared = (photos.importPhoto(Uri.parse("content://synthetic/photo")) as PhotoResult.Success).value
             val saved = (
                 photos.saveMeal(
-                    MealDraft(RecordIds.newId(), clock.millis(), zone.id, text, satiety),
+                    MealDraft(RecordIds.newId(), clock.millis(), zone.id, text, satiety, satietyText = satietyText),
                     prepared.ticket,
                 ) as PhotoResult.Success
                 ).value
             photos.release(prepared.ticket)
             saved
         } else {
-            (photos.saveMeal(MealDraft(RecordIds.newId(), clock.millis(), zone.id, text, satiety)) as PhotoResult.Success).value
+            (photos.saveMeal(
+                MealDraft(RecordIds.newId(), clock.millis(), zone.id, text, satiety, satietyText = satietyText),
+            ) as PhotoResult.Success).value
         }
 
     private suspend fun awaitLoaded(viewModel: MealDetailViewModel): MealDetailUiState =
@@ -120,6 +127,26 @@ class MealDetailViewModelTest {
         assertNotNull(state.photoUri)
         assertTrue(File(state.photoUri!!.path!!).isFile)
         assertFalse(state.photoMissing)
+    }
+
+    @Test
+    fun notFullSatietyIsShownInDetail() = runBlocking<Unit> {
+        val seeded = seed("下午加餐", Satiety.NOT_FULL)
+        val viewModel = MealDetailViewModel(seeded.id, records, photos)
+        val state = awaitLoaded(viewModel)
+
+        assertEquals(Satiety.NOT_FULL, state.meal?.satiety)
+        assertEquals("下午加餐", state.meal?.text)
+    }
+
+    @Test
+    fun customSatietyDescriptionIsShownInDetail() = runBlocking<Unit> {
+        val seeded = seed("下午加餐", Satiety.CUSTOM, satietyText = "七分饱但还想吃")
+        val viewModel = MealDetailViewModel(seeded.id, records, photos)
+        val state = awaitLoaded(viewModel)
+
+        assertEquals(Satiety.CUSTOM, state.meal?.satiety)
+        assertEquals("七分饱但还想吃", state.meal?.satietyText)
     }
 
     @Test

@@ -32,6 +32,7 @@ class RecordRepository(
         Rules.id(draft.id)
         val text = Rules.text(draft.text, Rules.MEAL_TEXT_LIMIT)
         if (text == null && draft.photoId == null) reject(ErrorCode.EMPTY_MEAL)
+        val satietyText = Rules.satietyText(draft.satiety, draft.satietyText)
         val date = RecordTime.localDate(draft.occurredAtUtcMs, draft.zoneId)
         draft.photoId?.let(Rules::id)
         if (preparedPhoto != null) {
@@ -44,9 +45,18 @@ class RecordRepository(
         if (draft.photoId != null && db.metadata().media(draft.photoId) == null) reject(ErrorCode.INVALID_MEDIA)
         val old = db.records().meal(draft.id)
         val now = clock.millis()
-        MealRecord(draft.id, draft.occurredAtUtcMs, draft.zoneId, date, text, draft.satiety, draft.photoId,
-            old?.createdAtUtcMs ?: now, updatedAt(now, old?.createdAtUtcMs ?: now, old?.updatedAtUtcMs ?: now))
-            .also { db.records().putMeal(it) }
+        MealRecord(
+            id = draft.id,
+            occurredAtUtcMs = draft.occurredAtUtcMs,
+            zoneId = draft.zoneId,
+            localDate = date,
+            text = text,
+            satiety = draft.satiety,
+            photoId = draft.photoId,
+            createdAtUtcMs = old?.createdAtUtcMs ?: now,
+            updatedAtUtcMs = updatedAt(now, old?.createdAtUtcMs ?: now, old?.updatedAtUtcMs ?: now),
+            satietyText = satietyText,
+        ).also { db.records().putMeal(it) }
     }
 
     suspend fun deleteMeal(id: String): DataResult<Boolean> = write(db, writes) { db.records().deleteMeal(Rules.id(id)) > 0 }

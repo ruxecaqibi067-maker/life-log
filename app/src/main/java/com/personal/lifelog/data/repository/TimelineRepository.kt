@@ -57,6 +57,7 @@ internal fun mergeTimeline(
                 zoneId = meal.zoneId,
                 text = meal.text,
                 satiety = meal.satiety,
+                satietyText = meal.satietyText,
                 photoId = meal.photoId,
             ),
         )

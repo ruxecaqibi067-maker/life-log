@@ -2,8 +2,9 @@ package com.personal.lifelog.domain
 
 import java.util.UUID
 
-// Enum names are persisted and form part of the v1 data contract.
-enum class Satiety { FIVE, SEVEN, NINE, FULL }
+// Enum names are persisted and form part of the v1 data contract. Add new values
+// at the end; never rename or remove an existing name (Room and backups store it).
+enum class Satiety { FIVE, SEVEN, NINE, FULL, NOT_FULL, CUSTOM }
 enum class ExerciseType { CARDIO, STRENGTH, OTHER }
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
@@ -19,6 +20,8 @@ data class MealDraft(
     val text: String? = null,
     val satiety: Satiety? = null,
     val photoId: String? = null,
+    /** Only meaningful when [satiety] is [Satiety.CUSTOM]; trimmed and length-checked by Rules. */
+    val satietyText: String? = null,
 )
 
 data class SleepDraft(
@@ -62,6 +65,7 @@ enum class ErrorCode {
     INVALID_NUMBER, EMPTY_WORKOUT, TOO_MANY_ITEMS, TOO_MANY_SETS,
     DUPLICATE_ID, INVALID_FIELDS_FOR_TYPE, NOT_FOUND, HIDDEN_EXERCISE,
     USED_EXERCISE_TYPE, INVALID_MEDIA, IMMUTABLE_MEDIA, STORAGE, STORAGE_FULL, STORAGE_UNAVAILABLE,
+    INVALID_SATIETY,
 }
 
 data class DataError(val code: ErrorCode, val field: String? = null)

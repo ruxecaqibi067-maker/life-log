@@ -103,7 +103,7 @@ T02 冻结实际字段名、DAO/Repository 公共签名和 schema。实现可以
 
 | 表 | 关键字段/约束 |
 | --- | --- |
-| MealRecord | id、occurredAtUtcMs、zoneId、localDate、text?、satiety?、photoId?；文字/照片至少一个；satiety 使用稳定枚举 |
+| MealRecord | id、occurredAtUtcMs、zoneId、localDate、text?、satiety?、satietyText?、photoId?；文字/照片至少一个；satiety 使用稳定枚举；仅 CUSTOM 携带不超过 40 字的描述 |
 | SleepRecord | id、startedAtUtcMs、startZoneId、endedAtUtcMs?、endZoneId?、archiveLocalDate、activeSlot?；未结束 activeSlot=1，已结束为空；activeSlot 唯一索引 |
 | ExerciseDefinition | id、name、normalizedName、type、isBuiltin、isHidden、lastUsedAtUtcMs?；隐藏代替物理删除 |
 | WorkoutSession | id、occurredAtUtcMs、zoneId、localDate、note?；至少一个 WorkoutItem |
@@ -180,7 +180,7 @@ data.json
 media/<photoId>.jpg
 ```
 
-- `manifest`：`formatVersion=1`、appVersion、exportedAtUtcMs、数据与照片数量，以及 `data.json` 和每张照片的相对路径/大小/SHA-256；manifest不计算自身哈希。
+- `manifest`：`formatVersion=2`（读取兼容 v1）、appVersion、exportedAtUtcMs、数据与照片数量，以及 `data.json` 和每张照片的相对路径/大小/SHA-256；manifest不计算自身哈希。v2 为饮食增加可选 `satietyText`，v1 包缺失该字段时按 null 读取。
 - `data`：稳定 UUID、三类记录、完整项目库、所有项目快照和组、照片语义元数据、进行中作息、AppSettings。
 - 不导出原手机绝对路径、content URI、恢复日志、临时文件或签名资料。照片在备份里的路径与运行时 generation 目录分离。
 - 导入保留记录 ID 与历史内容；生成新的本地媒体 generation，并重建 DB 路径。导出计数、引用与哈希必须互相吻合。

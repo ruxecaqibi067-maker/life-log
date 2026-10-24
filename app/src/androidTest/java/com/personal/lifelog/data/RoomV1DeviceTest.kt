@@ -36,12 +36,38 @@ class RoomV1DeviceTest {
 
     @After fun close() { db.close(); context.deleteDatabase(name) }
 
-    @Test fun freshV1MatchesExportedSchemaWithoutInventingAnOldMigration() = runBlocking<Unit> {
+    @Test fun freshV2MatchesExportedSchemaWithoutInventingAnOldMigration() = runBlocking<Unit> {
         assertEquals(8, db.workouts().allExercises().size)
         assertEquals(1, db.metadata().settingsNow().id)
         db.close()
-        // Same real v1 on both sides: schema validation only, no fictional v0 -> v1 migration.
-        helper.runMigrationsAndValidate(name, 1, true).close()
+        // Same real v2 on both sides: schema validation only, no fictional v0 -> v1 migration.
+        helper.runMigrationsAndValidate(name, 2, true).close()
+    }
+
+    @Test fun v1ToV2AddsSatietyTextAndPreservesExistingMeals() = runBlocking<Unit> {
+        val migrationName = "t05-migration-${RecordIds.newId()}.db"
+        val mealId = RecordIds.newId()
+        try {
+            helper.createDatabase(migrationName, 1).use { old ->
+                old.execSQL(
+                    "INSERT INTO MealRecord (id,occurredAtUtcMs,zoneId,localDate,text,satiety,photoId,createdAtUtcMs,updatedAtUtcMs) " +
+                        "VALUES (?,?,?,?,?,?,NULL,?,?)",
+                    arrayOf<Any>(mealId, 1000L, "UTC", "1970-01-01", "旧记录", "SEVEN", 1L, 2L),
+                )
+            }
+            helper.runMigrationsAndValidate(migrationName, 2, true, AppDatabase.MIGRATION_1_2).close()
+            val migrated = AppDatabase.create(context, Clock.systemUTC(), migrationName)
+            try {
+                val meal = migrated.records().meal(mealId)
+                assertEquals("旧记录", meal?.text)
+                assertEquals(com.personal.lifelog.domain.Satiety.SEVEN, meal?.satiety)
+                assertNull(meal?.satietyText)
+            } finally {
+                migrated.close()
+            }
+        } finally {
+            context.deleteDatabase(migrationName)
+        }
     }
 
     @Test fun androidSqliteEnforcesForeignKeysAndUniqueActiveSleep() = runBlocking<Unit> {

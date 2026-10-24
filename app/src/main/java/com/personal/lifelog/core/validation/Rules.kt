@@ -1,6 +1,7 @@
 package com.personal.lifelog.core.validation
 
 import com.personal.lifelog.domain.ErrorCode
+import com.personal.lifelog.domain.Satiety
 import com.personal.lifelog.domain.reject
 import java.math.BigDecimal
 import java.text.Normalizer
@@ -9,6 +10,7 @@ import java.util.UUID
 
 object Rules {
     const val MEAL_TEXT_LIMIT = 500
+    const val SATIETY_TEXT_LIMIT = 40
     const val NOTE_LIMIT = 1000
     const val EXERCISE_NAME_LIMIT = 40
     const val WORKOUT_ITEMS_LIMIT = 100
@@ -25,6 +27,22 @@ object Rules {
         val trimmed = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
         if (trimmed.codePointCount(0, trimmed.length) > limit) reject(ErrorCode.TEXT_TOO_LONG)
         return trimmed
+    }
+
+    /**
+     * Custom satiety carries a short user description; every other value must not
+     * carry one. Returns the normalized text (null unless [satiety] is CUSTOM).
+     */
+    fun satietyText(satiety: Satiety?, value: String?): String? {
+        val trimmed = value?.trim()?.takeIf { it.isNotEmpty() }
+        if (satiety == Satiety.CUSTOM) {
+            if (trimmed == null || trimmed.codePointCount(0, trimmed.length) > SATIETY_TEXT_LIMIT) {
+                reject(ErrorCode.INVALID_SATIETY, "satietyText")
+            }
+            return trimmed
+        }
+        if (trimmed != null) reject(ErrorCode.INVALID_SATIETY, "satietyText")
+        return null
     }
 
     fun exerciseName(value: String): String {

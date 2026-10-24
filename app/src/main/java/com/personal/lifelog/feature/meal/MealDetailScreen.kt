@@ -206,10 +206,11 @@ private fun MealDetailContent(
             )
         }
 
-        if (meal.satiety != null) {
+        val satiety = satietyDisplayText(meal.satiety, meal.satietyText)
+        if (satiety != null) {
             DetailRow(
                 label = stringResource(R.string.meal_satiety_detail),
-                value = stringResource(satietyLabelRes(meal.satiety)),
+                value = satiety,
             )
         }
 
