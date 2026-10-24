@@ -34,6 +34,10 @@ class SleepViewModel(
     val error = MutableStateFlow<ErrorCode?>(null)
     val undo = MutableStateFlow<SleepUndo?>(null)
     val longFinish = MutableStateFlow<SleepFinish?>(null)
+    private val pendingBedtime = MutableStateFlow<String?>(null)
+    val bedtimeRequest = pendingBedtime.asStateFlow()
+
+    fun consumeBedtimeRequest(id: String) { if (pendingBedtime.value == id) pendingBedtime.value = null }
 
     fun retry() { refresh.value++ }
     fun dismissError() { error.value = null }
@@ -44,6 +48,7 @@ class SleepViewModel(
         when (val result = repository.startSleep(id)) {
             is DataResult.Success -> if (result.value.id == id && result.value.endedAtUtcMs == null) {
                 undo.value = SleepUndo(result.value, null)
+                pendingBedtime.value = result.value.id
             }
             is DataResult.Failure -> error.value = result.error.code
         }

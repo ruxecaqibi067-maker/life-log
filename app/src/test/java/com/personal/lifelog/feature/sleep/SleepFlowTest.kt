@@ -134,10 +134,14 @@ class SleepFlowTest {
         repeat(12) { vm.start(operationId) }; vm.idle()
         val active = repository.activeSleep().first()!!
         assertEquals(1, repository.sleeps().first().size)
+        assertEquals(active.id, vm.bedtimeRequest.value)
+        vm.consumeBedtimeRequest(active.id)
+        assertNull(vm.bedtimeRequest.value)
         now = Instant.parse("2026-10-22T23:10:00Z")
         repeat(12) { vm.finish(active) }; vm.idle()
         val completed = repository.sleep(active.id)!!
         assertNotNull(completed.endedAtUtcMs)
+        assertNull(vm.bedtimeRequest.value)
         assertEquals(1, repository.sleeps().first().size)
         assertEquals(26_400L, RecordTime.durationSeconds(completed.startedAtUtcMs, completed.endedAtUtcMs!!))
         vm.undoLast(); vm.idle()
