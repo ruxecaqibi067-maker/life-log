@@ -1,6 +1,8 @@
 package com.personal.lifelog.ui.navigation
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -165,10 +167,14 @@ fun LifelogApp(
             }
         },
     ) { innerPadding ->
+        // The bottom bar already includes the gesture/navigation safe area. Let
+        // child Scaffolds retain top insets without adding that bottom area again.
+        val bottomPadding = if (isBedtime) 0.dp else innerPadding.calculateBottomPadding()
         NavHost(
             navController = navController,
             startDestination = LifelogRoutes.TODAY,
-            modifier = Modifier.padding(bottom = if (isBedtime) 0.dp else innerPadding.calculateBottomPadding()),
+            modifier = Modifier.padding(bottom = bottomPadding)
+                .consumeWindowInsets(PaddingValues(bottom = bottomPadding)),
         ) {
             composable(LifelogRoutes.BEDTIME) {
                 BedtimeScreen(clock, zoneIdProvider, sleepViewModel, onBack = {
