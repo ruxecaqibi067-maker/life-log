@@ -2,9 +2,9 @@
 
 当前默认本地0.1.5 / versionCode7。本轮用户要求仅推送源码和文档，APK只保存在本机：不创建GitHub Release、不上传附件，以下远端发包步骤本轮不执行。源代码、schema和文档走Git，APK、日志、照片及备份留在忽略的artifacts，签名私钥位于仓库外。
 
-1. 检查任务交付提交已正常合入main，查看[进度板](../STATUS.md)和[本版报告](../releases/0.1.4.md)；只提交本轮已检查修改。
+1. 检查任务交付提交已正常合入main，查看[进度板](../STATUS.md)和[本地0.1.5说明](../releases/0.1.5-local.md)；只提交本轮已检查修改。
 2. 设置JDK17/Android SDK，执行主机测试、debug构建、Lint及必要隔离设备回归。逐项记录结果，不将条件跳过写为通过。
-3. 保持包名`com.personal.lifelog`，沿用长期签名；递增versionCode；版本名按用户确定的发布版本维护，本轮0.1.4由code5递增至code6，提交后从干净工作区运行：
+3. 保持包名`com.personal.lifelog`，沿用长期签名；本轮本地版0.1.5由code6递增至code7，提交后从干净工作区运行：
 
 ```powershell
 .\scripts\Build-Release.ps1 -SigningProperties "$env:LOCALAPPDATA\LifeLogAndroid\signing\signing.properties"
