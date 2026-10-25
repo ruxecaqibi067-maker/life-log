@@ -260,4 +260,23 @@ class HomeViewModelTest {
         override fun withZone(zone: ZoneId): Clock = Clock.fixed(now, zone)
         override fun instant(): Instant = now
     }
+
+    @Test fun resumeRefreshReReadsChangedPhoneDayAndZone() = runTest {
+        val changingClock = MutableClock(Instant.parse("2026-10-22T20:30:00Z"))
+        var zone: ZoneId = ZoneOffset.UTC
+        val vm = HomeViewModel(changingClock, { zone }, timelineRepository(),
+            { date -> flowOf(DataResult.Success(SleepSummary(date, null, 0, null, false))) },
+            { error("No goal write requested") })
+        try {
+            assertEquals(LocalDate.of(2026, 10, 22), vm.today.value)
+            zone = ZoneId.of("Asia/Shanghai")
+            vm.refreshToday()
+            runCurrent()
+            assertEquals(LocalDate.of(2026, 10, 23), vm.today.value)
+            changingClock.now = Instant.parse("2026-10-26T02:00:00Z")
+            vm.refreshToday()
+            runCurrent()
+            assertEquals(LocalDate.of(2026, 10, 26), vm.today.value)
+        } finally { vm.viewModelScope.cancel() }
+    }
 }

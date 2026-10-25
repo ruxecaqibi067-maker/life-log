@@ -15,6 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.settings.SettingsViewModel
 import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.feature.todo.TodoViewModel
 import com.personal.lifelog.ui.navigation.LifelogApp
 import com.personal.lifelog.ui.theme.LifeLogTheme
 import com.personal.lifelog.ui.theme.resolvedDarkTheme
@@ -54,6 +55,9 @@ class MainActivity : ComponentActivity() {
                     container.settings::setTargetWorkMinutes, createSavedStateHandle())
             }
             val darkTheme = resolvedDarkTheme(themeMode)
+            val todoViewModel: TodoViewModel = viewModel {
+                TodoViewModel(container.todos, homeViewModel.today, createSavedStateHandle(), container.clock, container.zoneIdProvider)
+            }
 
             // Keep system bar icon contrast in sync with the stored theme choice,
             // including when the user picks a mode that differs from the system.
@@ -79,6 +83,7 @@ class MainActivity : ComponentActivity() {
                     timelineRepository = container.timeline,
                     workViewModel = workViewModel,
                     workHomeViewModel = workHomeViewModel,
+                    todoViewModel = todoViewModel,
                 )
             }
         }
