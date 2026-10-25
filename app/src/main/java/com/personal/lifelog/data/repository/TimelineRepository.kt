@@ -2,13 +2,15 @@ package com.personal.lifelog.data.repository
 
 import com.personal.lifelog.data.local.entity.MealRecord
 import com.personal.lifelog.data.local.entity.SleepRecord
+import com.personal.lifelog.data.local.entity.WorkRecord
+import kotlinx.coroutines.flow.flowOf
 import com.personal.lifelog.data.local.entity.WorkoutWithItems
 import com.personal.lifelog.domain.TimelineEntry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
 /**
- * Read-only aggregation across the three record tables for one saved local date.
+ * Read-only aggregation across the four record tables for one saved local date.
  *
  * The repository adds no state and writes nothing: every emission comes from the
  * existing Room flows, so an edit that changes a record's local date moves it
@@ -21,22 +23,29 @@ class TimelineRepository(
     private val mealsOn: (String) -> Flow<List<MealRecord>>,
     private val sleepsOn: (String) -> Flow<List<SleepRecord>>,
     private val workoutsOn: (String) -> Flow<List<WorkoutWithItems>>,
+    private val workOn: (String) -> Flow<List<WorkRecord>> = { flowOf(emptyList()) },
+    private val workDates: () -> Flow<List<String>> = { flowOf(emptyList()) },
 ) {
-    constructor(records: RecordRepository, workouts: WorkoutRepository) : this(
+    constructor(records: RecordRepository, workouts: WorkoutRepository, work: WorkRepository? = null) : this(
         datesWithRecordsFlow = records::datesWithRecords,
         mealsOn = records::mealsOn,
         sleepsOn = records::sleepsOn,
         workoutsOn = workouts::workoutsOn,
+        workOn = { date -> work?.worksOn(date) ?: flowOf(emptyList()) },
+        workDates = { work?.datesWithRecords() ?: flowOf(emptyList()) },
     )
 
     /** Dates that have at least one saved record in any table, newest first. */
-    fun datesWithRecords(): Flow<List<String>> = datesWithRecordsFlow()
+    fun datesWithRecords(): Flow<List<String>> = combine(datesWithRecordsFlow(), workDates()) { other, work ->
+        (other + work).distinct().sortedDescending()
+    }
 
     fun timelineOn(date: String): Flow<List<TimelineEntry>> = combine(
         mealsOn(date),
         sleepsOn(date),
         workoutsOn(date),
-    ) { meals, sleeps, workouts -> mergeTimeline(meals, sleeps, workouts) }
+        workOn(date),
+    ) { meals, sleeps, workouts, work -> mergeTimeline(meals, sleeps, workouts, work) }
 }
 
 /**
@@ -48,6 +57,7 @@ internal fun mergeTimeline(
     meals: List<MealRecord>,
     sleeps: List<SleepRecord>,
     workouts: List<WorkoutWithItems>,
+    work: List<WorkRecord> = emptyList(),
 ): List<TimelineEntry> = buildList {
     meals.forEach { meal ->
         add(
@@ -71,6 +81,18 @@ internal fun mergeTimeline(
                 startZoneId = sleep.startZoneId,
                 endedAtUtcMs = sleep.endedAtUtcMs,
                 endZoneId = sleep.endZoneId,
+            ),
+        )
+    }
+    work.forEach { work ->
+        add(
+            TimelineEntry.Work(
+                id = work.id,
+                sortUtcMs = work.endedAtUtcMs ?: work.startedAtUtcMs,
+                startedAtUtcMs = work.startedAtUtcMs,
+                startZoneId = work.startZoneId,
+                endedAtUtcMs = work.endedAtUtcMs,
+                endZoneId = work.endZoneId,
             ),
         )
     }

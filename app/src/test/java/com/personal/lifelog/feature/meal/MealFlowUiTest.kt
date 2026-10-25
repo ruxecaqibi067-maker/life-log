@@ -1,5 +1,7 @@
 package com.personal.lifelog.feature.meal
 
+import androidx.compose.ui.test.*
+
 import android.app.Application
 import android.content.Context
 import androidx.compose.ui.test.assertIsNotSelected
@@ -109,6 +111,11 @@ class MealFlowUiTest {
             SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes,
         )
         val sleepViewModel = SleepViewModel(records, clock) { zone }
+        val workRepo = com.personal.lifelog.data.repository.WorkRepository(db, writes, clock, ZoneId::systemDefault)
+        val workVM = com.personal.lifelog.feature.work.WorkViewModel(workRepo, clock, ZoneId::systemDefault)
+        val workHomeVM = com.personal.lifelog.feature.home.WorkHomeViewModel(homeViewModel.today,
+            com.personal.lifelog.data.repository.WorkSummaryRepository(db)::observe,
+            com.personal.lifelog.data.repository.SettingsRepository(db, writes, clock)::setTargetWorkMinutes)
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
                 LifelogApp(
@@ -120,8 +127,7 @@ class MealFlowUiTest {
                     records = records,
                     photos = photos,
                     clock = clock,
-                    zoneIdProvider = { zone },
-                )
+                    zoneIdProvider = { zone }, workViewModel = workVM, workHomeViewModel = workHomeVM)
             }
         }
     }
@@ -134,6 +140,11 @@ class MealFlowUiTest {
 
     private fun waitForText(text: String) {
         compose.waitUntil(10_000) {
+            if (compose.onAllNodesWithText(text).fetchSemanticsNodes().isEmpty() &&
+                compose.onAllNodesWithTag("home-timeline").fetchSemanticsNodes().isNotEmpty()) {
+                // Both summary cards precede the lazy timeline; expose the actual matching row.
+                runCatching { compose.onNodeWithTag("home-timeline").performScrollToNode(hasText(text)) }
+            }
             compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }
     }

@@ -138,9 +138,9 @@ class BackupRestoreUiTest {
 
     @Test
     fun previewShowsCountsAndCancelLeavesDataUntouched() {
-        val old = runBlocking { f.seed("虚构旧记录") }
+        val old = runBlocking { f.seedWithWork("虚构旧记录", 480) }
         val zip = runBlocking {
-            g.seed("虚构新记录")
+            g.seedWithWork("虚构新记录", 600)
             g.zip()
         }
         nextSource = BackupSource { zip.inputStream() }
@@ -150,6 +150,10 @@ class BackupRestoreUiTest {
         waitForState { it is BackupRestoreState.Preview }
         compose.onNodeWithText("确认恢复此备份？").assertExists()
         compose.onNodeWithText("饮食记录：1 条").assertExists()
+        compose.onNodeWithText("工作记录：2 段").assertExists()
+        compose.onNodeWithText("包含进行中的工作").assertExists()
+        compose.onNodeWithText("期望睡眠：10小时").assertExists()
+        compose.onNodeWithText("期望工作：10小时15分").assertExists()
         compose.onNodeWithText("照片：1 张").assertExists()
         compose.onNodeWithText("导出备份").assertIsNotEnabled()
         assertEquals(semantic(old), runBlocking { semantic(f.snapshots.read()) })
@@ -161,10 +165,35 @@ class BackupRestoreUiTest {
     }
 
     @Test
+    fun workOnlyBackupHasVisibleWorkGoalAndCanBeRestored() {
+        val old = runBlocking { f.seedWithWork("虚构旧记录", 480) }
+        val incoming = runBlocking {
+            g.work.startWork(com.personal.lifelog.domain.RecordIds.newId(), 1000, "UTC")
+            g.settings.setTargetWorkMinutes(300)
+            g.snapshots.read()
+        }
+        val zip = runBlocking { g.zip() }
+        nextSource = BackupSource { zip.inputStream() }
+        setContent()
+        compose.onNodeWithText("从备份恢复").performClick()
+        waitForState { it is BackupRestoreState.Preview }
+        compose.onNodeWithText("工作记录：1 段").assertExists()
+        compose.onNodeWithText("饮食记录：0 条").assertExists()
+        compose.onNodeWithText("期望工作：5小时").assertExists()
+        compose.onNodeWithText("包含进行中的工作").assertExists()
+        assertEquals(semantic(old), runBlocking { semantic(f.snapshots.read()) })
+        compose.onNodeWithText("覆盖并恢复").performClick()
+        waitForState { it is BackupRestoreState.Result }
+        compose.onNodeWithText("恢复完成").assertExists()
+        compose.onNodeWithText("饮食 0 条 · 作息 0 条 · 训练 0 场 · 工作 1 段 · 照片 0 张", substring = true).assertExists()
+        assertEquals(semantic(incoming), runBlocking { semantic(f.snapshots.read()) })
+    }
+
+    @Test
     fun confirmingRestoreReplacesDataAndShowsCompletion() {
         runBlocking {
-            f.seed("虚构旧记录")
-            g.seed("虚构新记录")
+            f.seedWithWork("虚构旧记录", 480)
+            g.seedWithWork("虚构新记录", 600)
         }
         val incoming = runBlocking { g.snapshots.read() }
         val zip = runBlocking { g.zip() }
@@ -182,8 +211,8 @@ class BackupRestoreUiTest {
     @Test
     fun rejectedPreflightShowsErrorAndCanRetryWithAnotherFile() {
         runBlocking {
-            f.seed("虚构旧记录")
-            g.seed("虚构新记录")
+            f.seedWithWork("虚构旧记录", 480)
+            g.seedWithWork("虚构新记录", 600)
         }
         val valid = runBlocking { g.zip() }
         nextSource = BackupSource { ByteArrayInputStream(byteArrayOf(1, 2, 3)) }

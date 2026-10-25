@@ -23,6 +23,13 @@ object LifelogRoutes {
     const val TODAY = "today"
     const val REVIEW = "review"
     const val SETTINGS = "settings"
+    const val WORK_HISTORY = "work/history"
+    const val WORK_EDIT = "work/edit"
+    const val ARG_WORK_ID = "workId"
+    const val WORK_EDIT_PATTERN = "$WORK_EDIT?$ARG_WORK_ID={$ARG_WORK_ID}"
+    fun workEditor(id: String? = null): String = editorRoute(WORK_EDIT, ARG_WORK_ID, id)
+    val workIdArgument = navArgument(ARG_WORK_ID) { type = NavType.StringType; nullable = true; defaultValue = null }
+
     const val SLEEP_HISTORY = "sleep/history"
     const val BEDTIME = "sleep/bedtime"
     const val EXERCISES = "exercises"

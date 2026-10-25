@@ -51,6 +51,7 @@ import com.personal.lifelog.data.backup.format.BackupError
 import com.personal.lifelog.data.backup.importer.BackupPreview
 import com.personal.lifelog.data.backup.restore.RecoveryStatus
 import com.personal.lifelog.domain.ThemeMode
+import com.personal.lifelog.ui.components.PrimaryButton
 import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.ErrorState
 import com.personal.lifelog.ui.components.RecordCard
@@ -346,12 +347,21 @@ private fun BackupPreviewDialog(
                 )
                 Text(countsLine(R.string.backup_preview_meals, counts["meals"] ?: 0))
                 Text(countsLine(R.string.backup_preview_sleeps, counts["sleeps"] ?: 0))
+                Text(countsLine(R.string.backup_preview_work, counts["workRecords"] ?: 0))
                 Text(countsLine(R.string.backup_preview_sessions, counts["sessions"] ?: 0))
                 Text(countsLine(R.string.backup_preview_exercises, counts["exercises"] ?: 0))
                 Text(countsLine(R.string.backup_preview_items, counts["items"] ?: 0))
                 Text(countsLine(R.string.backup_preview_sets, counts["sets"] ?: 0))
                 Text(countsLine(R.string.backup_preview_media, counts["media"] ?: 0))
                 Text(range, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(if (preview.hasActiveWork) R.string.backup_preview_has_active_work
+                    else R.string.backup_preview_no_active_work))
+                Text(stringResource(R.string.backup_preview_sleep_goal,
+                    preview.targetSleepMinutes?.let { com.personal.lifelog.feature.home.durationMinutesText(it.toLong()) }
+                        ?: stringResource(R.string.work_goal_unset)))
+                Text(stringResource(R.string.backup_preview_work_goal,
+                    preview.targetWorkMinutes?.let { com.personal.lifelog.feature.home.durationMinutesText(it.toLong()) }
+                        ?: stringResource(R.string.work_goal_unset)))
                 Text(
                     text = stringResource(
                         if (preview.hasActiveSleep) {
@@ -380,13 +390,13 @@ private fun BackupPreviewDialog(
             }
         },
         confirmButton = {
-            ActionButton(onClick = onConfirm, colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.error)) {
+            PrimaryButton(onClick = onConfirm, colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error)) {
                 Text(stringResource(R.string.backup_confirm_replace))
             }
         },
         dismissButton = {
-            ActionButton(onClick = onCancel) {
+            SecondaryButton(onClick = onCancel) {
                 Text(stringResource(R.string.backup_cancel))
             }
         },
@@ -669,6 +679,7 @@ private fun restoreCountsLine(counts: Map<String, Int>): String = stringResource
     counts["sleeps"] ?: 0,
     counts["sessions"] ?: 0,
     counts["media"] ?: 0,
+    counts["workRecords"] ?: 0,
 )
 
 @Composable

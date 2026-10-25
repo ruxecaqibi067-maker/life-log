@@ -35,7 +35,7 @@
     <string name="settings_never_exported">尚未成功导出过备份</string>
 
     <string name="backup_preview_title">确认恢复此备份？</string>
-    <string name="backup_preview_replace_warning">恢复会用备份内容替换本机全部记录、照片和设置（包括主题），不会合并。</string>
+    <string name="backup_preview_replace_warning">恢复会用备份内容替换本机全部记录、照片和设置（包括主题、睡眠与工作目标），不会合并。</string>
     <string name="backup_preview_rollback_note">开始前会自动生成并校验一份当前数据的回滚备份；准备失败时本机数据不会被修改。恢复成功后可在设置中导出该回滚备份。</string>
     <string name="backup_preview_counts">备份内容</string>
     <string name="backup_preview_meals">饮食记录：%1$d 条</string>
@@ -93,7 +93,7 @@
     <string name="backup_restore_cancelled_body">本机原有记录和照片未改变。</string>
     <string name="backup_restore_failed_title">恢复未开始</string>
     <string name="backup_restore_failed_body">本机原有记录和照片未改变。</string>
-    <string name="backup_restore_counts">饮食 %1$d 条 · 作息 %2$d 条 · 训练 %3$d 场 · 照片 %4$d 张</string>
+    <string name="backup_restore_counts">饮食 %1$d 条 · 作息 %2$d 条 · 训练 %3$d 场 · 工作 %5$d 段 · 照片 %4$d 张</string>
     <string name="backup_recovery_required_title">恢复状态待确认</string>
     <string name="backup_recovery_required_body">无法确认上次恢复是否完成，已暂停写入以保护数据。请重试检查；问题解决前不会开放写入。</string>
     <string name="backup_recovery_old_title">上次恢复未完成</string>
@@ -125,7 +125,7 @@
 
     <!-- 公共状态组件 -->
     <string name="empty_timeline_title">这一天还没有记录</string>
-    <string name="empty_timeline_hint">保存的饮食、作息和运动会按时间显示在这里</string>
+    <string name="empty_timeline_hint">保存的饮食、作息、训练和工作会按时间显示在这里</string>
     <string name="saving">保存中…</string>
     <string name="retry">重试</string>
 

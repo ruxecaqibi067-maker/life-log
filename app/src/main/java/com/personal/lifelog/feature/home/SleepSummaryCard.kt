@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -40,23 +41,25 @@ data class SleepCardState(
 )
 
 /** Milliseconds remain intact until division; an unset target/total has no progress. */
-internal fun sleepProgress(recordedDurationMs: Long?, targetMinutes: Int?): Float? {
+internal fun durationProgress(recordedDurationMs: Long?, targetMinutes: Int?): Float? {
     if (recordedDurationMs == null || targetMinutes == null || targetMinutes !in 1..1440) return null
     return (recordedDurationMs.toDouble() / (targetMinutes * 60_000L)).coerceIn(0.0, 1.0).toFloat()
 }
 
+internal fun sleepProgress(recordedDurationMs: Long?, targetMinutes: Int?) = durationProgress(recordedDurationMs, targetMinutes)
+
 @Composable
-internal fun sleepMinutesText(minutes: Long): String = when {
+internal fun durationMinutesText(minutes: Long): String = when {
     minutes % 60 == 0L -> stringResource(R.string.home_sleep_hours, minutes / 60)
     minutes < 60 -> stringResource(R.string.home_sleep_minutes, minutes)
     else -> stringResource(R.string.home_sleep_hours_minutes, minutes / 60, minutes % 60)
 }
 
 @Composable
-private fun recordedDurationText(ms: Long): String = when {
+internal fun recordedDurationText(ms: Long): String = when {
     ms < 1_000 -> stringResource(R.string.home_sleep_under_second)
     ms < 60_000 -> stringResource(R.string.home_sleep_seconds, ms / 1_000)
-    else -> sleepMinutesText(ms / 60_000)
+    else -> durationMinutesText(ms / 60_000)
 }
 
 @Composable
@@ -68,14 +71,14 @@ fun SleepSummaryCard(
     modifier: Modifier = Modifier,
 ) {
     val content = state.content
-    val target = content?.targetMinutes?.let { sleepMinutesText(it.toLong()) }
+    val target = content?.targetMinutes?.let { durationMinutesText(it.toLong()) }
     val targetLabel = if (target == null) stringResource(R.string.home_sleep_target_unset)
         else stringResource(R.string.home_sleep_target, target)
     RecordCard(modifier.fillMaxWidth().testTag("sleep-summary-card")) {
         Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.home_sleep_title), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                ActionButton(onClick = onEditTarget, enabled = content != null && !state.loading && !state.failed,
+                com.personal.lifelog.ui.components.SecondaryButton(onClick = onEditTarget, enabled = content != null && !state.loading && !state.failed,
                     modifier = Modifier.testTag("sleep-target-edit")) {
                     Text(stringResource(if (target == null) R.string.home_sleep_set else R.string.home_sleep_change))
                 }
@@ -98,7 +101,7 @@ fun SleepSummaryCard(
                         BoxWithConstraints(Modifier.fillMaxWidth()) {
                             val stacked = maxWidth < 260.dp || LocalDensity.current.fontScale > 1.2f
                             val chart: @Composable () -> Unit = {
-                                SleepProgressRing(if (state.failed || state.loading) null
+                                DurationProgressRing(if (state.failed || state.loading) null
                                     else sleepProgress(content.recordedDurationMs, content.targetMinutes), description)
                             }
                             val values: @Composable () -> Unit = {
@@ -124,7 +127,7 @@ fun SleepSummaryCard(
                     }
                     Text(stringResource(R.string.home_sleep_source), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    com.personal.lifelog.ui.components.SecondaryButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.home_sleep_history), Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = MaterialTheme.colorScheme.primary)
                     }
@@ -135,10 +138,10 @@ fun SleepSummaryCard(
 }
 
 @Composable
-private fun SleepProgressRing(progress: Float?, description: String) {
+internal fun DurationProgressRing(progress: Float?, description: String, icon: ImageVector = Icons.Filled.Bedtime, tag: String = "sleep-progress") {
     val track = MaterialTheme.colorScheme.outlineVariant
     val fill = MaterialTheme.colorScheme.primary
-    Box(Modifier.size(112.dp).semantics { contentDescription = description }.testTag("sleep-progress"), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(112.dp).semantics { contentDescription = description }.testTag(tag), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val stroke = 12.dp.toPx()
             val inset = stroke / 2
@@ -149,6 +152,6 @@ private fun SleepProgressRing(progress: Float?, description: String) {
                     style = Stroke(stroke, cap = StrokeCap.Butt))
             }
         }
-        Icon(Icons.Filled.Bedtime, null, Modifier.size(28.dp), tint = if (progress == null) MaterialTheme.colorScheme.onSurfaceVariant else fill)
+        Icon(icon, null, Modifier.size(28.dp), tint = if (progress == null) MaterialTheme.colorScheme.onSurfaceVariant else fill)
     }
 }
