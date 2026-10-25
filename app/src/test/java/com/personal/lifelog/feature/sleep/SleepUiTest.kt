@@ -172,6 +172,67 @@ class SleepUiTest {
         assertEquals(1, rows().size)
     }
 
+    @Test fun wakeOnBedtimeAfterRecreationFinishesSameRecordAndHomeUndoStillWorks() {
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        val started = rows().single()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithTag("bedtime-wake").assertIsDisplayed().assertIsEnabled()
+        now = Instant.parse("2026-10-22T23:10:00.789Z")
+        compose.onNodeWithTag("bedtime-wake").performClick()
+        awaitText("准备睡了")
+        compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
+        val completed = rows().single()
+        assertEquals(started.id, completed.id)
+        assertEquals(started.startedAtUtcMs, completed.startedAtUtcMs)
+        assertEquals(now.toEpochMilli(), completed.endedAtUtcMs)
+        assertEquals("2026-10-23", completed.archiveLocalDate)
+        compose.onNodeWithText("撤销上次作息操作").performClick()
+        compose.onNodeWithText("确认").performClick()
+        awaitText("起床了")
+        assertNull(rows().single().endedAtUtcMs)
+        assertEquals(started.id, rows().single().id)
+    }
+
+    @Test fun failedWakeKeepsDarkPageAndRecordThenRetrySavesOnce() {
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        val started = rows().single()
+        now = Instant.parse("2026-10-22T23:10:00Z")
+        db.openHelper.writableDatabase.execSQL("CREATE TEMP TRIGGER fail_wake BEFORE UPDATE ON SleepRecord BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END")
+        compose.onNodeWithTag("bedtime-wake").performClick()
+        awaitText("无法读写作息记录，请重试；输入仍保留。")
+        compose.onNodeWithTag("bedtime-screen").assertExists()
+        compose.onNodeWithTag("bedtime-wake").assertIsEnabled()
+        assertEquals(started, rows().single())
+        db.openHelper.writableDatabase.execSQL("DROP TRIGGER fail_wake")
+        compose.onNodeWithTag("bedtime-wake").performClick()
+        awaitText("准备睡了")
+        assertEquals(started.id, rows().single().id)
+        assertEquals(now.toEpochMilli(), rows().single().endedAtUtcMs)
+    }
+
+    @Test fun longWakeCancelKeepsBedtimeAndConfirmUsesCapturedInstant() {
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        val started = rows().single()
+        now = Instant.parse("2026-10-24T00:00:00Z")
+        compose.onNodeWithTag("bedtime-wake").performClick()
+        awaitText("请检查就寝时段")
+        compose.onNodeWithText("取消").performClick()
+        assertEquals(started, rows().single())
+        compose.onNodeWithTag("bedtime-wake").assertIsDisplayed().assertIsEnabled().performClick()
+        awaitText("请检查就寝时段")
+        val captured = now.toEpochMilli()
+        restoration.emulateSavedInstanceStateRestore()
+        awaitText("请检查就寝时段")
+        now = now.plusSeconds(1800)
+        compose.onNodeWithText("确认").performClick()
+        awaitText("准备睡了")
+        assertEquals(started.id, rows().single().id)
+        assertEquals(captured, rows().single().endedAtUtcMs)
+    }
+
     @Test fun supplementShowsCompleteDatesAndDurationAndEditingMovesArchive() {
         compose.onNodeWithTag("sleep-summary-history").performClick()
         compose.onNodeWithText("补录作息").performClick()

@@ -79,11 +79,10 @@ class BedtimeDeviceTest {
     private fun waitForBedtime() = compose.waitUntil(10_000) {
         compose.onAllNodesWithTag("bedtime-screen").fetchSemanticsNodes().isNotEmpty()
     }
-    private fun shell(command: String) {
+    private fun shell(command: String): String =
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command).use { descriptor ->
-            ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { it.readBytes() }
+            ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { it.readBytes().toString(Charsets.UTF_8) }
         }
-    }
 
     private fun captureBlackScreenshot(name: String) {
         compose.waitForIdle()
@@ -98,18 +97,24 @@ class BedtimeDeviceTest {
         try {
             val file = File(instrumentation.targetContext.getExternalFilesDir(null), name)
             file.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
-            shell("cp ${file.absolutePath} /data/local/tmp/lifelog-$name")
+            val destination = "/data/local/tmp/${instrumentation.targetContext.packageName}-$name"
+            // Separate package names avoid stale screenshots left by another test installation.
+            shell("cp ${file.absolutePath} $destination")
+            shell("chmod 644 $destination")
+            val copiedSize = shell("stat -c %s $destination").trim().toLong()
+            assertEquals(file.length(), copiedSize)
             assertEquals(Color.BLACK, bitmap.getPixel(0, 0))
             assertEquals(Color.BLACK, bitmap.getPixel(bitmap.width - 1, bitmap.height - 1))
         } finally { bitmap.recycle() }
     }
 
-    @Test fun startsPersistThenShowsOnlyClockAndMessagesAndBackKeepsActiveRecord() {
+    @Test fun startsPersistThenShowsClockMessagesAndWakeButtonAndBackKeepsActiveRecord() {
         compose.onNodeWithText("准备睡了").performClick()
         waitForBedtime()
         val saved = runBlocking { db.records().allSleeps().single() }
         assertNull(saved.endedAtUtcMs)
         compose.onNodeWithTag("bedtime-clock").assertExists()
+        compose.onNodeWithTag("bedtime-wake").assertIsDisplayed().assertIsEnabled()
         compose.onNodeWithTag("bedtime-messages").onChildren().assertCountEquals(3)
         compose.onNodeWithText("记饮食").assertDoesNotExist()
         compose.onNodeWithText("回顾").assertDoesNotExist()
@@ -152,9 +157,24 @@ class BedtimeDeviceTest {
         assertFalse(layout.isLineEllipsized(0))
         compose.onNodeWithTag("bedtime-messages").onChildren().assertCountEquals(3)
         compose.onNodeWithTag("bedtime-messages").onChildren()[2].performScrollTo().assertIsDisplayed()
-        pressBack()
-        waitText("起床了")
-        assertNull(runBlocking { db.records().allSleeps().single().endedAtUtcMs })
+        compose.onNodeWithTag("bedtime-wake").assertIsDisplayed().performClick()
+        waitText("准备睡了")
+        compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
+        assertNotNull(runBlocking { db.records().allSleeps().single().endedAtUtcMs })
+    }
+
+    @Test fun wakeFromDarkPageKeepsSameRecordAndRestoresNavigation() {
+        compose.onNodeWithText("准备睡了").performClick()
+        waitForBedtime()
+        val started = runBlocking { db.records().allSleeps().single() }
+        compose.onNodeWithTag("bedtime-wake").assertIsDisplayed().assertIsEnabled().performClick()
+        waitText("准备睡了")
+        compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
+        compose.onNodeWithText("回顾").assertIsDisplayed()
+        val completed = runBlocking { db.records().allSleeps().single() }
+        assertEquals(started.id, completed.id)
+        assertEquals(started.startedAtUtcMs, completed.startedAtUtcMs)
+        assertNotNull(completed.endedAtUtcMs)
     }
 
     @Test fun failedStartDoesNotEnterAndWakeStillFinishesTheSameRecordAfterReturning() {

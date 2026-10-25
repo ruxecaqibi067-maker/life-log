@@ -147,7 +147,9 @@ fun LifelogApp(
             modifier = Modifier.padding(bottom = if (isBedtime) 0.dp else innerPadding.calculateBottomPadding()),
         ) {
             composable(LifelogRoutes.BEDTIME) {
-                BedtimeScreen(clock, zoneIdProvider, onBack = { navController.popBackStack() })
+                BedtimeScreen(clock, zoneIdProvider, sleepViewModel, onBack = {
+                    if (navController.currentDestination?.route == LifelogRoutes.BEDTIME) navController.popBackStack()
+                })
             }
             composable(LifelogRoutes.TODAY) {
                 HomeScreen(
