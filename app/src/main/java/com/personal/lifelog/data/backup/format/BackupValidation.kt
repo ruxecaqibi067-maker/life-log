@@ -5,16 +5,19 @@ import com.personal.lifelog.core.time.RecordTime
 import com.personal.lifelog.core.time.WorkTime
 import com.personal.lifelog.core.validation.MediaRules
 import com.personal.lifelog.core.validation.Rules
+import com.personal.lifelog.core.validation.TodoRules
 import com.personal.lifelog.data.local.BuiltinExercises
 import com.personal.lifelog.data.local.entity.MediaAsset
 import com.personal.lifelog.data.repository.DataSnapshot
 import com.personal.lifelog.domain.ExerciseType
+import com.personal.lifelog.domain.HabitFrequency
 import java.io.File
 
 object BackupValidation {
     fun counts(d: DataSnapshot) = linkedMapOf("meals" to d.meals.size, "sleeps" to d.sleeps.size,
         "exercises" to d.exercises.size, "sessions" to d.sessions.size, "items" to d.items.size,
-        "sets" to d.sets.size, "media" to d.media.size, "workRecords" to d.workRecords.size)
+        "sets" to d.sets.size, "media" to d.media.size, "workRecords" to d.workRecords.size,
+        "todos" to d.todos.size, "habits" to d.habits.size)
 
     fun validate(d: DataSnapshot, l: BackupLimits) {
         fun ids(values: List<String>) { values.forEach(Rules::id); requireBackup(values.distinct().size == values.size) }
@@ -22,8 +25,34 @@ object BackupValidation {
         ids(d.workRecords.map { it.id })
         ids(d.meals.map { it.id }); ids(d.sleeps.map { it.id }); ids(d.exercises.map { it.id })
         ids(d.sessions.map { it.id }); ids(d.items.map { it.id }); ids(d.sets.map { it.id }); ids(d.media.map { it.id })
-        requireBackup(d.meals.size.toLong() + d.sleeps.size + d.sessions.size + d.workRecords.size <= l.records &&
+        ids(d.todos.map { it.id }); ids(d.habits.map { it.id })
+        requireBackup(d.meals.size.toLong() + d.sleeps.size + d.sessions.size + d.workRecords.size + d.todos.size + d.habits.size <= l.records &&
             d.exercises.size <= l.exercises && d.media.size <= l.photos && d.sets.size <= l.sets, BackupError.LIMIT)
+        val habits = d.habits.associateBy { it.id }
+        d.habits.forEach {
+            times(it.createdAtUtcMs, it.updatedAtUtcMs)
+            requireBackup(TodoRules.title(it.title) == it.title)
+            TodoRules.date(it.startDate); TodoRules.minute(it.scheduledMinute)
+            when (it.frequency) {
+                HabitFrequency.DAILY -> requireBackup(it.intervalDays == 1 && it.weekdaysMask == 0)
+                HabitFrequency.INTERVAL -> { TodoRules.interval(it.intervalDays); requireBackup(it.weekdaysMask == 0) }
+                HabitFrequency.WEEKLY -> { TodoRules.weekdays(it.weekdaysMask); requireBackup(it.intervalDays == 1) }
+            }
+        }
+        val generated = mutableSetOf<Pair<String, String>>()
+        d.todos.forEach {
+            times(it.createdAtUtcMs, it.updatedAtUtcMs)
+            requireBackup(TodoRules.title(it.title) == it.title)
+            TodoRules.date(it.localDate); TodoRules.minute(it.scheduledMinute)
+            requireBackup((it.habitId == null) == (it.habitDate == null))
+            if (it.habitId != null && it.habitDate != null) {
+                Rules.id(it.habitId); TodoRules.date(it.habitDate)
+                requireBackup(it.habitId in habits && generated.add(it.habitId to it.habitDate))
+            }
+            listOfNotNull(it.completedAtUtcMs, it.deletedAtUtcMs).forEach { time ->
+                requireBackup(time in it.createdAtUtcMs..it.updatedAtUtcMs)
+            }
+        }
         val photos = d.media.associateBy { it.id }
         requireBackup(d.meals.mapNotNull { it.photoId }.toSet() == photos.keys)
         d.media.forEach { MediaRules.validate(it); requireBackup(it.byteSize <= l.photoBytes, BackupError.LIMIT) }

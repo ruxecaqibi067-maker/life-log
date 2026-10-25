@@ -5,8 +5,14 @@ import com.personal.lifelog.domain.ExerciseType
 import com.personal.lifelog.domain.Satiety
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.domain.WorkoutEffort
+import com.personal.lifelog.domain.HabitFrequency
+import com.personal.lifelog.domain.HabitStatus
 
 class Converters {
+    @TypeConverter fun habitFrequency(value: String): HabitFrequency = HabitFrequency.valueOf(value)
+    @TypeConverter fun habitFrequency(value: HabitFrequency): String = value.name
+    @TypeConverter fun habitStatus(value: String): HabitStatus = HabitStatus.valueOf(value)
+    @TypeConverter fun habitStatus(value: HabitStatus): String = value.name
     @TypeConverter fun effort(value: String?): WorkoutEffort? = value?.let(WorkoutEffort::valueOf)
     @TypeConverter fun effort(value: WorkoutEffort?): String? = value?.name
     @TypeConverter fun satiety(value: String?): Satiety? = value?.let(Satiety::valueOf)

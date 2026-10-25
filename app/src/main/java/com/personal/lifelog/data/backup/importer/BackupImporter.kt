@@ -24,7 +24,12 @@ data class BackupPreview(val counts: Map<String, Int>, val earliestUtcMs: Long?,
     val replacesAllRecordsAndSettings: Boolean = true,
     val hasActiveWork: Boolean = false,
     val targetSleepMinutes: Int? = null,
-    val targetWorkMinutes: Int? = null)
+    val targetWorkMinutes: Int? = null,
+    /** Includes deletion tombstones, which are restored to prevent automatic resurrection. */
+    val todoCount: Int = 0,
+    val habitCount: Int = 0,
+    val earliestLocalDate: String? = null,
+    val latestLocalDate: String? = null)
 data class PreparedBackup(val token: StagingToken, val preview: BackupPreview, val expiresAtUtcMs: Long)
 
 /** Only owns backup-import/<UUID>. No reference to a business DAO, repository, or current media writer. */
@@ -53,12 +58,15 @@ class BackupImporter(private val filesRoot: File, private val clock: Clock,
                         verified.data.sessions.map { it.occurredAtUtcMs } +
                         verified.data.sleeps.flatMap { listOfNotNull(it.startedAtUtcMs, it.endedAtUtcMs) } +
                         verified.data.workRecords.flatMap { listOfNotNull(it.startedAtUtcMs, it.endedAtUtcMs) }
+                    val localDates = verified.data.todos.map { it.localDate } + verified.data.habits.map { it.startDate }
                     val preview = BackupPreview(verified.manifest.counts.toMap(), times.minOrNull(), times.maxOrNull(),
                         verified.data.sleeps.any { it.endedAtUtcMs == null }, verified.manifest.exportedAtUtcMs,
                         verified.manifest.appVersion,
                         hasActiveWork = verified.data.workRecords.any { it.endedAtUtcMs == null },
                         targetSleepMinutes = verified.data.settings.targetSleepMinutes,
-                        targetWorkMinutes = verified.data.settings.targetWorkMinutes)
+                        targetWorkMinutes = verified.data.settings.targetWorkMinutes,
+                        todoCount = verified.data.todos.size, habitCount = verified.data.habits.size,
+                        earliestLocalDate = localDates.minOrNull(), latestLocalDate = localDates.maxOrNull())
                     val entry = Entry(token, directory, digest(zip), now, now + TOKEN_LIFETIME_MS)
                     tokens[token.id] = entry
                     retained = true
