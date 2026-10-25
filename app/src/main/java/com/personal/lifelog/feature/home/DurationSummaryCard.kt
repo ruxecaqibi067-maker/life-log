@@ -87,8 +87,6 @@ internal fun DurationSummaryCard(
             if (feedback != null) Text(feedback, Modifier.fillMaxWidth().heightIn(min = 60.dp).testTag("$prefix-feedback"),
                 style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
             Spacer(Modifier.weight(1f))
-            Text(stringResource(R.string.home_duration_source), Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             val historyLabel = stringResource(if (sleep) R.string.home_sleep_open_history else R.string.home_work_open_history)
             SecondaryButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth().testTag("$prefix-summary-history")
                 .semantics { contentDescription = historyLabel }) {

@@ -85,6 +85,7 @@ fun HomeScreen(
     workHomeViewModel: WorkHomeViewModel,
     onOpenWorkHistory: () -> Unit,
     onEditWork: (String) -> Unit,
+    todoContent: @Composable () -> Unit = {},
 ) {
     val sleepStatus by sleepViewModel.status.collectAsStateWithLifecycle()
     val sleepBusy by sleepViewModel.busy.collectAsStateWithLifecycle()
@@ -154,6 +155,9 @@ fun HomeScreen(
                             Modifier.weight(1f).fillMaxHeight())
                     }
                 }
+                item(key = "daily-todos") {
+                    todoContent()
+                }
                 item(key = "sleep-feedback") {
                     SleepHomeFeedback(sleepViewModel, onEditSleep) { confirmSleepUndo = true }
                 }
@@ -173,8 +177,8 @@ fun HomeScreen(
                     onRetry = onRetryTimeline,
                 )
             }
-            Column(Modifier.padding(horizontal = LogDimens.page, vertical = 8.dp).testTag("home-quick-actions"),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.padding(horizontal = LogDimens.page, vertical = 4.dp).testTag("home-quick-actions"),
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QuickActionCard(
                         label = stringResource(when {
@@ -212,7 +216,7 @@ fun HomeScreen(
     }
 }
 
-/** Large thumb-friendly entry card; at least 48dp touch target enforced explicitly. */
+/** Compact thumb-friendly entry card; grows with text and keeps a 48dp touch target. */
 @Composable
 private fun QuickActionCard(
     label: String,
@@ -224,12 +228,12 @@ private fun QuickActionCard(
     Surface(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 56.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Row(
-            Modifier.minimumInteractiveComponentSize().padding(horizontal = 12.dp, vertical = 10.dp),
+            Modifier.minimumInteractiveComponentSize().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
