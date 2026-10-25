@@ -1,10 +1,10 @@
 # 安装、更新与备份
 
-当前为「随手记」0.1.4 / versionCode 5 长期签名测试候选，面向 Android 9 及以上手机、不限品牌。配置和依赖层面的支持范围见 [COMPATIBILITY.md](COMPATIBILITY.md)；不同品牌的系统相机/图库、文件选择器、重启及性能仍需实测。
+当前完整版本为「随手记」0.1.4 / versionCode 6，沿用长期签名，面向 Android 9 及以上手机、不限品牌。配置和依赖层面的支持范围见 [COMPATIBILITY.md](COMPATIBILITY.md)；不同品牌的系统相机/图库、文件选择器、重启及性能仍需实测。
 
 ## 手机上安装
 
-1. 用手机打开 [下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.4-test.1)，下载 `suishouji-0.1.4.apk`；也可先在电脑下载，再经 USB 复制到手机。[手机测试清单](testing/ANDROID_PHONE_TEST.md) 给出具体步骤。
+1. 用手机打开 [下载页](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.4)，下载 `suishouji-0.1.4.apk`；也可先在电脑下载，再经 USB 复制到手机。[手机测试清单](testing/ANDROID_PHONE_TEST.md) 给出具体步骤。
 2. 在手机文件管理器打开 APK；系统询问时允许这个安装来源。安装后打开「随手记」。不需要账号。
 3. 首次只使用虚构记录，验证饮食、作息、运动、照片和备份流程。完整检查表在 `docs/ACCEPTANCE.md`。
 
@@ -18,7 +18,7 @@
 
 本轮已在 Android 14 模拟器用长期签名包验证 0.1.3 → 0.1.4 覆盖升级：1001 条虚构记录及 200 张照片保持一致，UID 与首次安装时间不变。荣耀及其他品牌实机仍需按清单复核。
 
-0.1.4 将已发布0.1.3的数据库/备份v2明确迁移到v4。新版可读取v1–v3旧备份；本版导出v4，旧版无法读取，保留升级前副本。睡眠与工作目标缺失时保持未设置。工作数据已接入存储及备份，工作界面待T21。本轮没有加入自动更新检查或提醒，仍需手动下载新版 APK。
+0.1.4 将已发布0.1.3的数据库/备份v2明确迁移到v4。新版可读取v1–v3旧备份；本版导出v4，旧版无法读取，保留升级前副本。睡眠与工作目标缺失时保持未设置。工作记录、首页双卡和工作备份预览已完整接入。本轮没有加入自动更新检查或提醒，仍需手动下载新版 APK。
 
 若提示签名冲突，先停止安装并核对原安装来源。开发 debug 包与正式包使用不同密钥，不能直接覆盖；先从原 App 导出并在独立测试安装验证备份，保留原安装和数据，由维护者安排迁移，不能为解决冲突直接卸载抹掉记录。
 
@@ -40,8 +40,8 @@
 .\scripts\Build-Release.ps1 -SigningProperties "$env:LOCALAPPDATA\LifeLogAndroid\signing\signing.properties"
 ```
 
-脚本默认生成 0.1.4 / versionCode 5，交付 APK、SHA256SUMS、证书验证结果与 `release.json`（Git 提交、版本及构建类型）。后续继续使用这份签名资料，并在 5 的基础上递增 `-VersionCode`、指定对应的 `-VersionName`。不要重新运行密钥初始化来替换已有密钥。
+脚本默认生成 0.1.4 / versionCode 6，交付 APK、SHA256SUMS、证书验证结果与 `release.json`（Git 提交、版本及构建类型）。此前0.1.4/code5候选可覆盖更新到本轮code6；对外版本名仍为0.1.4。后续继续使用这份签名资料，并在 6 的基础上递增 `-VersionCode`、指定对应的 `-VersionName`。不要重新运行密钥初始化来替换已有密钥。
 
-签名机制与 Android 更新要求见 [Android 官方应用签名说明](https://developer.android.com/studio/publish/app-signing)。本轮主管按用户明确授权整合并推送 GitHub，下载附件标记为预发布实机测试候选；未上传应用商店。
+签名机制与 Android 更新要求见 [Android 官方应用签名说明](https://developer.android.com/studio/publish/app-signing)。本轮主管按用户明确授权整合并推送 GitHub，完整0.1.4发布到独立v0.1.4版本页；真机与长期使用证据继续收集；未上传应用商店。
 
 交付后安排一周自用，将不便录入、难以查找或修改的具体场景交回主管；一周反馈不能提前写成已经通过。

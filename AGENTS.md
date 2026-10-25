@@ -3,8 +3,8 @@
 ## 产品与当前阶段
 
 - 产品名「随手记」，面向Android9及以上手机，本地离线；荣耀200 Pro优先真机验证。
-- 本轮版本0.1.4 / versionCode5，Room/备份v4。T01–T20实现已接受；T21工作界面待实施。最新结论以`docs/STATUS.md`、`docs/releases/0.1.4.md`及实际Git祖先为准。
-- T19交付`8955731`、T06黑屏起床修复`83afe9a`、T20数据`806dbe4`已正常整合。T21从最新main核对祖先后使用真实接口；开始工作留在普通首页，不进入睡前黑屏。
+- 本轮完整版本0.1.4 / versionCode6，Room/备份v4。T01–T21实现已接受；旧test.1/code5是T21接入前候选。最新结论以`docs/STATUS.md`、`docs/releases/0.1.4.md`及实际Git祖先为准。
+- T19交付`8955731`、T06黑屏起床修复`83afe9a`、T20数据`806dbe4`已正常整合。T21交付`32dfba7`（实现`f500219`）已整合`ea00652`，四类时间线、双卡与工作页面已可用；后续从最新main核对祖先并使用真实接口；开始工作留在普通首页，不进入睡前黑屏。
 - 用户指定主管对话负责规划、整合、验收与发布，实现对话执行各包。新用户指令优先；不要额外制造审批步骤。
 
 ## 先读取
@@ -13,7 +13,7 @@
 2. `docs/WORKFLOW.md`、相关产品/技术章节与`docs/README.md`导航。
 3. 直接前置交接：已完成任务在`docs/archive/handoffs/`，具体文件见`docs/TASKS.md`，然后读取相关代码。
 
-T01–T09任务已合并到`docs/archive/tasks/T01-T09-基础功能任务.md`，T10–T20原任务书在同一archive/tasks目录。历史提示词不代表当前待执行要求。新任务仍在docs/tasks，新交接按`docs/handoffs/TEMPLATE-交接模板.md`建立。
+T01–T09任务已合并到`docs/archive/tasks/T01-T09-基础功能任务.md`，T10–T21原任务书在同一archive/tasks目录。历史提示词不代表当前待执行要求。新任务仍在docs/tasks，新交接按`docs/handoffs/TEMPLATE-交接模板.md`建立。
 
 ## 实现边界
 
