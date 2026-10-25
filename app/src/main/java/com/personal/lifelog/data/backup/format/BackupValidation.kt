@@ -2,6 +2,7 @@ package com.personal.lifelog.data.backup.format
 
 import android.graphics.BitmapFactory
 import com.personal.lifelog.core.time.RecordTime
+import com.personal.lifelog.core.time.WorkTime
 import com.personal.lifelog.core.validation.MediaRules
 import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.data.local.BuiltinExercises
@@ -13,14 +14,15 @@ import java.io.File
 object BackupValidation {
     fun counts(d: DataSnapshot) = linkedMapOf("meals" to d.meals.size, "sleeps" to d.sleeps.size,
         "exercises" to d.exercises.size, "sessions" to d.sessions.size, "items" to d.items.size,
-        "sets" to d.sets.size, "media" to d.media.size)
+        "sets" to d.sets.size, "media" to d.media.size, "workRecords" to d.workRecords.size)
 
     fun validate(d: DataSnapshot, l: BackupLimits) {
         fun ids(values: List<String>) { values.forEach(Rules::id); requireBackup(values.distinct().size == values.size) }
         fun times(created: Long, updated: Long) { requireBackup(updated >= created) }
+        ids(d.workRecords.map { it.id })
         ids(d.meals.map { it.id }); ids(d.sleeps.map { it.id }); ids(d.exercises.map { it.id })
         ids(d.sessions.map { it.id }); ids(d.items.map { it.id }); ids(d.sets.map { it.id }); ids(d.media.map { it.id })
-        requireBackup(d.meals.size + d.sleeps.size + d.sessions.size <= l.records &&
+        requireBackup(d.meals.size.toLong() + d.sleeps.size + d.sessions.size + d.workRecords.size <= l.records &&
             d.exercises.size <= l.exercises && d.media.size <= l.photos && d.sets.size <= l.sets, BackupError.LIMIT)
         val photos = d.media.associateBy { it.id }
         requireBackup(d.meals.mapNotNull { it.photoId }.toSet() == photos.keys)
@@ -44,6 +46,19 @@ object BackupValidation {
             requireBackup(s.archiveLocalDate == RecordTime.localDate(s.endedAtUtcMs ?: s.startedAtUtcMs,
                 s.endZoneId ?: s.startZoneId))
             if (i > 0) requireBackup(sleeps[i - 1].endedAtUtcMs?.let { it <= s.startedAtUtcMs } == true)
+        }
+        val workRecords = d.workRecords.sortedBy { it.startedAtUtcMs }
+        workRecords.forEachIndexed { i, s ->
+            times(s.createdAtUtcMs, s.updatedAtUtcMs)
+            RecordTime.zone(s.startZoneId)
+            if (s.endedAtUtcMs == null) requireBackup(s.endZoneId == null && s.activeSlot == 1)
+            else {
+                requireBackup(s.endZoneId != null && s.activeSlot == null)
+                WorkTime.validateInterval(s.startedAtUtcMs, s.endedAtUtcMs)
+            }
+            requireBackup(s.archiveLocalDate == RecordTime.localDate(s.endedAtUtcMs ?: s.startedAtUtcMs,
+                s.endZoneId ?: s.startZoneId))
+            if (i > 0) requireBackup(workRecords[i - 1].endedAtUtcMs?.let { it <= s.startedAtUtcMs } == true)
         }
         val definitions = d.exercises.associateBy { it.id }
         val builtins = BuiltinExercises.entries.associateBy { it.id }
@@ -90,6 +105,7 @@ object BackupValidation {
         }
         requireBackup(d.settings.id == 1)
         Rules.targetSleepMinutes(d.settings.targetSleepMinutes)
+        Rules.targetWorkMinutes(d.settings.targetWorkMinutes)
         times(d.settings.createdAtUtcMs, d.settings.updatedAtUtcMs)
     }
 

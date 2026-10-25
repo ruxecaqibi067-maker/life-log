@@ -12,15 +12,17 @@ import com.personal.lifelog.data.local.dao.MetadataDao
 import com.personal.lifelog.data.local.dao.RecordDao
 import com.personal.lifelog.data.local.dao.RestoreDao
 import com.personal.lifelog.data.local.dao.SleepSummaryDao
+import com.personal.lifelog.data.local.dao.WorkDao
+import com.personal.lifelog.data.local.dao.WorkSummaryDao
 import com.personal.lifelog.data.local.dao.WorkoutDao
 import com.personal.lifelog.data.local.entity.*
 import java.time.Clock
 
 @Database(
-    entities = [MealRecord::class, SleepRecord::class, ExerciseDefinition::class,
+    entities = [MealRecord::class, SleepRecord::class, WorkRecord::class, ExerciseDefinition::class,
         WorkoutSession::class, WorkoutItem::class, WorkoutSet::class,
         MediaAsset::class, AppSettings::class, RestoreState::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -30,6 +32,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun metadata(): MetadataDao
     abstract fun restore(): RestoreDao
     abstract fun sleepSummaries(): SleepSummaryDao
+    abstract fun work(): WorkDao
+    abstract fun workSummaries(): WorkSummaryDao
 
     companion object {
         const val NAME = "life-log.db"
@@ -37,7 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun create(context: Context, clock: Clock, name: String = NAME): AppDatabase =
             Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, name)
                 .addCallback(creationCallback(clock))
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 // First real schema was v1. Every later version has an explicit tested migration.
                 // Never add fallbackToDestructiveMigration to the user database.
                 .build()
@@ -70,17 +74,41 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE AppSettings ADD COLUMN targetSleepMinutes INTEGER")
-                installSettingsGuard(db)
+                installSettingsGuard(db, includeWork = false)
             }
         }
 
-        private fun installSettingsGuard(db: SupportSQLiteDatabase) {
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS WorkRecord (id TEXT NOT NULL, startedAtUtcMs INTEGER NOT NULL, startZoneId TEXT NOT NULL, endedAtUtcMs INTEGER, endZoneId TEXT, archiveLocalDate TEXT NOT NULL, activeSlot INTEGER, createdAtUtcMs INTEGER NOT NULL, updatedAtUtcMs INTEGER NOT NULL, PRIMARY KEY(id))")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_WorkRecord_archiveLocalDate ON WorkRecord (archiveLocalDate)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_WorkRecord_activeSlot ON WorkRecord (activeSlot)")
+                db.execSQL("ALTER TABLE AppSettings ADD COLUMN targetWorkMinutes INTEGER")
+                installSettingsGuard(db)
+                installWorkGuard(db)
+            }
+        }
+
+        private fun installWorkGuard(db: SupportSQLiteDatabase) {
+            listOf("INSERT", "UPDATE").forEach { operation ->
+                db.execSQL("CREATE TRIGGER guard_WorkRecord_$operation BEFORE $operation ON WorkRecord WHEN " +
+                    "(NEW.endedAtUtcMs IS NULL AND (NEW.activeSlot IS NOT 1 OR NEW.endZoneId IS NOT NULL)) OR " +
+                    "(NEW.endedAtUtcMs IS NOT NULL AND (NEW.activeSlot IS NOT NULL OR NEW.endZoneId IS NULL OR NEW.endedAtUtcMs <= NEW.startedAtUtcMs OR typeof(NEW.endedAtUtcMs - NEW.startedAtUtcMs) != 'integer')) OR " +
+                    "EXISTS(SELECT 1 FROM WorkRecord WHERE id != NEW.id AND (NEW.endedAtUtcMs IS NULL OR startedAtUtcMs < NEW.endedAtUtcMs) AND (endedAtUtcMs IS NULL OR NEW.startedAtUtcMs < endedAtUtcMs)) " +
+                    "BEGIN SELECT RAISE(ABORT, 'invalid WorkRecord invariant'); END")
+            }
+        }
+
+        private fun installSettingsGuard(db: SupportSQLiteDatabase, includeWork: Boolean = true) {
             listOf("INSERT", "UPDATE").forEach { operation ->
                 db.execSQL("DROP TRIGGER IF EXISTS guard_AppSettings_$operation")
                 db.execSQL("CREATE TRIGGER guard_AppSettings_$operation BEFORE $operation ON AppSettings WHEN " +
                     "NEW.id != 1 OR (NEW.targetSleepMinutes IS NOT NULL AND " +
                     "(typeof(NEW.targetSleepMinutes) != 'integer' OR NEW.targetSleepMinutes < 1 OR " +
                     "NEW.targetSleepMinutes > ${Rules.TARGET_SLEEP_MINUTES_MAX})) " +
+                    (if (includeWork) "OR (NEW.targetWorkMinutes IS NOT NULL AND " +
+                        "(typeof(NEW.targetWorkMinutes) != 'integer' OR NEW.targetWorkMinutes < 1 OR " +
+                        "NEW.targetWorkMinutes > ${Rules.TARGET_WORK_MINUTES_MAX})) " else "") +
                     "BEGIN SELECT RAISE(ABORT, 'invalid AppSettings invariant'); END")
             }
         }
@@ -112,6 +140,7 @@ abstract class AppDatabase : RoomDatabase() {
                 }
             }
             installSettingsGuard(db)
+            installWorkGuard(db)
             guard("RestoreState", "NEW.id != 1")
             guard("SleepRecord", "(NEW.endedAtUtcMs IS NULL AND (NEW.activeSlot IS NOT 1 OR NEW.endZoneId IS NOT NULL)) OR (NEW.endedAtUtcMs IS NOT NULL AND (NEW.activeSlot IS NOT NULL OR NEW.endZoneId IS NULL OR NEW.endedAtUtcMs <= NEW.startedAtUtcMs))")
             guard("ExerciseDefinition", "(NEW.isHidden = 0 AND NEW.activeNameKey IS NOT NEW.normalizedName) OR (NEW.isHidden = 1 AND NEW.activeNameKey IS NOT NULL)")

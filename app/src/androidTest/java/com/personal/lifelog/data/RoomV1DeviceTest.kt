@@ -36,12 +36,12 @@ class RoomV1DeviceTest {
 
     @After fun close() { db.close(); context.deleteDatabase(name) }
 
-    @Test fun freshV3MatchesExportedSchemaWithoutInventingAnOldMigration() = runBlocking<Unit> {
+    @Test fun freshV4MatchesExportedSchemaWithoutInventingAnOldMigration() = runBlocking<Unit> {
         assertEquals(8, db.workouts().allExercises().size)
         assertEquals(1, db.metadata().settingsNow().id)
         db.close()
-        // Same real v3 on both sides: schema validation only, no fictional v0 -> v1 migration.
-        helper.runMigrationsAndValidate(name, 3, true).close()
+        // Same real v4 on both sides: schema validation only, no fictional v0 -> v1 migration.
+        helper.runMigrationsAndValidate(name, 4, true).close()
     }
 
     @Test fun v1ToV2AddsSatietyTextAndPreservesExistingMeals() = runBlocking<Unit> {

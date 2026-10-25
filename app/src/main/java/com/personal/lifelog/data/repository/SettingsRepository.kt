@@ -28,6 +28,17 @@ class SettingsRepository(
             .also { db.metadata().putSettings(it) }
     }
 
+    /** Read failures propagate; null is exclusively an unset saved goal. */
+    fun targetWorkMinutes() = settings().map { it.targetWorkMinutes }.distinctUntilChanged()
+
+    suspend fun setTargetWorkMinutes(minutes: Int?): DataResult<AppSettings> = write(db, writes) {
+        Rules.targetWorkMinutes(minutes)
+        val old = db.metadata().settingsNow()
+        old.copy(targetWorkMinutes = minutes,
+            updatedAtUtcMs = updatedAt(clock.millis(), old.createdAtUtcMs, old.updatedAtUtcMs))
+            .also { db.metadata().putSettings(it) }
+    }
+
     suspend fun setTheme(mode: ThemeMode): DataResult<AppSettings> = write(db, writes) {
         val old = db.metadata().settingsNow()
         old.copy(themeMode = mode, updatedAtUtcMs = updatedAt(clock.millis(), old.createdAtUtcMs, old.updatedAtUtcMs))

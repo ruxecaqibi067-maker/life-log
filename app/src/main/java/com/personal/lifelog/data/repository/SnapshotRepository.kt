@@ -14,6 +14,7 @@ data class DataSnapshot(
     val sets: List<WorkoutSet>,
     val media: List<MediaAsset>,
     val settings: AppSettings,
+    val workRecords: List<WorkRecord> = emptyList(),
 )
 
 class SnapshotRepository(private val db: AppDatabase) {
@@ -23,6 +24,7 @@ class SnapshotRepository(private val db: AppDatabase) {
         val photoIds = meals.mapNotNull { it.photoId }.toSet()
         DataSnapshot(meals, db.records().allSleeps(), db.workouts().allExercises(),
             db.workouts().allSessions(), db.workouts().allItems(), db.workouts().allSets(),
-            db.metadata().allMedia().filter { it.id in photoIds }, db.metadata().settingsNow())
+            db.metadata().allMedia().filter { it.id in photoIds }, db.metadata().settingsNow(),
+            workRecords = db.work().allWorks())
     }
 }

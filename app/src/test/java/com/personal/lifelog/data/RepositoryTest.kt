@@ -68,12 +68,12 @@ class RepositoryTest {
 
     @Test fun compiledDatabaseIdentityMatchesExportedV3Schema() = runBlocking<Unit> {
         db.metadata().settingsNow()
-        val schema = JSONObject(File("schemas/com.personal.lifelog.data.local.AppDatabase/3.json").readText())
+        val schema = JSONObject(File("schemas/com.personal.lifelog.data.local.AppDatabase/4.json").readText())
         val expected = schema.getJSONObject("database").getString("identityHash")
         db.openHelper.readableDatabase.query("SELECT identity_hash FROM room_master_table WHERE id = 42").use {
             assertTrue(it.moveToFirst()); assertEquals(expected, it.getString(0))
         }
-        assertEquals(3, db.openHelper.readableDatabase.version)
+        assertEquals(4, db.openHelper.readableDatabase.version)
     }
 
     @Test fun mealAllowsOnlyTextOrPhotoAndDatesMoveOnEdit() = runBlocking<Unit> {

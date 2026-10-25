@@ -11,6 +11,8 @@ import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.SleepSummaryRepository
 import com.personal.lifelog.data.repository.SnapshotRepository
 import com.personal.lifelog.data.repository.TimelineRepository
+import com.personal.lifelog.data.repository.WorkRepository
+import com.personal.lifelog.data.repository.WorkSummaryRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.feature.settings.BackupRestoreController
@@ -31,6 +33,12 @@ class AppContainer(
     val workouts: WorkoutRepository by lazy { WorkoutRepository(database, writes, clock) }
     val timeline: TimelineRepository by lazy { TimelineRepository(records, workouts) }
     val settings: SettingsRepository by lazy { SettingsRepository(database, writes, clock) }
+    val work: WorkRepository by lazy {
+        WorkRepository(database, writes, clock, zoneIdProvider)
+    }
+    val workSummary: WorkSummaryRepository by lazy {
+        WorkSummaryRepository(database)
+    }
     val sleepSummary: SleepSummaryRepository by lazy { SleepSummaryRepository(database) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
     val backupExporter: BackupExporter by lazy {

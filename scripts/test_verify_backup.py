@@ -17,7 +17,7 @@ class VerifyBackupTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
 
-    def archive(self, name, version, goal=None, text='synthetic', photo=b'photo'):
+    def archive(self, name, version, goal=None, text='synthetic', photo=b'photo', work_goal=None, work_records=None):
         data = {'dataVersion': version, 'meals': [{'id': 'meal', 'text': text}],
                 **{key: [] for key in ('sleeps', 'exercises', 'sessions', 'items', 'sets', 'media')},
                 'settings': {'themeMode': 'DARK', 'lastSuccessfulExportAtUtcMs': 1, 'updatedAtUtcMs': 2}}
@@ -25,6 +25,9 @@ class VerifyBackupTest(unittest.TestCase):
             data['meals'][0]['satietyText'] = None
         if version >= 3:
             data['settings']['targetSleepMinutes'] = goal
+        if version >= 4:
+            data['settings']['targetWorkMinutes'] = work_goal
+            data['workRecords'] = work_records or []
         files = {'data.json': json.dumps(data).encode(), 'media/synthetic.jpg': photo}
         manifest = {'formatVersion': version, 'counts': {key: len(value) for key, value in data.items() if isinstance(value, list)},
                     'files': [{'path': key, 'byteSize': len(value), 'sha256': hashlib.sha256(value).hexdigest()}
@@ -41,7 +44,7 @@ class VerifyBackupTest(unittest.TestCase):
                               capture_output=True, text=True)
 
     def test_all_defined_forward_migrations_require_explicit_flags(self):
-        for old, new in ((1, 2), (2, 3), (1, 3)):
+        for old, new in ((1, 2), (2, 3), (1, 3), (1, 4), (2, 4), (3, 4)):
             before = self.archive(f'before-{old}.zip', old)
             after = self.archive(f'after-{new}.zip', new)
             self.assertNotEqual(0, self.compare(before, after).returncode)
@@ -62,6 +65,20 @@ class VerifyBackupTest(unittest.TestCase):
         for index, value in enumerate((None, 1, 480, 1440)):
             data, _, _ = verify_backup.inspect(self.archive(f'good-{index}.zip', 3, goal=value))
             self.assertEqual(value, data['settings']['targetSleepMinutes'])
+
+    def test_v4_migration_preserves_sleep_goal_and_rejects_work_changes(self):
+        before = self.archive('v3.zip', 3, goal=480)
+        after = self.archive('v4.zip', 4, goal=480)
+        self.assertEqual(0, self.compare(before, after, '--allow-v3-to-v4').returncode)
+        for i, changes in enumerate(({'goal': 600}, {'goal': 480, 'work_goal': 1},
+                                      {'goal': 480, 'work_records': [{'id': 'work'}]},
+                                      {'goal': 480, 'photo': b'changed'}, {'goal': 480, 'text': 'changed'})):
+            changed = self.archive(f'changed-{i}.zip', 4, **changes)
+            self.assertNotEqual(0, self.compare(before, changed, '--allow-v3-to-v4').returncode)
+        for i, bad in enumerate((0, -1, 1441, 2147483648, 1.5, 1.0, True, '480', {})):
+            with self.assertRaises(AssertionError):
+                verify_backup.inspect(self.archive(f'bad-work-{i}.zip', 4, work_goal=bad))
+        self.assertEqual(0, self.compare(after, after).returncode)
 
     def test_wrong_direction_or_mismatched_flag_is_rejected(self):
         v1, v2, v3 = (self.archive(f'v{version}.zip', version) for version in (1, 2, 3))

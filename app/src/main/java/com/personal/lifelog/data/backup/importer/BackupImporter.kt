@@ -21,7 +21,10 @@ class SafBackupSource(private val resolver: ContentResolver, private val uri: Ur
 class StagingToken internal constructor(internal val id: String)
 data class BackupPreview(val counts: Map<String, Int>, val earliestUtcMs: Long?, val latestUtcMs: Long?,
     val hasActiveSleep: Boolean, val exportedAtUtcMs: Long, val appVersion: String,
-    val replacesAllRecordsAndSettings: Boolean = true)
+    val replacesAllRecordsAndSettings: Boolean = true,
+    val hasActiveWork: Boolean = false,
+    val targetSleepMinutes: Int? = null,
+    val targetWorkMinutes: Int? = null)
 data class PreparedBackup(val token: StagingToken, val preview: BackupPreview, val expiresAtUtcMs: Long)
 
 /** Only owns backup-import/<UUID>. No reference to a business DAO, repository, or current media writer. */
@@ -48,10 +51,14 @@ class BackupImporter(private val filesRoot: File, private val clock: Clock,
                     val now = clock.millis()
                     val times = verified.data.meals.map { it.occurredAtUtcMs } +
                         verified.data.sessions.map { it.occurredAtUtcMs } +
-                        verified.data.sleeps.flatMap { listOfNotNull(it.startedAtUtcMs, it.endedAtUtcMs) }
+                        verified.data.sleeps.flatMap { listOfNotNull(it.startedAtUtcMs, it.endedAtUtcMs) } +
+                        verified.data.workRecords.flatMap { listOfNotNull(it.startedAtUtcMs, it.endedAtUtcMs) }
                     val preview = BackupPreview(verified.manifest.counts.toMap(), times.minOrNull(), times.maxOrNull(),
                         verified.data.sleeps.any { it.endedAtUtcMs == null }, verified.manifest.exportedAtUtcMs,
-                        verified.manifest.appVersion)
+                        verified.manifest.appVersion,
+                        hasActiveWork = verified.data.workRecords.any { it.endedAtUtcMs == null },
+                        targetSleepMinutes = verified.data.settings.targetSleepMinutes,
+                        targetWorkMinutes = verified.data.settings.targetWorkMinutes)
                     val entry = Entry(token, directory, digest(zip), now, now + TOKEN_LIFETIME_MS)
                     tokens[token.id] = entry
                     retained = true

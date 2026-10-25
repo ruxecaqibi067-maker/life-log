@@ -46,6 +46,8 @@ class RestoreProcessDeviceTest {
         val db = Room.databaseBuilder(context, AppDatabase::class.java, name).addCallback(AppDatabase.creationCallback(clock)).build()
         try {
             val writes = WriteCoordinator(); val snapshots = SnapshotRepository(db)
+            val settings = SettingsRepository(db, writes, clock)
+            val work = WorkRepository(db, writes, clock) { ZoneId.of("UTC") }
             val records = RecordRepository(db, writes, clock) { ZoneId.of("UTC") }
             val exporter = BackupExporter(snapshots, SettingsRepository(db, writes, clock), writes, root, clock, "qa")
             val importer = BackupImporter(root, clock)
@@ -61,8 +63,14 @@ class RestoreProcessDeviceTest {
                     val hash = digest(image)
                     val asset = MediaAsset(photo, gen, path, "image/jpeg", 12, 8, hash.byteSize, hash.sha256, 1, 1)
                     assertTrue(records.saveMeal(MealDraft(RecordIds.newId(), clock.millis(), "UTC", "synthetic-old", photoId = photo), asset) is DataResult.Success)
+                    assertTrue(records.startSleep(RecordIds.newId(), 1000, "UTC") is DataResult.Success)
+                    assertTrue(work.startWork(RecordIds.newId(), 1000, "UTC") is DataResult.Success)
+                    assertTrue(settings.setTargetSleepMinutes(480) is DataResult.Success)
+                    assertTrue(settings.setTargetWorkMinutes(420) is DataResult.Success)
                     val old = snapshots.read()
-                    val incoming = old.copy(meals = old.meals.map { it.copy(text = "synthetic-new") })
+                    val incoming = old.copy(meals = old.meals.map { it.copy(text = "synthetic-new") },
+                        workRecords = old.workRecords.map { it.copy(endedAtUtcMs = 2000, endZoneId = "UTC", activeSlot = null) },
+                        settings = old.settings.copy(targetSleepMinutes = 600, targetWorkMinutes = 300))
                     val zip = BackupArchive().create(incoming, { BackupFiles(root).file(it) },
                         BackupFiles(root).mkdir("source"), "qa", clock.millis())
                     val ready = (importer.preflight(BackupSource { zip.inputStream() }) as BackupResult.Success).value
@@ -74,6 +82,11 @@ class RestoreProcessDeviceTest {
                     val data = snapshots.read()
                     val committed = point in listOf(RestoreFaultPoint.AFTER_COMMIT, RestoreFaultPoint.CLEANUP)
                     assertEquals(if (committed) "synthetic-new" else "synthetic-old", data.meals.single().text)
+                    assertEquals(if (committed) 600 else 480, data.settings.targetSleepMinutes)
+                    assertEquals(if (committed) 300 else 420, data.settings.targetWorkMinutes)
+                    assertEquals(if (committed) 2000L else null, data.workRecords.single().endedAtUtcMs)
+                    assertEquals(if (committed) null else 1, data.workRecords.single().activeSlot)
+                    assertNull(data.sleeps.single().endedAtUtcMs)
                     BackupValidation.validate(data, BackupLimits())
                     data.media.forEach { BackupValidation.photo(BackupFiles(root).file(it.relativePath), it, BackupLimits()) }
                     assertFalse(File(root, "media-recovery.pending").exists())
