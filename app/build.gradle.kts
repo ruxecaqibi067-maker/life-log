@@ -16,8 +16,8 @@ val releaseSecrets = Properties().apply {
 }
 val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { !releaseSecrets.getProperty(it).isNullOrBlank() }
-val requestedVersionCode = providers.gradleProperty("releaseVersionCode").orElse("7").get().toInt()
-val requestedVersionName = providers.gradleProperty("releaseVersionName").orElse("0.1.5").get()
+val requestedVersionCode = providers.gradleProperty("releaseVersionCode").orElse("8").get().toInt()
+val requestedVersionName = providers.gradleProperty("releaseVersionName").orElse("0.1.6").get()
 // Device verification uses an isolated package, preserving any installed personal-data build.
 val debugTestSuffix = providers.gradleProperty("debugTestSuffix").orNull
 require(debugTestSuffix == null || debugTestSuffix.matches(Regex("\\.[a-z][a-z0-9]*")))
