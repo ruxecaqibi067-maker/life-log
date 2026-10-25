@@ -15,6 +15,9 @@ data class DataSnapshot(
     val media: List<MediaAsset>,
     val settings: AppSettings,
     val workRecords: List<WorkRecord> = emptyList(),
+    /** Includes deletion tombstones so restored habits cannot recreate removed instances. */
+    val todos: List<TodoRecord> = emptyList(),
+    val habits: List<HabitRecord> = emptyList(),
 )
 
 class SnapshotRepository(private val db: AppDatabase) {
@@ -25,6 +28,6 @@ class SnapshotRepository(private val db: AppDatabase) {
         DataSnapshot(meals, db.records().allSleeps(), db.workouts().allExercises(),
             db.workouts().allSessions(), db.workouts().allItems(), db.workouts().allSets(),
             db.metadata().allMedia().filter { it.id in photoIds }, db.metadata().settingsNow(),
-            workRecords = db.work().allWorks())
+            workRecords = db.work().allWorks(), todos = db.todos().allTodos(), habits = db.todos().allHabits())
     }
 }

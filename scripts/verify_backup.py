@@ -1,5 +1,6 @@
 """Compare synthetic acceptance backups without printing record or photo content."""
 import argparse
+from datetime import date
 import hashlib
 import json
 import zipfile
@@ -15,7 +16,7 @@ def inspect(path):
         assert archive.getinfo('manifest.json').file_size <= 4 * 1024**2, 'Manifest size limit'
         assert archive.getinfo('data.json').file_size <= 32 * 1024**2, 'Data size limit'
         manifest = json.loads(archive.read('manifest.json'))
-        assert manifest['formatVersion'] in (1, 2, 3, 4, 5), 'Unknown format'
+        assert manifest['formatVersion'] in (1, 2, 3, 4, 5, 6), 'Unknown format'
         files = manifest['files']
         assert len(files) == len({item['path'] for item in files}), 'Duplicate manifest path'
         assert {item['path'] for item in files} == set(names) - {'manifest.json'}, 'Incomplete manifest'
@@ -55,9 +56,13 @@ def inspect(path):
         keys = {'meals', 'sleeps', 'exercises', 'sessions', 'items', 'sets', 'media'}
         if version >= 4:
             keys.add('workRecords')
+        if version >= 6:
+            keys.update(('todos', 'habits'))
+            validate_todos(data)
         assert set(manifest['counts']) == keys, 'Missing or unknown count'
         counts = {key: len(data[key]) for key in keys}
         assert counts == manifest['counts'], 'Count mismatch'
+        assert sum(counts.get(key, 0) for key in ('meals', 'sleeps', 'sessions', 'workRecords', 'todos', 'habits')) <= 10000, 'Record limit'
         for key, value in data.items():
             if isinstance(value, list):
                 assert len(value) == len({row['id'] for row in value}), 'Duplicate ID'
@@ -65,10 +70,49 @@ def inspect(path):
         return data, {name: sha for name, sha in hashes.items() if name.startswith('media/')}, counts
 
 
+def validate_todos(data):
+    def local_date(value):
+        assert type(value) is str and len(value) == 10, 'Invalid local date'
+        parsed = date.fromisoformat(value)
+        assert date(1900, 1, 1) <= parsed <= date(2199, 12, 31) and parsed.isoformat() == value, 'Local date range'
+
+    def common(row):
+        assert type(row['title']) is str and row['title'] == row['title'].strip() and 1 <= len(row['title']) <= 120, 'Invalid title'
+        minute = row['scheduledMinute']
+        assert minute is None or type(minute) is int and 0 <= minute <= 1439, 'Invalid minute'
+        assert type(row['createdAtUtcMs']) is int and type(row['updatedAtUtcMs']) is int, 'Invalid timestamp'
+        assert row['createdAtUtcMs'] <= row['updatedAtUtcMs'], 'Invalid timestamps'
+
+    assert isinstance(data['todos'], list) and isinstance(data['habits'], list), 'Missing todo/habit arrays'
+    habits = {row['id']: row for row in data['habits']}
+    for row in habits.values():
+        common(row)
+        local_date(row['startDate'])
+        assert row['status'] in ('ACTIVE', 'PAUSED', 'ARCHIVED'), 'Invalid habit status'
+        frequency, interval, mask = row['frequency'], row['intervalDays'], row['weekdaysMask']
+        assert type(interval) is int and type(mask) is int, 'Invalid frequency values'
+        assert (frequency == 'DAILY' and interval == 1 and mask == 0 or
+                frequency == 'INTERVAL' and 1 <= interval <= 365 and mask == 0 or
+                frequency == 'WEEKLY' and interval == 1 and 1 <= mask <= 127), 'Invalid frequency'
+    generated = set()
+    for row in data['todos']:
+        common(row)
+        local_date(row['localDate'])
+        habit_id, habit_date = row['habitId'], row['habitDate']
+        assert (habit_id is None) == (habit_date is None), 'Incomplete habit source'
+        if habit_id is not None:
+            local_date(habit_date)
+            assert habit_id in habits and (habit_id, habit_date) not in generated, 'Invalid or duplicate habit source'
+            generated.add((habit_id, habit_date))
+        for key in ('completedAtUtcMs', 'deletedAtUtcMs'):
+            value = row[key]
+            assert value is None or type(value) is int and row['createdAtUtcMs'] <= value <= row['updatedAtUtcMs'], 'Invalid todo timestamp'
+
+
 def migrate_for_comparison(data, target_version):
     """Only defined additive fields; never remove or normalize record values."""
     version = data['dataVersion']
-    assert 1 <= version < target_version <= 5, 'Undefined migration'
+    assert 1 <= version < target_version <= 6, 'Undefined migration'
     if version == 1:
         assert all(row.get('satietyText') is None for row in data['meals']), 'Unexpected v1 custom text'
         for row in data['meals']:
@@ -86,6 +130,10 @@ def migrate_for_comparison(data, target_version):
             assert row.get('effort') is None and row.get('effortText') is None, 'Unexpected legacy effort'
             row['effort'] = None
             row['effortText'] = None
+    if version < 6 and target_version >= 6:
+        assert not data.get('todos') and not data.get('habits'), 'Unexpected legacy todo/habit data'
+        data['todos'] = []
+        data['habits'] = []
     data['dataVersion'] = target_version
 
 
@@ -108,6 +156,9 @@ def main():
     for version in (1, 2, 3, 4):
         migrations.add_argument(f'--allow-v{version}-to-v5', action='store_true',
                                 help=f'Compare v{version} with additive workout effort fields in v5')
+    for version in (1, 2, 3, 4, 5):
+        migrations.add_argument(f'--allow-v{version}-to-v6', action='store_true',
+                                help=f'Compare v{version} with additive empty todo/habit tables in v6')
     args = parser.parse_args()
     before, before_photos, counts = inspect(args.before)
     after, after_photos, after_counts = inspect(args.after)
@@ -118,11 +169,17 @@ def main():
     for version in (1, 2, 3, 4):
         if getattr(args, f'allow_v{version}_to_v5'):
             migration = [version, 5]
+    for version in (1, 2, 3, 4, 5):
+        if getattr(args, f'allow_v{version}_to_v6'):
+            migration = [version, 6]
     if migration:
         assert versions == migration, 'Wrong versions for explicitly requested migration'
         migrate_for_comparison(before, migration[1])
         if migration[0] < 4 and migration[1] >= 4:
             counts['workRecords'] = 0
+        if migration[0] < 6 and migration[1] >= 6:
+            counts['todos'] = 0
+            counts['habits'] = 0
     if args.ignore_export_clock:
         for data in (before, after):
             for key in ('lastSuccessfulExportAtUtcMs', 'updatedAtUtcMs'):

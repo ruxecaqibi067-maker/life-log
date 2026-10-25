@@ -23,7 +23,7 @@ import org.robolectric.annotation.SQLiteMode
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class WorkoutEffortMigrationTest {
     /** Builds actual committed old schemas, then opens through production Room migrations. */
-    @Test fun everyOldSchemaMigratesToFivePreservingSetsSnapshotsAndNullEffort() = runBlocking<Unit> {
+    @Test fun everyOldSchemaMigratesToCurrentPreservingSetsSnapshotsAndNullEffort() = runBlocking<Unit> {
         val context = ApplicationProvider.getApplicationContext<Context>()
         for (version in 1..4) {
             val name = "p$version.db"
@@ -54,7 +54,7 @@ class WorkoutEffortMigrationTest {
                 val db = AppDatabase.create(context, Clock.systemUTC(), name)
                 try {
                     val record = db.workouts().workout(sessionId)!!
-                    assertEquals(5, db.openHelper.readableDatabase.version)
+                    assertEquals(6, db.openHelper.readableDatabase.version)
                     assertEquals("虚构旧训练", record.session.note)
                     assertEquals(1001L, record.session.occurredAtUtcMs)
                     assertNull(record.session.effort); assertNull(record.session.effortText)

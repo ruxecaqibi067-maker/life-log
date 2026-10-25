@@ -17,7 +17,7 @@ class VerifyBackupTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
 
-    def archive(self, name, version, goal=None, text='synthetic', photo=b'photo', work_goal=None, work_records=None, sessions=None):
+    def archive(self, name, version, goal=None, text='synthetic', photo=b'photo', work_goal=None, work_records=None, sessions=None, todos=None, habits=None):
         data = {'dataVersion': version, 'meals': [{'id': 'meal', 'text': text}],
                 **{key: [] for key in ('sleeps', 'exercises', 'sessions', 'items', 'sets', 'media')},
                 'settings': {'themeMode': 'DARK', 'lastSuccessfulExportAtUtcMs': 1, 'updatedAtUtcMs': 2}}
@@ -28,6 +28,9 @@ class VerifyBackupTest(unittest.TestCase):
         if version >= 4:
             data['settings']['targetWorkMinutes'] = work_goal
             data['workRecords'] = work_records or []
+        if version >= 6:
+            data['todos'] = todos or []
+            data['habits'] = habits or []
         data['sessions'] = sessions or []
         files = {'data.json': json.dumps(data).encode(), 'media/synthetic.jpg': photo}
         manifest = {'formatVersion': version, 'counts': {key: len(value) for key, value in data.items() if isinstance(value, list)},
@@ -45,7 +48,8 @@ class VerifyBackupTest(unittest.TestCase):
                               capture_output=True, text=True)
 
     def test_all_defined_forward_migrations_require_explicit_flags(self):
-        for old, new in ((1, 2), (2, 3), (1, 3), (1, 4), (2, 4), (3, 4), (1, 5), (2, 5), (3, 5), (4, 5)):
+        for old, new in ((1, 2), (2, 3), (1, 3), (1, 4), (2, 4), (3, 4), (1, 5), (2, 5), (3, 5), (4, 5),
+                         (1, 6), (2, 6), (3, 6), (4, 6), (5, 6)):
             before = self.archive(f'before-{old}.zip', old)
             after = self.archive(f'after-{new}.zip', new)
             self.assertNotEqual(0, self.compare(before, after).returncode)
@@ -98,6 +102,26 @@ class VerifyBackupTest(unittest.TestCase):
                                sessions=[{'id': 'training', 'effort': 'HARD', 'effortText': None}])
         self.assertNotEqual(0, self.compare(before, changed, '--allow-v4-to-v5').returncode)
         self.assertEqual(0, self.compare(changed, changed).returncode)
+
+    def test_v6_preserves_tombstone_moved_date_and_requires_empty_legacy_tables(self):
+        habit = {'id': 'habit', 'title': 'synthetic', 'startDate': '2026-10-26', 'scheduledMinute': 480,
+                 'frequency': 'WEEKLY', 'intervalDays': 1, 'weekdaysMask': 1, 'status': 'ACTIVE',
+                 'createdAtUtcMs': 1, 'updatedAtUtcMs': 5}
+        todo = {'id': 'todo', 'title': 'snapshot', 'localDate': '2026-10-27', 'scheduledMinute': None,
+                'habitId': 'habit', 'habitDate': '2026-10-26', 'completedAtUtcMs': 2, 'deletedAtUtcMs': 3,
+                'createdAtUtcMs': 1, 'updatedAtUtcMs': 5}
+        before = self.archive('v5.zip', 5)
+        full = self.archive('v6-full.zip', 6, todos=[todo], habits=[habit])
+        self.assertEqual(0, self.compare(full, full).returncode)
+        self.assertNotEqual(0, self.compare(before, full, '--allow-v5-to-v6').returncode)
+        for index, changes in enumerate(({'scheduledMinute': 1440}, {'habitDate': None},
+                                         {'habitId': 'missing'}, {'completedAtUtcMs': True},
+                                         {'title': ''}, {'localDate': '2200-01-01'})):
+            with self.assertRaises((AssertionError, ValueError)):
+                verify_backup.inspect(self.archive(f'bad-todo-{index}.zip', 6, todos=[dict(todo, **changes)], habits=[habit]))
+        with self.assertRaises(AssertionError):
+            verify_backup.inspect(self.archive('duplicate-source.zip', 6,
+                                               todos=[todo, dict(todo, id='other')], habits=[habit]))
 
 
 if __name__ == '__main__':

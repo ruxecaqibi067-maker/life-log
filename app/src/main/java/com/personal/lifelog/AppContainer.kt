@@ -15,6 +15,7 @@ import com.personal.lifelog.data.repository.WorkRepository
 import com.personal.lifelog.data.repository.WorkSummaryRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
+import com.personal.lifelog.data.repository.TodoRepository
 import com.personal.lifelog.feature.settings.BackupRestoreController
 import java.time.Clock
 import java.time.ZoneId
@@ -29,6 +30,7 @@ class AppContainer(
     val writes = WriteCoordinator { restoreEngine.ensureRecovered() }
     internal val database: AppDatabase by lazy { AppDatabase.create(appContext, clock) }
     val records: RecordRepository by lazy { RecordRepository(database, writes, clock, zoneIdProvider) }
+    val todos: TodoRepository by lazy { TodoRepository(database, writes, clock, zoneIdProvider) }
     val photos: PhotoStorage by lazy { PhotoStorage(appContext, database, records, writes, clock) }
     val workouts: WorkoutRepository by lazy { WorkoutRepository(database, writes, clock) }
     val timeline: TimelineRepository by lazy { TimelineRepository(records, workouts, work) }

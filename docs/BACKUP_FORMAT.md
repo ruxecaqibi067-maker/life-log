@@ -1,6 +1,6 @@
-# 备份格式（v1 基础与 v2/v3/v4/v5 增量）
+# 备份格式（v1 基础与 v2–v6 增量）
 
-本地0.1.5导出 `formatVersion/dataVersion=5`，读取兼容 v1–v5；已发布 0.1.4 的格式仍为 v4，App交付与升级证据见 [0.1.4报告](releases/0.1.4.md)。本轮已整合，APK只本地交付，不发布GitHub安装包；见[0.1.5本地说明](releases/0.1.5-local.md)。以下 v1 字段为基础，后续增量见文末。manifest 与 data 的版本必须相同。
+当前数据实现导出 `formatVersion/dataVersion=6`，读取兼容 v1–v6；Room/备份格式版本与 App 版本独立。安装包与整合状态以 [主管进度板](STATUS.md) 为准。本轮 APK 只本地交付，不发布 GitHub 安装包。以下 v1 字段为基础，后续增量见文末；manifest 与 data 的版本必须相同。
 
 ZIP 只允许 `manifest.json`、`data.json` 和 `media/<规范小写UUID>.jpg`，不包含目录条目、系统文件、设备路径、运行时 generation 或恢复日志。ZIP64、多卷、加密和符号链接不支持。未加密，T14 须在保存前说明包含生活记录和照片。
 
@@ -15,7 +15,7 @@ ZIP 只允许 `manifest.json`、`data.json` 和 `media/<规范小写UUID>.jpg`�
 
 所有其余字段必需存在；可空字段显式为 JSON null。ID 是规范小写 UUID；枚举使用实体枚举名；数值使用整数，重量为克、距离为米、时长为秒、时间点为 UTC 毫秒；时区和保存的当地日期同时保留。禁止字符串到数值的隐式转换、浮点数、重复 JSON 键、超深嵌套、无效 UTF-8。保留 null 与 0 的不同含义，组中的 0 克合法。未知可选字段可忽略；未知格式/数据版本、未知枚举或缺必需字段拒绝，不做部分恢复。
 
-上限见 `BackupLimits`，与路线一致：ZIP/展开各 2 GiB、data 32 MiB、照片 8 MiB、10002 条目、10000 条记录（饮食＋作息＋训练＋工作，四类合计）、1000 定义、每训练 100 项、每项 100 组、总 100000 组；manifest 额外限制 4 MiB。实际流量计数，不依赖 ZIP 大小声明。图片先读尺寸限制 1 亿像素，再降采样解码验证，避免按外部尺寸申请整图内存。计数、派生日期、全部引用、顺序、活动作息/工作各自唯一性及各自区间重叠、类型数值规则均验证。
+上限见 `BackupLimits`，与路线一致：ZIP/展开各 2 GiB、data 32 MiB、照片 8 MiB、10002 条目、10000 条记录（饮食＋作息＋训练＋工作＋待办＋习惯合计，含待办墓碑）、1000 运动定义、每训练 100 项、每项 100 组、总 100000 组；manifest 额外限制 4 MiB。实际流量计数，不依赖 ZIP 大小声明。图片先读尺寸限制 1 亿像素，再降采样解码验证，避免按外部尺寸申请整图内存。计数、派生日期、全部引用、顺序、活动作息/工作各自唯一性及各自区间重叠、类型数值规则均验证。
 
 导出持有全局 WriteCoordinator，通过 Room 事务取得 DataSnapshot，复制并校验照片，打包后从 ZIP 重新读取自检，再通过 BackupDestination 写入并关闭 SAF 文档，随后记录成功时间。失败或取消尽力删除目标和暂存；provider 拒绝删除时残留文档仍不得报告成功。内部回滚复用 prepare，不更新成功导出时间。
 
@@ -53,3 +53,14 @@ v2 为饮食新增可空 `satietyText`，支持 `NOT_FULL` 和 `CUSTOM`；只有
 - v1–v4 读取时统一补 `effort=null, effortText=null`，不把旧备注解释为评价；既有工作、目标、照片、训练项目与组、历史快照及时间语义全部保留。新导出只用 v5，旧版 App 会拒绝 v5，不提供降级导出。
 - Room 同时新增真实 v4→v5 加列迁移；旧训练保持未评价，无删表或重建训练量。快速输入的“组数、每组次数、重量”在保存时展开为原有的独立组，`items/sets` 结构、单位和 ID 语义未变，因此备份仍可保留各组不同训练量。
 - 全量恢复和回滚使用同一完整 `DataSnapshot`，包含评价字段。比较脚本新增 `--allow-v1-to-v5` 至 `--allow-v4-to-v5`；只补已定义的空评价及必要的旧格式增量，4→5 保留工作及两个目标，任何真实记录/评价/照片变化仍应失败。
+
+## v6 待办与21个自然日习惯（T22）
+
+- `data.todos`、`data.habits` 及 `manifest.counts.todos/habits` 均为必需字段；空列表显式为 `[]`。待办数量包括软删除墓碑，不能在导出时过滤掉，否则恢复后会重复生成。
+- 待办对象必需字段：`id`、`title`、`localDate`、`scheduledMinute`、`habitId`、`habitDate`、`completedAtUtcMs`、`deletedAtUtcMs`、`createdAtUtcMs`、`updatedAtUtcMs`。标题为去首尾空白后的1–120个Unicode码点；分钟为整数0–1439或null；本地日期为规范ISO `YYYY-MM-DD`，范围1900-01-01至2199-12-31。完成/删除时间可空；存在时须在创建至更新时间内。`habitId/habitDate` 同为空或同非空；非空时须引用一个习惯且 `(habitId, habitDate)` 唯一。
+- `habitDate` 是不可变原生成日，`localDate` 是可单独编辑的待办日期。已生成标题/分钟保留快照，后续习惯编辑、暂停或归档不重写历史；待办移日或软删除均保留生成去重键。备份不根据当前习惯规则反向校验历史实例的标题、日期或完成状态。
+- 习惯对象必需字段：`id`、`title`、`startDate`、`scheduledMinute`、`frequency`、`intervalDays`、`weekdaysMask`、`status`、`createdAtUtcMs`、`updatedAtUtcMs`。标题、日期、分钟与待办一致。`status` 为 `ACTIVE/PAUSED/ARCHIVED`；`frequency` 为 `DAILY/INTERVAL/WEEKLY`。DAILY规范为间隔1/掩码0；INTERVAL间隔1–365、掩码0；WEEKLY间隔1、掩码1–127（周一bit0、周日bit6）。未知枚举、非法类型、日期、引用、重复生成键和计数不匹配均拒绝预检。
+- 周期按起始日本地日期为第1天，范围 `startDate..startDate+20`；第22天从进行中列表隐藏并停止生成，不删除历史。暂停不顺延，漏一天不重置；不是21次打卡，也不承诺21天保证养成习惯。只在进入/切换到手机当前本地今日时幂等生成，不补造过去漏日、不预生成未来、不依赖后台服务。历史保存日期不因当前时区改变而漂移。
+- `DataSnapshot`、导出自检、预检、全量恢复、恢复前回滚档案均包含两表所有行。读取v1–v5时两表默认为空；确认恢复旧包会全量清空当前待办/习惯。取消、提交前异常或数据库事务失败保留旧完整状态；恢复回滚档案会恢复墓碑及完成状态。
+- `BackupPreview` 新增 `todoCount/habitCount`（默认0）、`earliestLocalDate/latestLocalDate`（待办日期与习惯起始日范围，默认null）。原UTC时点范围仍用于原四类记录，不把无时区日期转换成虚构UTC时点。`counts` 对旧包也补齐两项0。
+- Room v5→v6仅新增两表、外键、索引及校验触发器，保留schema1–5。新App读v1–v6，旧App拒绝v6；比较脚本增加 `--allow-v1-to-v6` 至 `--allow-v5-to-v6`，仅补齐定义的空新表与既定旧字段。
