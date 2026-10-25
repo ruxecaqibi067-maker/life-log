@@ -3,8 +3,8 @@
 ## 产品与当前阶段
 
 - 产品名「随手记」，面向Android9及以上手机，本地离线；荣耀200 Pro优先真机验证。
-- 当前源码/本地测试版0.1.5 / versionCode7，Room/备份v5，已接受运动优化`104761b`及首页双卡`2c965f2`；最近公开安装包仍为完整0.1.4/code6。用户本轮只授权源码/文档推送，APK仅本地，不创建Release或上传APK。以`docs/STATUS.md`、`docs/releases/0.1.5-local.md`及实际Git祖先为准。
-- T19交付`8955731`、T06黑屏起床修复`83afe9a`、T20数据`806dbe4`已正常整合。T21交付`32dfba7`（实现`f500219`）已整合`ea00652`，四类时间线、双卡与工作页面已可用；后续从最新main核对祖先并使用真实接口；开始工作留在普通首页，不进入睡前黑屏。
+- 当前源码/本地测试版0.1.6 / versionCode8，Room/备份v6；T22数据`2e9a7d1`、T23界面`7997c3c`、T24布局`3578ef7`正常整合。最近公开APK仍为完整0.1.4/code6，默认不创建Release或上传APK。以`docs/STATUS.md`、`docs/releases/0.1.6-local.md`及实际Git祖先为准。
+- 前置0.1.5完整主线`ec005a5`，包含既有饮食/睡眠/工作/训练、黑屏起床修复、批量力量/感受、公共滚轮和首页并排双卡。开始工作留普通首页，不进入睡前黑屏。历史交付不重新实现。
 - 用户指定主管对话负责规划、整合、验收与发布，实现对话执行各包。新用户指令优先；不要额外制造审批步骤。
 
 ## 先读取
@@ -13,7 +13,7 @@
 2. `docs/WORKFLOW.md`、相关产品/技术章节与`docs/README.md`导航。
 3. 直接前置交接：已完成任务在`docs/archive/handoffs/`，具体文件见`docs/TASKS.md`，然后读取相关代码。
 
-T01–T09任务已合并到`docs/archive/tasks/T01-T09-基础功能任务.md`，T10–T21原任务书在同一archive/tasks目录。历史提示词不代表当前待执行要求。新任务仍在docs/tasks，新交接按`docs/handoffs/TEMPLATE-交接模板.md`建立。
+T01–T09任务已合并到`docs/archive/tasks/T01-T09-基础功能任务.md`，T10–T24原任务书在同一archive/tasks目录；T22–T24交接已汇总到0.1.6报告。历史提示词不代表当前待执行要求。新任务仍在docs/tasks，新交接按`docs/handoffs/TEMPLATE-交接模板.md`建立。
 
 ## 实现边界
 

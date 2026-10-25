@@ -315,7 +315,7 @@ T15放行仅针对候选功能、数据可靠性与性能，不要求尚未发�
 
 精确接口和文件边界见 [T20](archive/tasks/T20.md)、[T21](archive/tasks/T21.md)。T20不提前扩展只读时间线枚举导致旧UI编译失败，T21统一接入读模型和对应穷尽分支；T21在已接受T19首页上增量接入，保留黑屏起床修复。
 
-## 13. 当前本地0.1.5增补
+## 13. 历史本地0.1.5增补
 
 公共时间选择统一ui/components/RecordDateTimePicker，SleepDateTimePicker只保留兼容入口；StrengthBatch展开为原有独立WorkoutSet，历史不同组训练量不合并。Room4→5给WorkoutSession增加可空effort/effortText，完整迁移链和备份1–4读取保留，导出v5。首页并排双卡与随机评价只在表现层比较目标，不改变记录或区间统计。详见[本地说明](releases/0.1.5-local.md)。
 
