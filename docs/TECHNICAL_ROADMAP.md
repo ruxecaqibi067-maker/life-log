@@ -110,7 +110,7 @@ T02 冻结实际字段名、DAO/Repository 公共签名和 schema。实现可以
 | WorkoutItem | id、sessionId、exerciseId、nameSnapshot、typeSnapshot、sortOrder、durationSeconds?、distanceMeters?、note? |
 | WorkoutSet | id、itemId、sortOrder、weightGrams?、repetitions?；各组可以不同，纯空占位组不入库 |
 | MediaAsset | id、generationId、relativePath、mimeType、width、height、byteSize、sha256；路径仅由本地程序生成 |
-| AppSettings | 固定单行 id、themeMode、lastSuccessfulExportAtUtcMs? 等首版偏好 |
+| AppSettings | 固定单行 id、themeMode、lastSuccessfulExportAtUtcMs?；T18 schema3新增 targetSleepMinutes?（每日分钟目标，1–1440，未设置为null） |
 | RestoreState | 固定单行/元数据，lastCommittedRestoreId；用于启动后判断恢复事务是否提交 |
 
 `activeSlot` 唯一索引使数据库最多容纳一个进行中的作息；开始/结束仍在事务内做完整校验。导入必须重建并验证该字段，不能信任外部值。
@@ -180,7 +180,7 @@ data.json
 media/<photoId>.jpg
 ```
 
-- `manifest`：`formatVersion=2`（读取兼容 v1）、appVersion、exportedAtUtcMs、数据与照片数量，以及 `data.json` 和每张照片的相对路径/大小/SHA-256；manifest不计算自身哈希。v2 为饮食增加可选 `satietyText`，v1 包缺失该字段时按 null 读取。
+- `manifest`：T18源码导出 `formatVersion=3`（读取兼容 v1/v2），与 `dataVersion` 相同；另含 appVersion、exportedAtUtcMs、数据与照片数量，以及 `data.json` 和每张照片的相对路径/大小/SHA-256；manifest不计算自身哈希。v2 为饮食增加可选 `satietyText`，v1 包缺失时按 null；v3 为设置增加 `targetSleepMinutes`，v1/v2 缺失时按 null。发布基线仍由 STATUS 与主管发布报告确认，格式细节见 BACKUP_FORMAT_V1.md。
 - `data`：稳定 UUID、三类记录、完整项目库、所有项目快照和组、照片语义元数据、进行中作息、AppSettings。
 - 不导出原手机绝对路径、content URI、恢复日志、临时文件或签名资料。照片在备份里的路径与运行时 generation 目录分离。
 - 导入保留记录 ID 与历史内容；生成新的本地媒体 generation，并重建 DB 路径。导出计数、引用与哈希必须互相吻合。

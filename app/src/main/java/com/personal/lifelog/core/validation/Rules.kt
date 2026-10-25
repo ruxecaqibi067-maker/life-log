@@ -16,6 +16,14 @@ object Rules {
     const val WORKOUT_ITEMS_LIMIT = 100
     const val SETS_PER_ITEM_LIMIT = 100
     const val PHOTO_BYTES_LIMIT = 8 * 1024 * 1024L
+    const val TARGET_SLEEP_MINUTES_MAX = 1440
+
+    fun targetSleepMinutes(value: Int?): Int? {
+        if (value != null && value !in 1..TARGET_SLEEP_MINUTES_MAX) {
+            reject(ErrorCode.INVALID_NUMBER, "targetSleepMinutes")
+        }
+        return value
+    }
 
     fun id(value: String): String {
         val parsed = runCatching { UUID.fromString(value).toString() }.getOrNull()

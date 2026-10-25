@@ -27,6 +27,8 @@ data class AppSettings(
     val lastSuccessfulExportAtUtcMs: Long? = null,
     val createdAtUtcMs: Long,
     val updatedAtUtcMs: Long,
+    /** Current global daily duration goal, in minutes; null means not set. */
+    val targetSleepMinutes: Int? = null,
 )
 
 /** Internal restore commit marker; excluded from user backup DTOs. */

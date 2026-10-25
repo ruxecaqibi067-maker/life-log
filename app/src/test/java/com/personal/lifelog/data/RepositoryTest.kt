@@ -62,18 +62,18 @@ class RepositoryTest {
         assertNull(db.metadata().restoreState().lastCommittedRestoreId)
         assertTrue(db.workouts().allExercises().all { it.isBuiltin && it.createdAtUtcMs == clock.millis() })
         assertThrows(Exception::class.java) {
-            db.openHelper.writableDatabase.execSQL("INSERT INTO AppSettings VALUES (2,'SYSTEM',NULL,1,1)")
+            db.openHelper.writableDatabase.execSQL("INSERT INTO AppSettings (id,themeMode,lastSuccessfulExportAtUtcMs,createdAtUtcMs,updatedAtUtcMs) VALUES (2,'SYSTEM',NULL,1,1)")
         }
     }
 
-    @Test fun compiledDatabaseIdentityMatchesExportedV2Schema() = runBlocking<Unit> {
+    @Test fun compiledDatabaseIdentityMatchesExportedV3Schema() = runBlocking<Unit> {
         db.metadata().settingsNow()
-        val schema = JSONObject(File("schemas/com.personal.lifelog.data.local.AppDatabase/2.json").readText())
+        val schema = JSONObject(File("schemas/com.personal.lifelog.data.local.AppDatabase/3.json").readText())
         val expected = schema.getJSONObject("database").getString("identityHash")
         db.openHelper.readableDatabase.query("SELECT identity_hash FROM room_master_table WHERE id = 42").use {
             assertTrue(it.moveToFirst()); assertEquals(expected, it.getString(0))
         }
-        assertEquals(2, db.openHelper.readableDatabase.version)
+        assertEquals(3, db.openHelper.readableDatabase.version)
     }
 
     @Test fun mealAllowsOnlyTextOrPhotoAndDatesMoveOnEdit() = runBlocking<Unit> {

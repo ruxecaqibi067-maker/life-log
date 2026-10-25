@@ -11,6 +11,7 @@ import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.data.local.dao.MetadataDao
 import com.personal.lifelog.data.local.dao.RecordDao
 import com.personal.lifelog.data.local.dao.RestoreDao
+import com.personal.lifelog.data.local.dao.SleepSummaryDao
 import com.personal.lifelog.data.local.dao.WorkoutDao
 import com.personal.lifelog.data.local.entity.*
 import java.time.Clock
@@ -19,7 +20,7 @@ import java.time.Clock
     entities = [MealRecord::class, SleepRecord::class, ExerciseDefinition::class,
         WorkoutSession::class, WorkoutItem::class, WorkoutSet::class,
         MediaAsset::class, AppSettings::class, RestoreState::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -28,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workouts(): WorkoutDao
     abstract fun metadata(): MetadataDao
     abstract fun restore(): RestoreDao
+    abstract fun sleepSummaries(): SleepSummaryDao
 
     companion object {
         const val NAME = "life-log.db"
@@ -35,7 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun create(context: Context, clock: Clock, name: String = NAME): AppDatabase =
             Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, name)
                 .addCallback(creationCallback(clock))
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 // First real schema was v1. Every later version has an explicit tested migration.
                 // Never add fallbackToDestructiveMigration to the user database.
                 .build()
@@ -61,6 +63,25 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE MealRecord ADD COLUMN satietyText TEXT")
                 installMealGuard(db)
+            }
+        }
+
+        /** Existing users have no goal until they explicitly save one. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE AppSettings ADD COLUMN targetSleepMinutes INTEGER")
+                installSettingsGuard(db)
+            }
+        }
+
+        private fun installSettingsGuard(db: SupportSQLiteDatabase) {
+            listOf("INSERT", "UPDATE").forEach { operation ->
+                db.execSQL("DROP TRIGGER IF EXISTS guard_AppSettings_$operation")
+                db.execSQL("CREATE TRIGGER guard_AppSettings_$operation BEFORE $operation ON AppSettings WHEN " +
+                    "NEW.id != 1 OR (NEW.targetSleepMinutes IS NOT NULL AND " +
+                    "(typeof(NEW.targetSleepMinutes) != 'integer' OR NEW.targetSleepMinutes < 1 OR " +
+                    "NEW.targetSleepMinutes > ${Rules.TARGET_SLEEP_MINUTES_MAX})) " +
+                    "BEGIN SELECT RAISE(ABORT, 'invalid AppSettings invariant'); END")
             }
         }
 
@@ -90,7 +111,7 @@ abstract class AppDatabase : RoomDatabase() {
                     db.execSQL("CREATE TRIGGER guard_${table}_${operation} BEFORE $operation ON $table WHEN $condition BEGIN SELECT RAISE(ABORT, 'invalid $table invariant'); END")
                 }
             }
-            guard("AppSettings", "NEW.id != 1")
+            installSettingsGuard(db)
             guard("RestoreState", "NEW.id != 1")
             guard("SleepRecord", "(NEW.endedAtUtcMs IS NULL AND (NEW.activeSlot IS NOT 1 OR NEW.endZoneId IS NOT NULL)) OR (NEW.endedAtUtcMs IS NOT NULL AND (NEW.activeSlot IS NOT NULL OR NEW.endZoneId IS NULL OR NEW.endedAtUtcMs <= NEW.startedAtUtcMs))")
             guard("ExerciseDefinition", "(NEW.isHidden = 0 AND NEW.activeNameKey IS NOT NEW.normalizedName) OR (NEW.isHidden = 1 AND NEW.activeNameKey IS NOT NULL)")

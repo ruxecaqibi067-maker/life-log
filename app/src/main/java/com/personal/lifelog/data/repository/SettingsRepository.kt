@@ -1,10 +1,13 @@
 package com.personal.lifelog.data.repository
 
 import com.personal.lifelog.data.local.AppDatabase
+import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.data.local.entity.AppSettings
 import com.personal.lifelog.domain.DataResult
 import com.personal.lifelog.domain.ThemeMode
 import java.time.Clock
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 class SettingsRepository(
     private val db: AppDatabase,
@@ -12,6 +15,18 @@ class SettingsRepository(
     private val clock: Clock,
 ) {
     fun settings() = db.metadata().settings()
+
+    /** Cold Room flow; read failures propagate, never become an unset target. */
+    fun targetSleepMinutes() = settings().map { it.targetSleepMinutes }.distinctUntilChanged()
+
+    /** null explicitly clears the goal. No record dates, intervals or other settings change. */
+    suspend fun setTargetSleepMinutes(minutes: Int?): DataResult<AppSettings> = write(db, writes) {
+        Rules.targetSleepMinutes(minutes)
+        val old = db.metadata().settingsNow()
+        old.copy(targetSleepMinutes = minutes,
+            updatedAtUtcMs = updatedAt(clock.millis(), old.createdAtUtcMs, old.updatedAtUtcMs))
+            .also { db.metadata().putSettings(it) }
+    }
 
     suspend fun setTheme(mode: ThemeMode): DataResult<AppSettings> = write(db, writes) {
         val old = db.metadata().settingsNow()

@@ -89,6 +89,7 @@ object BackupValidation {
             Rules.weight(it.weightGrams); Rules.repetitions(it.repetitions)
         }
         requireBackup(d.settings.id == 1)
+        Rules.targetSleepMinutes(d.settings.targetSleepMinutes)
         times(d.settings.createdAtUtcMs, d.settings.updatedAtUtcMs)
     }
 
