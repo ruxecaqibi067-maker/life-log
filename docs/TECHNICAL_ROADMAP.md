@@ -318,3 +318,11 @@ T15放行仅针对候选功能、数据可靠性与性能，不要求尚未发�
 ## 13. 当前本地0.1.5增补
 
 公共时间选择统一ui/components/RecordDateTimePicker，SleepDateTimePicker只保留兼容入口；StrengthBatch展开为原有独立WorkoutSet，历史不同组训练量不合并。Room4→5给WorkoutSession增加可空effort/effortText，完整迁移链和备份1–4读取保留，导出v5。首页并排双卡与随机评价只在表现层比较目标，不改变记录或区间统计。详见[本地说明](releases/0.1.5-local.md)。
+
+## 14. 待办与21天习惯（0.1.6）
+
+独立TodoRecord/HabitRecord和TodoRepository，由AppContainer装配；首页TodoViewModel订阅Room，并跟随HomeViewModel的手机本地日期。进入前台重读手机日期、跨午夜刷新后幂等生成当天实例，不使用网络、定时任务服务或闹钟权限。日期和可选分钟保留日历语义，完成/修改时间另存真实时间点。
+
+同一habitId和原生成habitDate唯一；单条编辑日期不改变去重键，删除保留墓碑避免自动复活。习惯修改只影响未来生成，21自然日按开始日期计算，与勾选次数无关。Room5→6新增两表，备份6通过完整Snapshot/校验/预览/恢复/回滚链涵盖新表；读取1–5时新列表为空。详情见[习惯规则](HABIT_RULES.md)、[备份格式](BACKUP_FORMAT.md)及[本地整合说明](releases/0.1.6-local.md)。
+
+首页HomeScreen通过todoContent插槽显示待办；外导航留出的bottom padding在传给内层Scaffold时消费，避免重复系统底部空间。原生公共滚轮是后续所有日期/钟点输入的默认实现。发布默认仅推送源码/文档，GitHub安装包更新需用户明确要求。
