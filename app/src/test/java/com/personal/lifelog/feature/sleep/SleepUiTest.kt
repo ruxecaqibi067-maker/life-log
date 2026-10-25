@@ -163,7 +163,7 @@ class SleepUiTest {
         compose.onNodeWithText("确认").performClick()
         awaitText("准备睡了")
         assertEquals(now.toEpochMilli(), rows().single().endedAtUtcMs)
-        compose.onNodeWithTag("home-timeline").performScrollToKey("sleep-summary")
+        compose.onNodeWithTag("home-timeline").performScrollToKey("duration-summaries")
         awaitText("48小时")
     }
 

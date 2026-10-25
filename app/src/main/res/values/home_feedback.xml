@@ -1,0 +1,73 @@
+<resources>
+    <string name="home_duration_source">按结束日统计</string>
+    <string name="home_duration_history">查看 / 补录</string>
+    <string name="home_sleep_open_history">查看或补录睡眠记录</string>
+    <string name="home_work_open_history">查看或补录工作记录</string>
+    <string name="home_duration_goal_loading">正在读取目标…</string>
+    <string name="home_duration_goal_unavailable">目标暂不可读</string>
+    <string-array name="sleep_feedback_short">
+        <item>离休息目标还有一点，今晚早点放下忙碌。</item>
+        <item>今天休息得偏少，记得给自己多留些睡眠。</item>
+        <item>忙碌也要留白，下一觉好好休息。</item>
+        <item>先照顾好自己，别忘了早点休息。</item>
+        <item>给疲惫按个暂停，今晚多留点休息时间。</item>
+    </string-array>
+    <string-array name="sleep_feedback_balanced">
+        <item>好好休息，也是认真生活的一部分。</item>
+        <item>给自己充好电，再从容开始新一天。</item>
+        <item>今天也在好好照顾自己，继续保持。</item>
+        <item>愿这份休息，换来一天轻松的心情。</item>
+        <item>把生活过得有张有弛，已经很棒了。</item>
+    </string-array>
+    <string-array name="sleep_feedback_unset">
+        <item>设个适合自己的休息目标吧。</item>
+        <item>给休息留个小目标，慢慢找到自己的节奏。</item>
+        <item>先定下期望时长，再看看今天的节奏。</item>
+    </string-array>
+    <string-array name="sleep_feedback_empty">
+        <item>还没有完整记录，记得给休息留时间。</item>
+        <item>别忘了记录休息，也别忘了照顾自己。</item>
+        <item>今天的休息还待记录，按自己的节奏来。</item>
+    </string-array>
+    <string-array name="sleep_feedback_active">
+        <item>正在休息，安心把忙碌放一放。</item>
+        <item>休息的时间，就留给自己。</item>
+        <item>好好休息，醒来再继续慢慢向前。</item>
+    </string-array>
+    <string-array name="work_feedback_short">
+        <item>离今日目标还有一点，别忘了手边的计划。</item>
+        <item>按自己的节奏来，也记得推进今天的小事。</item>
+        <item>先做一件小事，让今天的计划向前一点。</item>
+        <item>别忘了想完成的事，一步一步就好。</item>
+        <item>今天还有些计划待推进，挑一件慢慢做吧。</item>
+    </string-array>
+    <string-array name="work_feedback_balanced">
+        <item>今天的努力，正在一点点开花。</item>
+        <item>认真投入，也给生活留一点轻松。</item>
+        <item>稳稳向前的每一步，都值得肯定。</item>
+        <item>保持自己的节奏，你已经做得很好。</item>
+        <item>又向计划靠近了一点，为自己点个赞。</item>
+    </string-array>
+    <string-array name="work_feedback_long">
+        <item>已经超过自己的目标不少，起来休息一下吧。</item>
+        <item>今天投入很多了，别忘了给自己留些休息。</item>
+        <item>忙碌先告一段落，喝水、走动、放松一下。</item>
+        <item>辛苦了，接下来也给生活留点时间。</item>
+        <item>该给专注按个暂停了，休息一会再继续。</item>
+    </string-array>
+    <string-array name="work_feedback_unset">
+        <item>设个今天的工作目标，按自己的节奏来。</item>
+        <item>先定下期望时长，让今天更从容一点。</item>
+        <item>给工作留个小目标，也给休息留些空间。</item>
+    </string-array>
+    <string-array name="work_feedback_empty">
+        <item>今天的计划还待记录，别忘了想做的事。</item>
+        <item>从一件小事开始，记得记录投入的时间。</item>
+        <item>想做的事慢慢来，开始时记得按一下按钮。</item>
+    </string-array>
+    <string-array name="work_feedback_active">
+        <item>专注眼前的事，也记得适时休息。</item>
+        <item>工作正在进行，一步一步推进就好。</item>
+        <item>保持自己的节奏，忙一会也要歇一会。</item>
+    </string-array>
+</resources>

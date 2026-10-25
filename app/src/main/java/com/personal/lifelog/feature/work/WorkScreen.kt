@@ -66,25 +66,15 @@ fun WorkError(code: ErrorCode) {
     com.personal.lifelog.ui.components.ErrorState(stringResource(message))
 }
 
-/** Card actions are explicit buttons; records and sleep state remain independent. */
+/** Command feedback remains scrollable; the fixed home actions own start/finish. */
 @Composable
-fun WorkHomeActions(viewModel: WorkViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit, summaryReady: Boolean = true) {
+fun WorkHomeFeedback(viewModel: WorkViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit) {
     val status by viewModel.status.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val undo by viewModel.undo.collectAsStateWithLifecycle()
     val active = status.active
-    val startId = remember(active?.id) { com.personal.lifelog.domain.RecordIds.newId() }
     Column(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-        PrimaryButton(onClick = { if (active == null) viewModel.start(startId) else viewModel.finish(active) },
-            enabled = status.loaded && !status.failed && !busy && summaryReady,
-            modifier = Modifier.fillMaxWidth().testTag("work-start-finish")) {
-            Icon(if (active == null) androidx.compose.material.icons.Icons.Filled.WorkOutline
-                else androidx.compose.material.icons.Icons.Filled.StopCircle, null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(when { busy -> R.string.saving; !status.loaded -> R.string.work_loading
-                active == null -> R.string.work_start; else -> R.string.work_finish }))
-        }
         if (status.failed) {
             WorkError(ErrorCode.STORAGE_UNAVAILABLE)
             SecondaryButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
