@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -87,6 +88,11 @@ class LifelogNavigationSmokeTest {
             SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes,
         )
         val sleepViewModel = SleepViewModel(records, clock) { ZoneId.of("Asia/Shanghai") }
+        val workRepo = com.personal.lifelog.data.repository.WorkRepository(db, writes, clock, ZoneId::systemDefault)
+        val workVM = com.personal.lifelog.feature.work.WorkViewModel(workRepo, clock, ZoneId::systemDefault)
+        val workHomeVM = com.personal.lifelog.feature.home.WorkHomeViewModel(homeViewModel.today,
+            com.personal.lifelog.data.repository.WorkSummaryRepository(db)::observe,
+            com.personal.lifelog.data.repository.SettingsRepository(db, writes, clock)::setTargetWorkMinutes)
         compose.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
                 LifelogApp(
@@ -98,8 +104,7 @@ class LifelogNavigationSmokeTest {
                     records = records,
                     photos = photos,
                     clock = clock,
-                    zoneIdProvider = { ZoneId.of("Asia/Shanghai") },
-                )
+                    zoneIdProvider = { ZoneId.of("Asia/Shanghai") }, workViewModel = workVM, workHomeViewModel = workHomeVM)
             }
         }
     }
@@ -155,6 +160,7 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithText("保存训练").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
+        compose.onNodeWithTag("home-timeline").performScrollToNode(androidx.compose.ui.test.hasTestTag("home-workout-history"))
         compose.onNodeWithTag("home-workout-history").performClick()
         compose.onNodeWithText("前一天").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()

@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * Today's persisted local date and the unified three-type timeline for it.
+ * Today's persisted local date and the unified four-type timeline for it.
  *
  * [today] follows the injected clock/zone and re-emits when the local day rolls
  * over while the app stays open, so a late-night session moves to the new day

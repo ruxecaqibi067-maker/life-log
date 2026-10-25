@@ -60,13 +60,24 @@ class WorkoutUiTest {
         val settings = SettingsViewModel(SettingsRepository(db, writes, clock))
         val sleep = SleepViewModel(records, clock) { zone }
         val photos = PhotoStorage(context, db, records, writes, clock)
+        val workRepo = com.personal.lifelog.data.repository.WorkRepository(db, writes, clock, ZoneId::systemDefault)
+        val workVM = com.personal.lifelog.feature.work.WorkViewModel(workRepo, clock, ZoneId::systemDefault)
+        val workHomeVM = com.personal.lifelog.feature.home.WorkHomeViewModel(home.today,
+            com.personal.lifelog.data.repository.WorkSummaryRepository(db)::observe,
+            com.personal.lifelog.data.repository.SettingsRepository(db, writes, clock)::setTargetWorkMinutes)
         compose.setContent { LifeLogTheme(ThemeMode.LIGHT) {
-            LifelogApp(home, settings, records, photos, clock, { zone }, sleep, workouts, timelineRepository)
+            LifelogApp(home, settings, records, photos, clock, { zone }, sleep, workouts, timelineRepository, workVM, workHomeVM)
         } }
     }
     @After fun close() { db.close() }
     private fun waitText(text: String) {
-        compose.waitUntil(10_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) {
+            if (compose.onAllNodesWithText(text).fetchSemanticsNodes().isEmpty() &&
+                compose.onAllNodesWithTag("home-timeline").fetchSemanticsNodes().isNotEmpty()) {
+                runCatching { compose.onNodeWithTag("home-timeline").performScrollToNode(hasText(text)) }
+            }
+            compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
     }
     private fun add(name: String) {
         compose.onNodeWithTag("workout-form").performScrollToNode(hasText("添加项目"))

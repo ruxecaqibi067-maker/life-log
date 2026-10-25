@@ -1,4 +1,6 @@
 package com.personal.lifelog.feature.timeline
+
+import androidx.compose.ui.test.*
 import com.personal.lifelog.feature.sleep.pickSleepTime
 
 import android.app.Application
@@ -119,6 +121,11 @@ class TimelineUiTest {
         val settings = SettingsViewModel(SettingsRepository(db, WriteCoordinator(), clock))
         val home = HomeViewModel(clock, { zone }, timeline, SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes)
         val sleep = SleepViewModel(records, clock) { zone }
+        val workRepo = com.personal.lifelog.data.repository.WorkRepository(db, writes, clock, ZoneId::systemDefault)
+        val workVM = com.personal.lifelog.feature.work.WorkViewModel(workRepo, clock, ZoneId::systemDefault)
+        val workHomeVM = com.personal.lifelog.feature.home.WorkHomeViewModel(home.today,
+            com.personal.lifelog.data.repository.WorkSummaryRepository(db)::observe,
+            com.personal.lifelog.data.repository.SettingsRepository(db, writes, clock)::setTargetWorkMinutes)
         compose.setContent {
             LifeLogTheme(ThemeMode.LIGHT) {
                 LifelogApp(
@@ -130,8 +137,7 @@ class TimelineUiTest {
                     records = records,
                     photos = photos,
                     clock = clock,
-                    zoneIdProvider = { zone },
-                )
+                    zoneIdProvider = { zone }, workViewModel = workVM, workHomeViewModel = workHomeVM)
             }
         }
     }
@@ -211,6 +217,10 @@ class TimelineUiTest {
 
     private fun waitText(text: String) {
         compose.waitUntil(10_000) {
+            if (compose.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isEmpty() &&
+                compose.onAllNodesWithTag("home-timeline").fetchSemanticsNodes().isNotEmpty()) {
+                runCatching { compose.onNodeWithTag("home-timeline").performScrollToNode(hasText(text, substring = true)) }
+            }
             compose.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
         }
     }

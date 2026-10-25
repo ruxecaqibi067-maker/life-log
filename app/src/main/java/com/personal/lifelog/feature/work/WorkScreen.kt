@@ -1,0 +1,265 @@
+package com.personal.lifelog.feature.work
+
+import com.personal.lifelog.feature.sleep.SleepDateTimePicker
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.WorkOutline
+import androidx.compose.material.icons.filled.StopCircle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.personal.lifelog.R
+import com.personal.lifelog.core.time.RecordTime
+import com.personal.lifelog.data.local.entity.WorkRecord
+import com.personal.lifelog.domain.ErrorCode
+import com.personal.lifelog.ui.components.EmptyState
+import com.personal.lifelog.ui.components.PrimaryButton
+import com.personal.lifelog.ui.components.RecordCard
+import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.theme.LogDimens
+import java.time.Instant
+import java.time.ZoneId
+
+private fun recordedTime(instant: Long, zone: String): String =
+    chineseWorkTime(Instant.ofEpochMilli(instant).atZone(RecordTime.zone(zone)))
+
+@Composable
+fun WorkRecordSummary(record: WorkRecord) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.work_start_value, recordedTime(record.startedAtUtcMs, record.startZoneId)))
+        val end = record.endedAtUtcMs
+        if (end == null) Text(stringResource(R.string.work_active), color = MaterialTheme.colorScheme.primary)
+        else {
+            Text(stringResource(R.string.work_end_value, recordedTime(end, record.endZoneId!!)))
+            Text(stringResource(R.string.work_recorded_duration,
+                com.personal.lifelog.feature.home.recordedDurationText(Math.subtractExact(end, record.startedAtUtcMs))))
+        }
+        Text(stringResource(R.string.work_archive, record.archiveLocalDate), style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+fun WorkError(code: ErrorCode) {
+    val message = when (code) {
+        ErrorCode.INVALID_INTERVAL -> R.string.work_invalid_interval
+        ErrorCode.OVERLAPPING_WORK -> R.string.work_overlap
+        ErrorCode.INVALID_TIME_ZONE -> R.string.work_invalid_zone
+        ErrorCode.INVALID_LOCAL_TIME -> R.string.work_invalid_time
+        ErrorCode.AMBIGUOUS_LOCAL_TIME -> R.string.work_ambiguous
+        ErrorCode.NOT_FOUND, ErrorCode.INVALID_ID -> R.string.work_stale
+        ErrorCode.STORAGE_FULL -> R.string.work_storage_full
+        else -> R.string.work_storage_error
+    }
+    com.personal.lifelog.ui.components.ErrorState(stringResource(message))
+}
+
+/** Card actions are explicit buttons; records and sleep state remain independent. */
+@Composable
+fun WorkHomeActions(viewModel: WorkViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit, summaryReady: Boolean = true) {
+    val status by viewModel.status.collectAsStateWithLifecycle()
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val undo by viewModel.undo.collectAsStateWithLifecycle()
+    val active = status.active
+    val startId = remember(active?.id) { com.personal.lifelog.domain.RecordIds.newId() }
+    Column(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+        PrimaryButton(onClick = { if (active == null) viewModel.start(startId) else viewModel.finish(active) },
+            enabled = status.loaded && !status.failed && !busy && summaryReady,
+            modifier = Modifier.fillMaxWidth().testTag("work-start-finish")) {
+            Icon(if (active == null) androidx.compose.material.icons.Icons.Filled.WorkOutline
+                else androidx.compose.material.icons.Icons.Filled.StopCircle, null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(when { busy -> R.string.saving; !status.loaded -> R.string.work_loading
+                active == null -> R.string.work_start; else -> R.string.work_finish }))
+        }
+        if (status.failed) {
+            WorkError(ErrorCode.STORAGE_UNAVAILABLE)
+            SecondaryButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
+        }
+        active?.let {
+            Text(stringResource(R.string.work_start_value, recordedTime(it.startedAtUtcMs, it.startZoneId)))
+            SecondaryButton(onClick = { onEdit(it.id) }, enabled = !busy) { Text(stringResource(R.string.work_edit)) }
+        }
+        error?.let { WorkError(it) }
+        if (undo != null) SecondaryButton(onClick = onRequestUndo, enabled = !busy,
+            modifier = Modifier.testTag("work-undo")) { Text(stringResource(R.string.work_undo)) }
+    }
+}
+
+/** Mounted outside LazyColumn so scrolling cannot unmount pending confirmations. */
+@Composable
+fun WorkHomeDialogs(viewModel: WorkViewModel, confirmUndo: Boolean, onDismissUndo: () -> Unit) {
+    val undo by viewModel.undo.collectAsStateWithLifecycle()
+    if (confirmUndo && undo != null) ConfirmDialog(
+        R.string.work_undo,
+        if (undo!!.deleted) R.string.work_undo_delete else if (undo!!.previous == null) R.string.work_undo_start else R.string.work_undo_finish,
+        onCancel = onDismissUndo,
+        onConfirm = { onDismissUndo(); viewModel.undoLast() },
+    )
+    WorkFinishConfirmation(viewModel)
+}
+
+/** Shared by Home and the dark bedtime page: same captured end instant and validation. */
+@Composable
+internal fun WorkFinishConfirmation(viewModel: WorkViewModel) {
+    val pending by viewModel.longFinish.collectAsStateWithLifecycle()
+    if (pending != null) LongIntervalDialog(
+        onCancel = viewModel::dismissLong,
+        onConfirm = viewModel::confirmLong,
+        details = "${recordedTime(pending!!.record.startedAtUtcMs, pending!!.record.startZoneId)}\n${recordedTime(pending!!.instant, pending!!.zone)}",
+    )
+}
+
+@Composable
+fun WorkHistoryScreen(viewModel: WorkViewModel, onAdd: () -> Unit, onEdit: (String) -> Unit, onBack: () -> Unit) {
+    val history by viewModel.history.collectAsStateWithLifecycle()
+    var confirmUndo by rememberSaveable { mutableStateOf(false) }
+    val undo by viewModel.undo.collectAsStateWithLifecycle()
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    WorkHomeDialogs(viewModel, confirmUndo) { confirmUndo = false }
+    WorkScaffold(R.string.work_title, onBack) { modifier ->
+        LazyColumn(modifier.testTag("work-history"), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+            item {
+                PrimaryButton(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.work_add)) }
+                Text(stringResource(R.string.work_note), modifier = Modifier.padding(vertical = 8.dp))
+                error?.let { WorkError(it) }
+                if (undo != null) SecondaryButton(onClick = { confirmUndo = true }, enabled = !busy) {
+                    Text(stringResource(R.string.work_undo))
+                }
+            }
+            val rows = history.records
+            when {
+                history.failed -> item {
+                    WorkError(ErrorCode.STORAGE_UNAVAILABLE)
+                    SecondaryButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
+                }
+                rows == null -> item { Text(stringResource(R.string.work_loading)) }
+                rows.isEmpty() -> item { EmptyState(stringResource(R.string.work_none), hint = stringResource(R.string.work_empty_hint)) }
+                else -> items(rows, key = { it.id }) { record ->
+                    RecordCard(modifier = Modifier.fillMaxWidth().testTag("work-record-${record.id}")) {
+                        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                            WorkRecordSummary(record)
+                            SecondaryButton(onClick = { onEdit(record.id) }, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.work_view_edit))
+                                Spacer(Modifier.width(8.dp))
+                                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowForward, null)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkEditorScreen(viewModel: WorkEditorViewModel, editing: Boolean, onBack: () -> Unit) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var discard by rememberSaveable { mutableStateOf(false) }
+    var delete by rememberSaveable { mutableStateOf(false) }
+    var picker by rememberSaveable { mutableStateOf<String?>(null) }
+    var pickerZone by rememberSaveable { mutableStateOf<String?>(null) }
+    val zone = viewModel.systemZone()
+    val leave = { if (!state.busy) { if (state.dirty) discard = true else onBack() } }
+    BackHandler { leave() }
+    LaunchedEffect(state.done) { if (state.done) onBack() }
+    WorkScaffold(if (editing) R.string.work_edit else R.string.work_add, leave) { modifier ->
+        Column(modifier.testTag("work-form").verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
+            val form = state.form
+            if (state.loading) Text(stringResource(R.string.work_loading))
+            state.error?.let { WorkError(it) }
+            if (form == null && !state.loading) SecondaryButton(onClick = viewModel::load) { Text(stringResource(R.string.retry)) }
+            if (form != null) {
+                Text(stringResource(R.string.work_note))
+                TimeChoice(R.string.work_start_input, chineseWorkTime(form.startAt(zone)), !state.busy) {
+                    pickerZone = zone.id; picker = "start"
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Switch(checked = form.hasEnd, enabled = !state.busy, onCheckedChange = { viewModel.change(form.copy(hasEnd = it)) })
+                    Text(stringResource(R.string.work_has_end), modifier = Modifier.weight(1f))
+                }
+                if (form.hasEnd) TimeChoice(R.string.work_end_input, chineseWorkTime(form.endAt(zone)), !state.busy) {
+                    pickerZone = zone.id; picker = "end"
+                }
+                PrimaryButton(onClick = viewModel::save, enabled = !state.busy, modifier = Modifier.fillMaxWidth().testTag("work-save")) {
+                    Text(stringResource(if (state.busy) R.string.saving else R.string.work_save))
+                }
+                if (editing) SecondaryButton(onClick = { delete = true }, enabled = !state.busy, modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
+                    Text(stringResource(R.string.work_delete))
+                }
+            }
+        }
+    }
+    val form = state.form
+    val target = picker
+    if (form != null && target != null) {
+        val selectedZone = ZoneId.of(pickerZone ?: zone.id)
+        SleepDateTimePicker(
+            title = if (target == "start") R.string.work_pick_start else R.string.work_pick_end,
+            initial = if (target == "start") form.startAt(selectedZone) else form.endAt(selectedZone),
+            zone = selectedZone,
+            onCancel = { picker = null },
+            onConfirm = { local, offset ->
+                viewModel.change(if (target == "start") form.pickStart(local, selectedZone, offset) else form.pickEnd(local, selectedZone, offset))
+                picker = null
+            },
+        )
+    }
+    if (discard) ConfirmDialog(R.string.work_discard, R.string.work_discard_hint, { discard = false }, { discard = false; onBack() })
+    if (delete) ConfirmDialog(R.string.work_delete, R.string.work_delete_prompt, { delete = false }, { delete = false; viewModel.delete() })
+    state.pendingLong?.let { draft ->
+        LongIntervalDialog(viewModel::cancelLong, viewModel::confirmLong,
+            "${recordedTime(draft.startedAtUtcMs, draft.startZoneId)}\n${recordedTime(draft.endedAtUtcMs!!, draft.endZoneId!!)}")
+    }
+}
+
+@Composable
+private fun TimeChoice(title: Int, value: String, enabled: Boolean, onClick: () -> Unit) {
+    RecordCard(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(LogDimens.page), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(title), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.work_picker_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WorkScaffold(title: Int, onBack: () -> Unit, content: @Composable (Modifier) -> Unit) {
+    Scaffold(topBar = { RecordTopBar(title = { Text(stringResource(title)) }, navigationIcon = {
+        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
+    }) }) { padding -> content(Modifier.fillMaxSize().padding(padding).imePadding().padding(LogDimens.page)) }
+}
+
+@Composable
+private fun ConfirmDialog(title: Int, message: Int, onCancel: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(onDismissRequest = onCancel, title = { Text(stringResource(title)) }, text = { Text(stringResource(message)) },
+        confirmButton = { PrimaryButton(onClick = onConfirm, colors = ButtonDefaults.buttonColors(
+            containerColor = if (title == R.string.work_delete) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)) {
+            Text(stringResource(R.string.work_confirm)) } },
+        dismissButton = { SecondaryButton(onClick = onCancel) { Text(stringResource(R.string.work_cancel)) } })
+}
+
+@Composable
+private fun LongIntervalDialog(onCancel: () -> Unit, onConfirm: () -> Unit, details: String) {
+    AlertDialog(onDismissRequest = onCancel, title = { Text(stringResource(R.string.work_long_title)) },
+        text = { Text("${stringResource(R.string.work_long_hint)}\n\n$details", Modifier.verticalScroll(rememberScrollState())) },
+        confirmButton = { PrimaryButton(onClick = onConfirm) { Text(stringResource(R.string.work_confirm)) } },
+        dismissButton = { SecondaryButton(onClick = onCancel) { Text(stringResource(R.string.work_cancel)) } })
+}

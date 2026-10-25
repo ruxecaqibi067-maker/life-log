@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.EventNote
+import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -81,6 +82,7 @@ fun LazyListScope.timelineSection(
     onOpenSleep: (String) -> Unit,
     onOpenWorkout: (String) -> Unit,
     onRetry: () -> Unit,
+    onOpenWork: (String) -> Unit = {},
 ) {
     when {
         state.failed -> item(key = "timeline-failed") {
@@ -122,6 +124,7 @@ fun LazyListScope.timelineSection(
                 when (entry) {
                     is TimelineEntry.Meal -> MealTimelineRow(entry, photos) { onOpenMeal(entry.id) }
                     is TimelineEntry.Sleep -> SleepTimelineRow(entry) { onOpenSleep(entry.id) }
+                    is TimelineEntry.Work -> WorkTimelineRow(entry) { onOpenWork(entry.id) }
                     is TimelineEntry.Workout -> WorkoutTimelineRow(entry) { onOpenWorkout(entry.id) }
                 }
             }
@@ -140,6 +143,8 @@ private fun TimelineSummary(entries: List<TimelineEntry>) {
     val workouts = entries.filterIsInstance<TimelineEntry.Workout>()
     val parts = mutableListOf<String>()
     if (meals > 0) parts += stringResource(R.string.timeline_summary_meal, meals)
+    val work = entries.count { it is TimelineEntry.Work }
+    if (work > 0) parts += stringResource(R.string.timeline_summary_work, work)
     if (sleeps > 0) parts += stringResource(R.string.timeline_summary_sleep, sleeps)
     if (workouts.isNotEmpty()) {
         parts += stringResource(
@@ -195,6 +200,30 @@ private fun SleepTimelineRow(entry: TimelineEntry.Sleep, onClick: () -> Unit) {
         time = displayTime(entry.sortUtcMs, sortZone),
     )
 }
+
+@Composable
+private fun WorkTimelineRow(entry: TimelineEntry.Work, onClick: () -> Unit) {
+    val start = displayDateTime(entry.startedAtUtcMs, entry.startZoneId)
+    val end = entry.endedAtUtcMs
+        ?.let { displayDateTime(it, entry.endZoneId ?: entry.startZoneId) }
+        ?: stringResource(R.string.timeline_work_active)
+    val range = stringResource(R.string.timeline_work_range, start, end)
+    val duration = entry.endedAtUtcMs?.let { workDurationText(entry.startedAtUtcMs, it) }
+    val secondary = listOfNotNull(range, duration).joinToString(" · ")
+    val sortZone = if (entry.endedAtUtcMs != null) entry.endZoneId ?: entry.startZoneId else entry.startZoneId
+    TimelineCard(
+        onClick = onClick,
+        onClickLabel = stringResource(R.string.timeline_open_work),
+        leading = { TimelineIcon(Icons.Filled.WorkOutline) },
+        title = stringResource(R.string.timeline_kind_work),
+        secondary = secondary,
+        time = displayTime(entry.sortUtcMs, sortZone),
+    )
+}
+
+@Composable
+private fun workDurationText(start: Long, end: Long): String = stringResource(R.string.work_recorded_duration,
+    com.personal.lifelog.feature.home.recordedDurationText(Math.subtractExact(end, start)))
 
 @Composable
 private fun WorkoutTimelineRow(entry: TimelineEntry.Workout, onClick: () -> Unit) {

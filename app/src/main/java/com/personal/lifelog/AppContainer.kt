@@ -31,7 +31,7 @@ class AppContainer(
     val records: RecordRepository by lazy { RecordRepository(database, writes, clock, zoneIdProvider) }
     val photos: PhotoStorage by lazy { PhotoStorage(appContext, database, records, writes, clock) }
     val workouts: WorkoutRepository by lazy { WorkoutRepository(database, writes, clock) }
-    val timeline: TimelineRepository by lazy { TimelineRepository(records, workouts) }
+    val timeline: TimelineRepository by lazy { TimelineRepository(records, workouts, work) }
     val settings: SettingsRepository by lazy { SettingsRepository(database, writes, clock) }
     val work: WorkRepository by lazy {
         WorkRepository(database, writes, clock, zoneIdProvider)

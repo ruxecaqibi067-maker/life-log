@@ -60,12 +60,17 @@ class BedtimeDeviceTest {
         val home = HomeViewModel(clock, ZoneId::systemDefault, timeline, SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes)
         val settings = SettingsViewModel(SettingsRepository(db, writes, clock))
         val sleep = SleepViewModel(records, clock, ZoneId::systemDefault)
+        val workRepo = com.personal.lifelog.data.repository.WorkRepository(db, writes, clock, ZoneId::systemDefault)
+        val workVM = com.personal.lifelog.feature.work.WorkViewModel(workRepo, clock, ZoneId::systemDefault)
+        val workHomeVM = com.personal.lifelog.feature.home.WorkHomeViewModel(home.today,
+            com.personal.lifelog.data.repository.WorkSummaryRepository(db)::observe,
+            com.personal.lifelog.data.repository.SettingsRepository(db, writes, clock)::setTargetWorkMinutes)
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale * fontScaleMultiplier.floatValue)) {
                 LifeLogTheme(ThemeMode.LIGHT) {
                     LifelogApp(home, settings, records, PhotoStorage(context, db, records, writes, clock),
-                        clock, ZoneId::systemDefault, sleep, workouts, timeline)
+                        clock, ZoneId::systemDefault, sleep, workouts, timeline, workVM, workHomeVM)
                 }
             }
         }

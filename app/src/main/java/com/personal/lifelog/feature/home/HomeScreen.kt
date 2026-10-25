@@ -76,6 +76,10 @@ fun HomeScreen(
     onRetryTimeline: () -> Unit,
     sleepViewModel: SleepViewModel,
     homeViewModel: HomeViewModel,
+    workViewModel: com.personal.lifelog.feature.work.WorkViewModel,
+    workHomeViewModel: WorkHomeViewModel,
+    onOpenWorkHistory: () -> Unit,
+    onEditWork: (String) -> Unit,
 ) {
     val sleepStatus by sleepViewModel.status.collectAsStateWithLifecycle()
     val sleepBusy by sleepViewModel.busy.collectAsStateWithLifecycle()
@@ -83,6 +87,13 @@ fun HomeScreen(
     val startId = remember(activeSleep?.id) { RecordIds.newId() }
     val sleepCard by homeViewModel.sleep.collectAsStateWithLifecycle()
     val goal by homeViewModel.goal.collectAsStateWithLifecycle()
+    val workCard by workHomeViewModel.work.collectAsStateWithLifecycle()
+    val workGoal by workHomeViewModel.goal.collectAsStateWithLifecycle()
+    var confirmWorkUndo by rememberSaveable { mutableStateOf(false) }
+    DurationGoalDialog(workGoal, workHomeViewModel::goalHours, workHomeViewModel::goalMinutes,
+        workHomeViewModel::cancelGoal, workHomeViewModel::saveGoal, R.string.home_work_goal_title,
+        R.string.home_work_goal_hint, "work", workHomeViewModel::clearGoal)
+    com.personal.lifelog.feature.work.WorkHomeDialogs(workViewModel, confirmWorkUndo) { confirmWorkUndo = false }
     var confirmSleepUndo by rememberSaveable { mutableStateOf(false) }
 
     SleepGoalDialog(goal, homeViewModel::goalHours, homeViewModel::goalMinutes,
@@ -131,6 +142,12 @@ fun HomeScreen(
                 item(key = "sleep-feedback") {
                     SleepHomeFeedback(sleepViewModel, onEditSleep) { confirmSleepUndo = true }
                 }
+                item(key = "work-summary") {
+                    WorkSummaryCard(workCard, onOpenWorkHistory, workHomeViewModel::editGoal, workHomeViewModel::retryWork) {
+                        com.personal.lifelog.feature.work.WorkHomeActions(workViewModel, onEditWork, { confirmWorkUndo = true },
+                            summaryReady = !workCard.loading && !workCard.failed)
+                    }
+                }
                 item(key = "timeline-header") {
                     TodayTimelineHeader(onOpenWorkoutHistory)
                 }
@@ -140,6 +157,7 @@ fun HomeScreen(
                     onOpenMeal = onOpenMeal,
                     onOpenSleep = onEditSleep,
                     onOpenWorkout = onOpenWorkout,
+                    onOpenWork = onEditWork,
                     onRetry = onRetryTimeline,
                 )
             }

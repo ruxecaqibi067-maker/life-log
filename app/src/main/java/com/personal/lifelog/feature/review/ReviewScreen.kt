@@ -63,6 +63,7 @@ fun ReviewScreen(
     onOpenMeal: (String) -> Unit,
     onOpenSleep: (String) -> Unit,
     onOpenWorkout: (String) -> Unit,
+    onOpenWork: (String) -> Unit = {},
 ) {
     val selected by viewModel.date.collectAsStateWithLifecycle()
     val day by viewModel.day.collectAsStateWithLifecycle()
@@ -158,6 +159,7 @@ fun ReviewScreen(
                     onOpenMeal = onOpenMeal,
                     onOpenSleep = onOpenSleep,
                     onOpenWorkout = onOpenWorkout,
+                    onOpenWork = onOpenWork,
                     onRetry = viewModel::retry,
                 )
             }

@@ -52,6 +52,8 @@ import com.personal.lifelog.feature.sleep.SleepEditorScreen
 import com.personal.lifelog.feature.sleep.SleepEditorViewModel
 import com.personal.lifelog.feature.sleep.SleepHistoryScreen
 import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.feature.work.*
+import com.personal.lifelog.feature.home.WorkHomeViewModel
 import com.personal.lifelog.feature.workout.*
 import java.time.Clock
 import java.time.ZoneId
@@ -77,6 +79,8 @@ fun LifelogApp(
     sleepViewModel: SleepViewModel,
     workoutRepository: WorkoutRepository,
     timelineRepository: TimelineRepository,
+    workViewModel: WorkViewModel,
+    workHomeViewModel: WorkHomeViewModel,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -167,6 +171,10 @@ fun LifelogApp(
                     onRetryTimeline = homeViewModel::retry,
                     sleepViewModel = sleepViewModel,
                     homeViewModel = homeViewModel,
+                    workViewModel = workViewModel,
+                    workHomeViewModel = workHomeViewModel,
+                    onOpenWorkHistory = { navController.navigateSingle(LifelogRoutes.WORK_HISTORY) },
+                    onEditWork = { navController.navigate(LifelogRoutes.workEditor(it)) },
                 )
             }
             composable(LifelogRoutes.REVIEW) {
@@ -179,6 +187,7 @@ fun LifelogApp(
                     onOpenSettings = { navController.navigateSingle(LifelogRoutes.SETTINGS) },
                     onOpenMeal = { id -> navController.navigate(LifelogRoutes.mealDetail(id)) },
                     onOpenSleep = { id -> navController.navigate(LifelogRoutes.sleepEditor(id)) },
+                    onOpenWork = { id -> navController.navigate(LifelogRoutes.workEditor(id)) },
                     onOpenWorkout = { id -> navController.navigate(LifelogRoutes.workoutDetail(id)) },
                 )
             }
@@ -214,6 +223,20 @@ fun LifelogApp(
                     viewModel = editorViewModel,
                     onFinished = { navController.popBackStack() },
                 )
+            }
+            composable(LifelogRoutes.WORK_HISTORY) {
+                WorkHistoryScreen(workViewModel,
+                    onAdd = { navController.navigate(LifelogRoutes.workEditor()) },
+                    onEdit = { navController.navigate(LifelogRoutes.workEditor(it)) },
+                    onBack = { navController.navigateUp() })
+            }
+            composable(LifelogRoutes.WORK_EDIT_PATTERN, arguments = listOf(LifelogRoutes.workIdArgument)) { entry ->
+                val id = entry.arguments?.getString(LifelogRoutes.ARG_WORK_ID)
+                val editor: WorkEditorViewModel = viewModel {
+                    WorkEditorViewModel(workViewModel.repository, clock, zoneIdProvider, id,
+                        createSavedStateHandle(), workViewModel::deleted)
+                }
+                WorkEditorScreen(editor, editing = id != null, onBack = { navController.navigateUp() })
             }
             composable(LifelogRoutes.SLEEP_HISTORY) {
                 SleepHistoryScreen(sleepViewModel,

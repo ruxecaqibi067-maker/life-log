@@ -67,6 +67,14 @@ class SleepUiTest {
                 val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, timelineRepository, SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes) }
                 val settings = vm(SettingsViewModel::class.java) { SettingsViewModel(SettingsRepository(db, writes, clock)) }
                 val sleep = vm(SleepViewModel::class.java) { SleepViewModel(repository, clock) { ZoneId.of("Asia/Shanghai") } }
+                val workRepo = WorkRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
+                val workVM = vm(com.personal.lifelog.feature.work.WorkViewModel::class.java) {
+                    com.personal.lifelog.feature.work.WorkViewModel(workRepo, clock) { ZoneId.of("Asia/Shanghai") }
+                }
+                val workHomeVM = vm(com.personal.lifelog.feature.home.WorkHomeViewModel::class.java) {
+                    com.personal.lifelog.feature.home.WorkHomeViewModel(home.today, WorkSummaryRepository(db)::observe,
+                        SettingsRepository(db, writes, clock)::setTargetWorkMinutes)
+                }
                 LifelogApp(
                     homeViewModel = home,
                     settingsViewModel = settings,
@@ -76,8 +84,7 @@ class SleepUiTest {
                     clock = clock,
                     zoneIdProvider = { ZoneId.of("Asia/Shanghai") },
                     workoutRepository = workouts,
-                    timelineRepository = timelineRepository,
-                )
+                    timelineRepository = timelineRepository, workViewModel = workVM, workHomeViewModel = workHomeVM)
             }
         }
         awaitText("准备睡了")

@@ -46,6 +46,13 @@ class MainActivity : ComponentActivity() {
             val sleepViewModel: SleepViewModel = viewModel {
                 SleepViewModel(container.records, container.clock, container.zoneIdProvider)
             }
+            val workViewModel: com.personal.lifelog.feature.work.WorkViewModel = viewModel {
+                com.personal.lifelog.feature.work.WorkViewModel(container.work, container.clock, container.zoneIdProvider)
+            }
+            val workHomeViewModel: com.personal.lifelog.feature.home.WorkHomeViewModel = viewModel {
+                com.personal.lifelog.feature.home.WorkHomeViewModel(homeViewModel.today, container.workSummary::observe,
+                    container.settings::setTargetWorkMinutes, createSavedStateHandle())
+            }
             val darkTheme = resolvedDarkTheme(themeMode)
 
             // Keep system bar icon contrast in sync with the stored theme choice,
@@ -70,6 +77,8 @@ class MainActivity : ComponentActivity() {
                     zoneIdProvider = container.zoneIdProvider,
                     workoutRepository = container.workouts,
                     timelineRepository = container.timeline,
+                    workViewModel = workViewModel,
+                    workHomeViewModel = workHomeViewModel,
                 )
             }
         }
