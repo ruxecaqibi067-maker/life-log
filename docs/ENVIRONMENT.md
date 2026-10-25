@@ -76,6 +76,6 @@
 - 首次 Lint 的路径转义与冗余资源目录问题已修复。图标迁移后的增量构建曾报告 `mipmap/ic_launcher not found`，上面的 clean 构建已通过；失败日志与最终成功日志分别保留，详见交接。
 - Debug APK：`app/build/outputs/apk/debug/app-debug.apk`。
 - Lint 报告：`app/build/reports/lint-results-debug.html`，以及同目录 XML/TXT 报告。
-- 本包检查命令、实际结果、工具精确路径与未执行项见 [T01 交接](handoffs/T01-开发环境与空工程.md)；原始日志在 `artifacts/t01/`，均未提交。
+- 本包检查命令、实际结果、工具精确路径与未执行项见 [T01 交接](archive/handoffs/T01-开发环境与空工程.md)；原始日志在 `artifacts/t01/`，均未提交。
 - 仅有启动页，没有业务测试；`testDebugUnitTest` 若为 `NO-SOURCE`，只能说明当前没有单元测试，不能称为业务验证通过。
 - 当前无正式签名；debug 密钥由 Android 工具在用户私有目录自动管理，APK、密钥与产物不提交。真机安装、启动截图和荣耀系统备份行为需要实际设备证据。

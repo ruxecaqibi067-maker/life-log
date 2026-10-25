@@ -205,6 +205,21 @@ class HomeSleepDeviceTest {
             waitText("准备睡了")
             assertFalse(summary().hasActiveSleep)
 
+            // Integration: the bedtime wake action must refresh the real T19 summary.
+            click("准备睡了")
+            compose.waitUntil(20_000) { compose.onAllNodesWithTag("bedtime-screen").fetchSemanticsNodes().isNotEmpty() }
+            val bedtimeRecord = runBlocking { container.records.activeSleep().first()!! }
+            capture("integrated-bedtime-wake-screen")
+            click("起床了")
+            waitText("今日睡眠")
+            waitText("准备睡了")
+            assertNull(runBlocking { container.records.activeSleep().first() })
+            val finished = runBlocking { container.records.sleep(bedtimeRecord.id)!! }
+            assertNotNull(finished.endedAtUtcMs)
+            assertEquals(2, summary().completedSegmentCount)
+            assertEquals(26_400_000L + finished.endedAtUtcMs!! - finished.startedAtUtcMs, summary().recordedDurationMs)
+            top(); capture("integrated-bedtime-wake-home")
+
             // Restore through the existing confirmation flow; the same HomeViewModel refreshes.
             compose.onNodeWithContentDescription("打开设置").performClick()
             container.backupRestore.selectBackup(BackupSource { backup.inputStream() })

@@ -101,12 +101,15 @@ class VisualFlowDeviceTest {
             runBlocking { assertTrue(container.settings.setTheme(mode) is DataResult.Success) }
             ActivityScenario.launch(MainActivity::class.java).use {
                 val prefix = mode.name.lowercase()
+                waitText("今日睡眠")
+                compose.onNodeWithTag("home-timeline").performScrollToNode(hasText(mealText))
                 waitText(mealText)
                 screenshot("$prefix-home")
                 click("回顾")
                 waitText(mealText)
                 screenshot("$prefix-review")
                 click("今天")
+                compose.onNodeWithTag("home-timeline").performScrollToNode(hasText(mealText))
                 click(mealText)
                 screenshot("$prefix-meal-detail")
                 compose.onNodeWithContentDescription("编辑记录").performClick()
@@ -132,6 +135,7 @@ class VisualFlowDeviceTest {
                 click("取消")
                 back()
                 back()
+                compose.onNodeWithTag("home-timeline").performScrollToNode(hasText("卧推"))
                 click("卧推")
                 click("编辑训练")
                 waitText("保存训练")
@@ -179,7 +183,7 @@ class VisualFlowDeviceTest {
         val original = runBlocking { container.snapshots.read().sleeps }
         runBlocking { container.settings.setTheme(ThemeMode.LIGHT) }
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            waitText(mealText)
+            waitText("今日睡眠")
             click("准备睡了")
             compose.waitUntil(20_000) { compose.onAllNodesWithTag("bedtime-screen").fetchSemanticsNodes().isNotEmpty() }
             screenshot("bedtime")
@@ -206,7 +210,7 @@ class VisualFlowDeviceTest {
         android.os.SystemClock.sleep(700)
         try {
             ActivityScenario.launch(MainActivity::class.java).use {
-                waitText(mealText)
+                waitText("今日睡眠")
                 assertEquals(1.5f, app.resources.configuration.fontScale, 0.01f)
                 screenshot("large-home")
                 compose.onNodeWithContentDescription("打开设置").performClick()

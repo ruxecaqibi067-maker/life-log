@@ -1,6 +1,6 @@
 # 第一版技术路线
 
-基线日期：2026-10-22。需求以 [V1_SPEC.md](V1_SPEC.md) 为准，执行入口见 [TASKS.md](TASKS.md)。本文件是实现设计；尚无构建成功或真机通过的声明。
+基线日期：2026-10-22。需求以 [V1_SPEC.md](V1_SPEC.md) 为准，执行入口见 [TASKS.md](TASKS.md)。本文件保留首版架构及后续增补；当前实现、构建和设备证据以[主管进度板](STATUS.md)及[本版报告](releases/0.1.4.md)为准。
 
 ## 1. 技术选型与理由
 
@@ -180,7 +180,7 @@ data.json
 media/<photoId>.jpg
 ```
 
-- `manifest`：T18源码导出 `formatVersion=3`（读取兼容 v1/v2），与 `dataVersion` 相同；另含 appVersion、exportedAtUtcMs、数据与照片数量，以及 `data.json` 和每张照片的相对路径/大小/SHA-256；manifest不计算自身哈希。v2 为饮食增加可选 `satietyText`，v1 包缺失时按 null；v3 为设置增加 `targetSleepMinutes`，v1/v2 缺失时按 null。发布基线仍由 STATUS 与主管发布报告确认，格式细节见 BACKUP_FORMAT_V1.md。
+- `manifest`：当前导出 `formatVersion=4`（读取兼容 v1/v2/v3），与 `dataVersion` 相同；另含 appVersion、exportedAtUtcMs、数据与照片数量，以及 `data.json` 和每张照片的相对路径/大小/SHA-256；manifest不计算自身哈希。v2 为饮食增加可选 `satietyText`，v1 包缺失时按 null；v3 为设置增加 `targetSleepMinutes`，v1/v2 缺失时按 null。v4新增独立workRecords及targetWorkMinutes，旧1–3按空工作/null目标归一。发布基线由STATUS与发布报告确认，格式细节见 BACKUP_FORMAT.md。
 - `data`：稳定 UUID、三类记录、完整项目库、所有项目快照和组、照片语义元数据、进行中作息、AppSettings。
 - 不导出原手机绝对路径、content URI、恢复日志、临时文件或签名资料。照片在备份里的路径与运行时 generation 目录分离。
 - 导入保留记录 ID 与历史内容；生成新的本地媒体 generation，并重建 DB 路径。导出计数、引用与哈希必须互相吻合。
@@ -300,17 +300,17 @@ T15放行仅针对候选功能、数据可靠性与性能，不要求尚未发�
 
 首版任务量与多对话调度见 [WORKFLOW.md](WORKFLOW.md)。技术路线可以据实际验证调整，变更理由与影响须进入版本化文档。
 
-## 12. 工作时间功能增补（T20/T21计划）
+## 12. 工作时间功能增补（T20已接受，T21待接线）
 
-2026-10-25用户授权新增，以下尚未实现。现开发基线Room/备份为v3，公开0.1.3为v2；不能把下一轮v4计划写作当前已交付。
+2026-10-25：T20数据层已接受并整合，Room/备份均为v4；T21工作页面、双卡、时间线及预览显示待接线。已发布0.1.3为v2，0.1.4升级覆盖测试见发布报告。
 
 | 分层 | 新增与复用 |
 | --- | --- |
 | 记录 | 独立WorkRecord和WorkRepository，完整开始/结束时点与时区、结束日归档、唯一活动工作；复用时间校验、Clock和写事务机制，保持睡眠独立 |
 | 目标/汇总 | AppSettings新增可空targetWorkMinutes，WorkSummary只汇总已完成时段，返回独立活动标记；复用T18的一致快照及错误契约，两个目标互不覆盖 |
-| 数据迁移 | T20计划Room3→4新增工作表和可空目标，保留旧1→2→3链；schema4经完整Room验证，禁止破坏性回退 |
-| 快照/备份 | DataSnapshot、恢复清理/重建、中断回滚加入workRecords；计划备份v4及对应计数，读取旧1–3按空工作/null目标归一，严格校验新增格式及资源限额 |
+| 数据迁移 | T20已实现Room3→4新增工作表和可空目标，保留旧1→2→3链；schema4经完整Room验证，禁止破坏性回退 |
+| 快照/备份 | DataSnapshot、恢复清理/重建、中断回滚加入workRecords；已实现备份v4及对应计数，读取旧1–3按空工作/null目标归一，严格校验新增格式及资源限额 |
 | 展示 | T21在T19首页基础上增加工作卡及开始/结束/历史/目标，接入第四种时间线及回顾/预览；开始工作不触发BedtimeScreen或系统栏隐藏 |
 | 验证 | T20覆盖时段、汇总、迁移和完整备份恢复；T21覆盖真实页面、双卡、两类目标独立、小屏/大字体、原三类记录和黑屏修复回归；主管最后正式签名升级发包 |
 
-精确接口和文件边界见 [T20](tasks/T20.md)、[T21](tasks/T21.md)。T20不提前扩展只读时间线枚举导致旧UI编译失败，T21统一接入读模型和对应穷尽分支；T19正在写的首页不由新任务整文件替换。
+精确接口和文件边界见 [T20](archive/tasks/T20.md)、[T21](tasks/T21.md)。T20不提前扩展只读时间线枚举导致旧UI编译失败，T21统一接入读模型和对应穷尽分支；T21在已接受T19首页上增量接入，保留黑屏起床修复。
