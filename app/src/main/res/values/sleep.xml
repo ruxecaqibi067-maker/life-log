@@ -32,14 +32,6 @@
     <string name="sleep_picker_hint">点击选择日期和时间</string>
     <string name="sleep_pick_start">选择就寝时间</string>
     <string name="sleep_pick_end">选择起床时间</string>
-    <string name="sleep_year">年</string>
-    <string name="sleep_month">月</string>
-    <string name="sleep_day">日</string>
-    <string name="sleep_hour">时</string>
-    <string name="sleep_minute">分</string>
-    <string name="sleep_repeated_time">这一天的这个时间出现了两次，请选择：</string>
-    <string name="sleep_first_occurrence">第一次出现</string>
-    <string name="sleep_second_occurrence">第二次出现</string>
     <string name="sleep_has_end">已起床（关闭则保留未结束状态）</string>
     <string name="sleep_invalid_interval">起床时间必须晚于就寝时间，请检查完整日期和时间。</string>
     <string name="sleep_overlap">与其他作息时段重叠，请修改时间后重试。</string>

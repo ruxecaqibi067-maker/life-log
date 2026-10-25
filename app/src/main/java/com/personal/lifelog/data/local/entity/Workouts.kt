@@ -7,6 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Relation
 import com.personal.lifelog.domain.ExerciseType
+import com.personal.lifelog.domain.WorkoutEffort
 
 @Entity(
     tableName = "ExerciseDefinition",
@@ -35,6 +36,8 @@ data class WorkoutSession(
     val note: String?,
     val createdAtUtcMs: Long,
     val updatedAtUtcMs: Long,
+    val effort: WorkoutEffort? = null,
+    val effortText: String? = null,
 )
 
 @Entity(

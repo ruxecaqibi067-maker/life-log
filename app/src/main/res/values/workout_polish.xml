@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="workout_batch_count">组数（选填，默认 1 组）</string>
+    <string name="workout_batch_reps">每组次数（选填）</string>
+    <string name="workout_batch_kg">重量（kg，选填）</string>
+    <string name="workout_batch_hint">相同训练量只填一次；只填组数时，请再填次数或重量。</string>
+    <string name="workout_individual">逐组调整</string>
+    <string name="workout_batch_switch">合并为一次填写</string>
+    <string name="workout_batch_error">组数须为 1–100 的整数，次数须为正整数，重量须为 0 或正数；填写组数后请再填次数或重量。</string>
+    <string name="workout_effort_title">运动后感觉（选填）</string>
+    <string name="workout_effort_easy">轻松</string>
+    <string name="workout_effort_moderate">适中</string>
+    <string name="workout_effort_hard">吃力</string>
+    <string name="workout_effort_very_hard">非常吃力</string>
+    <string name="workout_effort_custom">自定义</string>
+    <string name="workout_effort_custom_input">自定义感觉（1–40 字）</string>
+    <string name="workout_effort_error">请填写 1–40 字的运动后感觉，或取消选择自定义</string>
+    <string name="workout_effort_value">运动后感觉：%1$s</string>
+</resources>

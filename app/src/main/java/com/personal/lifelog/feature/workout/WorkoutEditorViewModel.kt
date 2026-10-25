@@ -78,13 +78,16 @@ class WorkoutEditorViewModel(
         val form = _state.value.form ?: return
         if (definition.isHidden) { fail(ErrorCode.HIDDEN_EXERCISE); return }
         if (form.items.size >= Rules.WORKOUT_ITEMS_LIMIT) { fail(ErrorCode.TOO_MANY_ITEMS); return }
-        change(form.copy(items = form.items + WorkoutItemForm(RecordIds.newId(), definition.id, definition.name, definition.type)))
+        change(form.copy(items = form.items + WorkoutItemForm(RecordIds.newId(), definition.id, definition.name, definition.type,
+            batch = if (definition.type == ExerciseType.STRENGTH) StrengthBatch() else null)))
     }
 
     /** Updates a full item; set text events below resolve IDs against the latest draft. */
     fun changeItem(item: WorkoutItemForm) {
         val form = _state.value.form ?: return
-        change(form.copy(items = form.items.map { if (it.id == item.id) item else it }))
+        val old = form.items.find { it.id == item.id }
+        val next = if (old != null && item.sets != old.sets && item.batch == old.batch) item.copy(batch = null) else item
+        change(form.copy(items = form.items.map { if (it.id == item.id) next else it }))
     }
     fun remove(itemId: String) { _state.value.form?.let { change(it.copy(items = it.items.filterNot { row -> row.id == itemId })) } }
     fun move(itemId: String, delta: Int) {
@@ -102,11 +105,30 @@ class WorkoutEditorViewModel(
         if (state.busy || state.done || state.loading) return null
         return state.form?.items?.find { it.id == itemId && it.type == ExerciseType.STRENGTH }
     }
+    fun changeBatch(itemId: String, update: (StrengthBatch) -> StrengthBatch) {
+        val item = strengthItem(itemId) ?: return
+        val batch = item.batch ?: return
+        changeItem(item.copy(batch = update(batch)))
+    }
+
+    fun editIndividualSets(itemId: String) {
+        val item = strengthItem(itemId) ?: return
+        val batch = item.batch ?: return
+        try { changeItem(item.copy(sets = batch.sets(), batch = null)) }
+        catch (violation: DataViolation) { fail(violation.error.code, itemId) }
+    }
+
+    fun useBatch(itemId: String) {
+        val item = strengthItem(itemId) ?: return
+        StrengthBatch.from(item.sets)?.let { changeItem(item.copy(batch = it)) }
+    }
     fun addSets(itemId: String, count: Int = 1) {
         val item = strengthItem(itemId) ?: return
         if (count !in 1..3) return
         if (item.sets.size + count > Rules.SETS_PER_ITEM_LIMIT) { fail(ErrorCode.TOO_MANY_SETS, itemId); return }
-        changeItem(item.copy(sets = item.sets + List(count) { WorkoutSetForm(RecordIds.newId()) }))
+        val existing = try { item.batch?.sets() ?: item.sets } catch (violation: DataViolation) { fail(violation.error.code, itemId); return }
+        if (existing.size + count > Rules.SETS_PER_ITEM_LIMIT) { fail(ErrorCode.TOO_MANY_SETS, itemId); return }
+        changeItem(item.copy(sets = existing + List(count) { WorkoutSetForm(RecordIds.newId()) }, batch = null))
     }
     fun changeSetWeight(itemId: String, setId: String, value: String) = updateSet(itemId, setId) { it.copy(kilograms = value) }
     fun changeSetRepetitions(itemId: String, setId: String, value: String) = updateSet(itemId, setId) { it.copy(repetitions = value) }

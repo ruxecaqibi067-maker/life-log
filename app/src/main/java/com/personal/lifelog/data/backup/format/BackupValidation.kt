@@ -80,6 +80,7 @@ object BackupValidation {
             times(it.createdAtUtcMs, it.updatedAtUtcMs)
             requireBackup(it.localDate == RecordTime.localDate(it.occurredAtUtcMs, it.zoneId))
             requireBackup(Rules.text(it.note, Rules.NOTE_LIMIT) == it.note)
+            requireBackup(Rules.effortText(it.effort, it.effortText) == it.effortText)
             val children = groupedItems[it.id].orEmpty()
             requireBackup(children.isNotEmpty())
             requireBackup(children.size <= l.itemsPerSession, BackupError.LIMIT)

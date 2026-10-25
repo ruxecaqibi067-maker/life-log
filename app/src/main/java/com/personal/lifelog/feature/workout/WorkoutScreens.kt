@@ -1,7 +1,5 @@
 package com.personal.lifelog.feature.workout
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,8 +26,12 @@ import com.personal.lifelog.R
 import com.personal.lifelog.data.local.entity.ExerciseDefinition
 import com.personal.lifelog.data.local.entity.WorkoutWithItems
 import com.personal.lifelog.domain.ErrorCode
+import com.personal.lifelog.domain.WorkoutEffort
 import com.personal.lifelog.domain.ExerciseType
 import com.personal.lifelog.feature.meal.MealTimeDisplay
+import com.personal.lifelog.ui.components.RecordDatePicker
+import com.personal.lifelog.ui.components.RecordDateTimePicker
+import com.personal.lifelog.ui.components.RecordTimeChoice
 import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.PrimaryButton
 import com.personal.lifelog.ui.components.RecordCard
@@ -66,6 +68,8 @@ fun WorkoutEditorScreen(
             state.error?.let { error ->
                 if (state.errorSetId != null) Text(stringResource(R.string.workout_error_set_number),
                     Modifier.padding(LogDimens.card), color = MaterialTheme.colorScheme.error)
+                else if (error == ErrorCode.INVALID_NUMBER && state.form?.items?.any { it.id == state.errorItemId && it.batch != null } == true)
+                    com.personal.lifelog.ui.components.ErrorState(stringResource(R.string.workout_batch_error))
                 else WorkoutError(error)
                 state.errorItemId?.let { id -> state.form?.items?.indexOfFirst { it.id == id }?.let { index ->
                     Text(stringResource(R.string.workout_item_error, index + 1, state.form!!.items[index].name),
@@ -122,9 +126,8 @@ fun WorkoutEditorScreen(
                                             viewModel.changeItem(row.copy(kilometers = it))
                                         }
                                     }
-                                    if (row.type == ExerciseType.STRENGTH) {
-                                        Text(if (row.sets.isEmpty()) stringResource(R.string.workout_no_quantity)
-                                            else stringResource(R.string.workout_sets_entered, row.sets.count { !it.blank }))
+                                    if (row.type == ExerciseType.STRENGTH && row.batch != null) {
+                                        StrengthBatchEditor(row, !state.busy, viewModel)
                                     }
                                     RecordTextField(row.note, { viewModel.changeItem(row.copy(note = it)) },
                                         Modifier.fillMaxWidth(), enabled = !state.busy,
@@ -132,7 +135,7 @@ fun WorkoutEditorScreen(
                                 }
                             }
                         }
-                        if (row.type == ExerciseType.STRENGTH) {
+                        if (row.type == ExerciseType.STRENGTH && row.batch == null) {
                             itemsIndexed(row.sets, key = { _, set -> "${row.id}-${set.id}" }) { setIndex, set ->
                                 WorkoutSetEditor(row, index, set, setIndex, !state.busy,
                                     state.errorSetId == set.id, viewModel)
@@ -146,6 +149,7 @@ fun WorkoutEditorScreen(
                         SecondaryButton(viewModel::openPicker, enabled = !state.busy && form.items.size < 100,
                             modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.workout_add)) }
                     }
+                    item { WorkoutEffortEditor(form, !state.busy, viewModel::change) }
                 }
                 PrimaryButton(viewModel::save, enabled = !state.busy && !state.done,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = LogDimens.page, vertical = 8.dp)) {
@@ -162,28 +166,15 @@ fun WorkoutEditorScreen(
 
 @Composable
 private fun WorkoutTimeFields(form: WorkoutForm, enabled: Boolean, change: (WorkoutForm) -> Unit) {
-    val context = com.personal.lifelog.ui.components.rememberPickerContext()
-    val local = form.local
-    ActionButton(onClick = {
-        DatePickerDialog(context, { _, year, month, day ->
-            change(form.atLocal(local.withYear(year).withMonth(1).withDayOfMonth(1).withMonth(month + 1).withDayOfMonth(day)))
-        }, local.year, local.monthValue - 1, local.dayOfMonth).show()
-    }, enabled = enabled) { Text(stringResource(R.string.workout_date, local.toLocalDate().toString())) }
-    ActionButton(onClick = {
-        TimePickerDialog(context, { _, hour, minute ->
-            change(form.atLocal(local.withHour(hour).withMinute(minute).withSecond(0).withNano(0)))
-        }, local.hour, local.minute, true).show()
-    }, enabled = enabled) { Text(stringResource(R.string.workout_time, local.format(DateTimeFormatter.ofPattern("HH:mm")))) }
-    Text(stringResource(R.string.workout_zone, form.zoneId), style = MaterialTheme.typography.bodySmall)
-    val offsets = ZoneId.of(form.zoneId).rules.getValidOffsets(local)
-    if (offsets.size > 1) {
-        Text(stringResource(R.string.workout_overlap))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-            offsets.forEach { offset ->
-                FilterChip(selected = form.offset == offset.id, onClick = { change(form.copy(offset = offset.id)) },
-                    enabled = enabled, label = { Text(offset.id) })
-            }
-        }
+    var picking by rememberSaveable { mutableStateOf(false) }
+    RecordTimeChoice(R.string.picker_workout_label,
+        form.local.format(DateTimeFormatter.ofPattern("uuuu年M月d日 HH:mm")), enabled) { picking = true }
+    if (picking) {
+        val zone = ZoneId.of(form.zoneId)
+        val initial = java.time.ZonedDateTime.ofLocal(form.local, zone, form.offset.takeIf { it.isNotEmpty() }?.let(java.time.ZoneOffset::of))
+        RecordDateTimePicker(R.string.picker_workout_title, initial, zone, { picking = false }, { local, offset ->
+            change(form.pickTime(local, offset)); picking = false
+        })
     }
 }
 
@@ -196,12 +187,11 @@ private fun WorkoutNumber(value: String, label: Int, tag: String, enabled: Boole
 @Composable
 fun WorkoutHistoryScreen(viewModel: WorkoutDayViewModel, onBack: () -> Unit, onOpen: (String) -> Unit, onAdd: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = com.personal.lifelog.ui.components.rememberPickerContext()
+    var pickingDate by rememberSaveable { mutableStateOf(false) }
     WorkoutPage(stringResource(R.string.workout_history), onBack) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(LogDimens.page)) {
             ActionButton(onClick = {
-                DatePickerDialog(context, { _, year, month, day -> viewModel.selectDate(LocalDate.of(year, month + 1, day)) },
-                    state.date.year, state.date.monthValue - 1, state.date.dayOfMonth).show()
+                pickingDate = true
             }) { Text(stringResource(R.string.workout_date_select, state.date.toString())) }
             Row {
                 ActionButton({ viewModel.selectDate(state.date.minusDays(1)) }) { Text(stringResource(R.string.workout_previous_day)) }
@@ -211,6 +201,9 @@ fun WorkoutHistoryScreen(viewModel: WorkoutDayViewModel, onBack: () -> Unit, onO
             WorkoutDayRows(state, onOpen) { viewModel.selectDate(state.date) }
         }
     }
+    if (pickingDate) RecordDatePicker(R.string.picker_date_title, state.date, { pickingDate = false }, {
+        viewModel.selectDate(it); pickingDate = false
+    })
 }
 
 @Composable
@@ -224,12 +217,14 @@ private fun WorkoutDayRows(state: WorkoutDayState, onOpen: (String) -> Unit, onR
                 Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(MealTimeDisplay.full(record.session.occurredAtUtcMs, record.session.zoneId))
                     Text(record.items.joinToString("、") { it.item.nameSnapshot })
+                    record.session.effort?.let { Text(stringResource(R.string.workout_effort_value, effortLabel(it, record.session.effortText))) }
                     record.session.note?.let { Text(it) }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun WorkoutDetailScreen(viewModel: WorkoutDetailViewModel, onBack: () -> Unit, onEdit: (String) -> Unit) {
@@ -263,7 +258,7 @@ fun WorkoutDetailScreen(viewModel: WorkoutDetailViewModel, onBack: () -> Unit, o
 internal fun WorkoutDetailContent(record: WorkoutWithItems) {
     val form = WorkoutForm.from(record)
     Text(MealTimeDisplay.full(record.session.occurredAtUtcMs, record.session.zoneId), style = MaterialTheme.typography.titleMedium)
-    Text(stringResource(R.string.workout_zone, record.session.zoneId), style = MaterialTheme.typography.bodySmall)
+    record.session.effort?.let { Text(stringResource(R.string.workout_effort_value, effortLabel(it, record.session.effortText))) }
     record.session.note?.let { Text(it) }
     record.items.forEachIndexed { index, entry ->
         val row = form.items[index]
@@ -300,6 +295,7 @@ private fun itemHeading(index: Int, row: WorkoutItemForm) = stringResource(R.str
 @Composable
 private fun WorkoutError(code: ErrorCode) {
     com.personal.lifelog.ui.components.ErrorState(stringResource(when (code) {
+        ErrorCode.INVALID_EFFORT -> R.string.workout_effort_error
         ErrorCode.EMPTY_WORKOUT -> R.string.workout_error_empty
         ErrorCode.INVALID_NUMBER -> R.string.workout_error_number
         ErrorCode.TEXT_TOO_LONG -> R.string.workout_error_note

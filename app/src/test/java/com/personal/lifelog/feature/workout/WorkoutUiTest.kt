@@ -113,6 +113,9 @@ class WorkoutUiTest {
         waitText("1. 卧推 · 力量")
         compose.onNodeWithText("编辑训练").performScrollTo().performClick()
         waitText("保存训练")
+        if (compose.onAllNodesWithText("逐组调整").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithText("逐组调整").performScrollTo().performClick()
+        }
     }
     private fun field(tag: String, text: String) {
         compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag(tag))

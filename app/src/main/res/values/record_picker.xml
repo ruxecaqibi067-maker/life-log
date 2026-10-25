@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="picker_year">年</string>
+    <string name="picker_month">月</string>
+    <string name="picker_day">日</string>
+    <string name="picker_hour">时</string>
+    <string name="picker_minute">分</string>
+    <string name="picker_cancel">取消</string>
+    <string name="picker_confirm">确认</string>
+    <string name="picker_hint">点击修改日期和时间</string>
+    <string name="picker_invalid_time">这个时间因夏令时调整不存在，请重新选择</string>
+    <string name="picker_repeated_time">这个时间出现两次，请选择对应的一次</string>
+    <string name="picker_first_occurrence">第一次</string>
+    <string name="picker_second_occurrence">第二次</string>
+    <string name="picker_workout_label">运动时间</string>
+    <string name="picker_workout_title">选择运动时间</string>
+    <string name="picker_meal_title">选择饮食时间</string>
+    <string name="picker_date_title">选择日期</string>
+</resources>

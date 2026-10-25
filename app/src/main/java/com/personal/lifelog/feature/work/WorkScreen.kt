@@ -1,6 +1,6 @@
 package com.personal.lifelog.feature.work
 
-import com.personal.lifelog.feature.sleep.SleepDateTimePicker
+import com.personal.lifelog.ui.components.RecordDateTimePicker
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -209,10 +209,11 @@ fun WorkEditorScreen(viewModel: WorkEditorViewModel, editing: Boolean, onBack: (
     val target = picker
     if (form != null && target != null) {
         val selectedZone = ZoneId.of(pickerZone ?: zone.id)
-        SleepDateTimePicker(
+        RecordDateTimePicker(
             title = if (target == "start") R.string.work_pick_start else R.string.work_pick_end,
             initial = if (target == "start") form.startAt(selectedZone) else form.endAt(selectedZone),
             zone = selectedZone,
+            tagPrefix = "sleep-wheel",
             onCancel = { picker = null },
             onConfirm = { local, offset ->
                 viewModel.change(if (target == "start") form.pickStart(local, selectedZone, offset) else form.pickEnd(local, selectedZone, offset))

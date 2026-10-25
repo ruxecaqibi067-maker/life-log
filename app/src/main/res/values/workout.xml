@@ -32,7 +32,6 @@
     <string name="workout_duration_value">时长：%1$s 分钟</string>
     <string name="workout_seconds_value">%1$d 秒</string>
     <string name="workout_distance_value">距离：%1$s km</string>
-    <string name="workout_sets_entered">已输入 %1$d 组，空白组不保存</string>
     <string name="workout_sets_hint">可不填组。重量留空表示未记录，0 kg 表示未附加外部重量；空白组不保存。</string>
     <string name="workout_set_heading">%1$s · 第 %2$d 组</string>
     <string name="workout_set_kg">重量（kg，选填）</string>
@@ -50,10 +49,6 @@
     <string name="workout_set_value">第 %1$d 组：%2$s</string>
     <string name="workout_weight_value">%1$s kg</string>
     <string name="workout_reps_value">%1$d 次</string>
-    <string name="workout_date">发生日期：%1$s</string>
-    <string name="workout_time">发生时间：%1$s</string>
-    <string name="workout_zone">记录时区：%1$s</string>
-    <string name="workout_overlap">这个时间出现两次，请选择实际的时区偏移：</string>
     <string name="workout_previous_day">前一天</string>
     <string name="workout_next_day">后一天</string>
     <string name="workout_date_select">选择日期：%1$s</string>

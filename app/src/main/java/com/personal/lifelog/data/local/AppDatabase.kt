@@ -22,7 +22,7 @@ import java.time.Clock
     entities = [MealRecord::class, SleepRecord::class, WorkRecord::class, ExerciseDefinition::class,
         WorkoutSession::class, WorkoutItem::class, WorkoutSet::class,
         MediaAsset::class, AppSettings::class, RestoreState::class],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -41,7 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun create(context: Context, clock: Clock, name: String = NAME): AppDatabase =
             Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, name)
                 .addCallback(creationCallback(clock))
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 // First real schema was v1. Every later version has an explicit tested migration.
                 // Never add fallbackToDestructiveMigration to the user database.
                 .build()
@@ -86,6 +86,25 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE AppSettings ADD COLUMN targetWorkMinutes INTEGER")
                 installSettingsGuard(db)
                 installWorkGuard(db)
+            }
+        }
+
+        /** Existing workouts remain unrated; no fabricated exertion or rewritten set history. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE WorkoutSession ADD COLUMN effort TEXT")
+                db.execSQL("ALTER TABLE WorkoutSession ADD COLUMN effortText TEXT")
+                installEffortGuard(db)
+            }
+        }
+
+        private fun installEffortGuard(db: SupportSQLiteDatabase) {
+            listOf("INSERT", "UPDATE").forEach { operation ->
+                db.execSQL("CREATE TRIGGER guard_WorkoutSession_$operation BEFORE $operation ON WorkoutSession WHEN " +
+                    "(NEW.effort IS NOT NULL AND NEW.effort NOT IN ('EASY','MODERATE','HARD','VERY_HARD','CUSTOM')) OR " +
+                    "(NEW.effort = 'CUSTOM' AND (NEW.effortText IS NULL OR length(trim(NEW.effortText)) NOT BETWEEN 1 AND ${Rules.EFFORT_TEXT_LIMIT})) OR " +
+                    "((NEW.effort IS NULL OR NEW.effort != 'CUSTOM') AND NEW.effortText IS NOT NULL) " +
+                    "BEGIN SELECT RAISE(ABORT, 'invalid WorkoutSession invariant'); END")
             }
         }
 
@@ -141,6 +160,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
             installSettingsGuard(db)
             installWorkGuard(db)
+            installEffortGuard(db)
             guard("RestoreState", "NEW.id != 1")
             guard("SleepRecord", "(NEW.endedAtUtcMs IS NULL AND (NEW.activeSlot IS NOT 1 OR NEW.endZoneId IS NOT NULL)) OR (NEW.endedAtUtcMs IS NOT NULL AND (NEW.activeSlot IS NOT NULL OR NEW.endZoneId IS NULL OR NEW.endedAtUtcMs <= NEW.startedAtUtcMs))")
             guard("ExerciseDefinition", "(NEW.isHidden = 0 AND NEW.activeNameKey IS NOT NEW.normalizedName) OR (NEW.isHidden = 1 AND NEW.activeNameKey IS NOT NULL)")

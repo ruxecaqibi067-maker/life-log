@@ -1,6 +1,5 @@
 package com.personal.lifelog.feature.review
 
-import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -39,6 +38,7 @@ import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.feature.timeline.RecordedDatesState
 import com.personal.lifelog.feature.timeline.timelineSection
+import com.personal.lifelog.ui.components.RecordDatePicker
 import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.SecondaryButton
@@ -69,7 +69,7 @@ fun ReviewScreen(
     val day by viewModel.day.collectAsStateWithLifecycle()
     val recorded by viewModel.recordedDates.collectAsStateWithLifecycle()
     var showDates by rememberSaveable { mutableStateOf(false) }
-    val context = com.personal.lifelog.ui.components.rememberPickerContext()
+    var pickingDate by rememberSaveable { mutableStateOf(false) }
     val dateLabel = reviewDateFormatter.format(selected)
 
     Scaffold(
@@ -106,15 +106,7 @@ fun ReviewScreen(
                 }
                 SecondaryButton(
                     onClick = {
-                        DatePickerDialog(
-                            context,
-                            { _, year, month, dayOfMonth ->
-                                viewModel.selectDate(LocalDate.of(year, month + 1, dayOfMonth))
-                            },
-                            selected.year,
-                            selected.monthValue - 1,
-                            selected.dayOfMonth,
-                        ).show()
+                        pickingDate = true
                     },
                     modifier = Modifier.weight(1f),
                 ) {
@@ -166,6 +158,9 @@ fun ReviewScreen(
         }
     }
 
+    if (pickingDate) RecordDatePicker(R.string.picker_date_title, selected, { pickingDate = false }, {
+        viewModel.selectDate(it); pickingDate = false
+    })
     if (showDates) {
         RecordedDatesDialog(
             state = recorded,

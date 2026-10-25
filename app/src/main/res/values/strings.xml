@@ -151,11 +151,9 @@
     <string name="meal_satiety_custom_label">描述饱腹感</string>
     <string name="meal_satiety_custom_hint">最多 40 字，例如：七分饱但还想吃</string>
     <string name="meal_time_label">时间</string>
-    <string name="meal_time_of_day_label">时间</string>
     <string name="meal_save">保存</string>
     <string name="meal_saving">正在保存…</string>
     <string name="meal_cancel">取消</string>
-    <string name="meal_confirm">确定</string>
     <string name="meal_photo_take">拍照</string>
     <string name="meal_photo_pick">从相册选择</string>
     <string name="meal_photo_replace">替换照片</string>
@@ -178,7 +176,6 @@
     <string name="meal_discard_continue">继续编辑</string>
     <string name="meal_record_missing">记录不存在或已删除</string>
     <string name="meal_photo_missing">照片无法读取</string>
-    <string name="meal_time_zone_note">记录时区：%1$s</string>
     <string name="meal_error_empty">请添加文字或照片</string>
     <string name="meal_error_text_too_long">文字最多 500 字</string>
     <string name="meal_error_satiety_required">请填写自定义饱腹感描述</string>

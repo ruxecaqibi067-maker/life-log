@@ -186,7 +186,7 @@ class WorkBackupTest {
             val bad = writeZip(File(f.root, "bad-count-${id()}.zip"), entries)
             assertTrue(BackupImporter(f.root, f.clock).preflight(BackupSource { bad.inputStream() }) is BackupResult.Failure)
         }
-        for (edit in listOf<(JSONObject) -> Unit>({ it.put("dataVersion", 5) },
+        for (edit in listOf<(JSONObject) -> Unit>({ it.put("dataVersion", BackupJson.VERSION + 1) },
             { it.getJSONObject("settings").put("themeMode", "UNKNOWN") })) {
             val bad = editData(zip, File(f.root, "bad-version-${id()}.zip"), edit)
             assertTrue(BackupImporter(f.root, f.clock).preflight(BackupSource { bad.inputStream() }) is BackupResult.Failure)

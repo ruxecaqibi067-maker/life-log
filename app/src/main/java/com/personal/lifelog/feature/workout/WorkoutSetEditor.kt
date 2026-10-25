@@ -57,6 +57,9 @@ internal fun WorkoutSetEditor(
 @Composable
 internal fun WorkoutSetActions(item: WorkoutItemForm, enabled: Boolean, viewModel: WorkoutEditorViewModel) {
     Column(Modifier.fillMaxWidth().testTag("${item.id}-set-actions")) {
+        if (StrengthBatch.from(item.sets) != null) ActionButton({ viewModel.useBatch(item.id) }, enabled = enabled) {
+            Text(stringResource(R.string.workout_batch_switch))
+        }
         Text(stringResource(R.string.workout_sets_hint), style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
             SecondaryButton({ viewModel.addSets(item.id) }, enabled = enabled && item.sets.size < Rules.SETS_PER_ITEM_LIMIT,

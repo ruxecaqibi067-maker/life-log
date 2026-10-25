@@ -49,6 +49,7 @@ class WorkoutRepository(
         if (draft.items.size > Rules.WORKOUT_ITEMS_LIMIT) reject(ErrorCode.TOO_MANY_ITEMS)
         val date = RecordTime.localDate(draft.occurredAtUtcMs, draft.zoneId)
         val note = Rules.text(draft.note, Rules.NOTE_LIMIT)
+        val effortText = Rules.effortText(draft.effort, draft.effortText)
         val old = db.workouts().workout(draft.id)
         val oldItems = old?.items?.associateBy { it.item.id }.orEmpty()
         val now = clock.millis()
@@ -95,7 +96,7 @@ class WorkoutRepository(
         }
         val session = WorkoutSession(draft.id, draft.occurredAtUtcMs, draft.zoneId, date, note,
             old?.session?.createdAtUtcMs ?: now,
-            updatedAt(now, old?.session?.createdAtUtcMs ?: now, old?.session?.updatedAtUtcMs ?: now))
+            updatedAt(now, old?.session?.createdAtUtcMs ?: now, old?.session?.updatedAtUtcMs ?: now), draft.effort, effortText)
         db.workouts().putSession(session)
         db.workouts().deleteItems(draft.id) // Child sets cascade; every replacement happens in this transaction.
         db.workouts().insertItems(items)
