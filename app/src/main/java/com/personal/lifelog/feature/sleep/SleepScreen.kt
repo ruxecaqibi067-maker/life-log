@@ -65,36 +65,37 @@ fun SleepError(code: ErrorCode) {
 }
 
 @Composable
-fun SleepHomeStatus(viewModel: SleepViewModel, onManage: () -> Unit, onEdit: (String) -> Unit) {
+fun SleepHomeFeedback(viewModel: SleepViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit) {
     val status by viewModel.status.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val undo by viewModel.undo.collectAsStateWithLifecycle()
-    var confirmUndo by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (status.failed) {
             SleepError(ErrorCode.STORAGE_UNAVAILABLE)
             ActionButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
         } else if (!status.loaded) Text(stringResource(R.string.sleep_loading))
         status.active?.let { record ->
-            RecordCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                    SleepRecordSummary(record)
-                    ActionButton(onClick = { onEdit(record.id) }) { Text(stringResource(R.string.sleep_edit)) }
-                }
-            }
+            Text(stringResource(R.string.sleep_start_value, recordedTime(record.startedAtUtcMs, record.startZoneId)),
+                style = MaterialTheme.typography.bodyMedium)
+            ActionButton(onClick = { onEdit(record.id) }) { Text(stringResource(R.string.sleep_edit)) }
         }
         error?.let { SleepError(it) }
-        if (undo != null) ActionButton(onClick = { confirmUndo = true }, enabled = !busy) {
+        if (undo != null) ActionButton(onClick = onRequestUndo, enabled = !busy) {
             Text(stringResource(R.string.sleep_undo))
         }
-        ActionButton(onClick = onManage) { Text(stringResource(R.string.sleep_manage)) }
     }
+}
+
+/** Mounted outside LazyColumn so scrolling cannot unmount pending confirmations. */
+@Composable
+fun SleepHomeDialogs(viewModel: SleepViewModel, confirmUndo: Boolean, onDismissUndo: () -> Unit) {
+    val undo by viewModel.undo.collectAsStateWithLifecycle()
     if (confirmUndo && undo != null) ConfirmDialog(
         R.string.sleep_undo,
         if (undo!!.previous == null) R.string.sleep_undo_start else R.string.sleep_undo_finish,
-        onCancel = { confirmUndo = false },
-        onConfirm = { confirmUndo = false; viewModel.undoLast() },
+        onCancel = onDismissUndo,
+        onConfirm = { onDismissUndo(); viewModel.undoLast() },
     )
     val pending by viewModel.longFinish.collectAsStateWithLifecycle()
     if (pending != null) LongIntervalDialog(

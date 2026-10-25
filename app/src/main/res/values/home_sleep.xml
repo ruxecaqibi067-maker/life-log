@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_sleep_title">今日睡眠</string>
+    <string name="home_sleep_target">期望睡眠：%1$s</string>
+    <string name="home_sleep_target_unset">设置期望睡眠</string>
+    <string name="home_sleep_set">设置</string>
+    <string name="home_sleep_change">修改</string>
+    <string name="home_sleep_recorded">已记录</string>
+    <string name="home_sleep_recorded_value">已记录%1$s</string>
+    <string name="home_sleep_hours">%1$d小时</string>
+    <string name="home_sleep_minutes">%1$d分</string>
+    <string name="home_sleep_hours_minutes">%1$d小时%2$d分</string>
+    <string name="home_sleep_seconds">%1$d秒</string>
+    <string name="home_sleep_under_second">不足1秒</string>
+    <string name="home_sleep_segments">%1$d段已完成记录</string>
+    <string name="home_sleep_no_completed">暂无已完成记录</string>
+    <string name="home_sleep_active">作息进行中</string>
+    <string name="home_sleep_source">按作息记录计算</string>
+    <string name="home_sleep_history">查看 / 补录</string>
+    <string name="home_sleep_loading">正在读取今日睡眠…</string>
+    <string name="home_sleep_read_error">无法读取今日睡眠，请重试。</string>
+    <string name="home_sleep_stale">暂显示上次读取的记录，重试后更新。</string>
+    <string name="home_sleep_goal_title">期望睡眠时长</string>
+    <string name="home_sleep_goal_hint">每天想睡多久？按小时和分钟填写。</string>
+    <string name="home_sleep_hour_label">小时</string>
+    <string name="home_sleep_minute_label">分钟</string>
+    <string name="home_sleep_goal_invalid">请填写1分钟至24小时；分钟为0–59，24小时只能配0分钟。</string>
+    <string name="home_sleep_goal_failed">保存失败，输入已保留，请重试。</string>
+    <string name="home_sleep_goal_save">保存目标</string>
+    <string name="home_workout_history">训练记录</string>
+</resources>

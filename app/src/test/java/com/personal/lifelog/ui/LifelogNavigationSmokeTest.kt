@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,8 +17,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
-import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.data.repository.SleepSummaryRepository
+import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
@@ -82,6 +84,7 @@ class LifelogNavigationSmokeTest {
             clock,
             { ZoneId.of("Asia/Shanghai") },
             timelineRepository,
+            SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes,
         )
         val sleepViewModel = SleepViewModel(records, clock) { ZoneId.of("Asia/Shanghai") }
         compose.setContent {
@@ -144,7 +147,7 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
 
-        compose.onNodeWithText("查看作息 / 补录").performClick()
+        compose.onNodeWithTag("sleep-summary-history").performClick()
         compose.onNodeWithText("补录作息").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
 
@@ -152,7 +155,7 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithText("保存训练").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("记饮食").assertExists()
-        compose.onNodeWithText("训练记录 / 补录").performClick()
+        compose.onNodeWithTag("home-workout-history").performClick()
         compose.onNodeWithText("前一天").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
     }

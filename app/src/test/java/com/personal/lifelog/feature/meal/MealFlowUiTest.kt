@@ -15,11 +15,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
+import com.personal.lifelog.data.repository.SleepSummaryRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
@@ -104,6 +106,7 @@ class MealFlowUiTest {
             clock,
             { zone },
             timelineRepository,
+            SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes,
         )
         val sleepViewModel = SleepViewModel(records, clock) { zone }
         compose.setContent {
@@ -157,6 +160,7 @@ class MealFlowUiTest {
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("返回").performClick()
         waitForText("起床了")
+        compose.onNodeWithTag("home-timeline").performScrollToKey("timeline-summary")
         compose.onNodeWithText("整合测试午饭").assertExists()
         assertEquals(1, mealCount())
         runBlocking { assertEquals(1, db.records().allSleeps().size) }
@@ -273,6 +277,7 @@ class MealFlowUiTest {
         compose.onNodeWithTag("meal_save_button").performClick()
         compose.waitUntil(10_000) { onlyMeal()?.text == "牛肉面加蛋" }
         waitForText("牛肉面加蛋")
+        waitForText("饮食详情")
 
         // Cancelling an edit must not modify the committed record.
         compose.onNodeWithContentDescription("编辑记录").performClick()

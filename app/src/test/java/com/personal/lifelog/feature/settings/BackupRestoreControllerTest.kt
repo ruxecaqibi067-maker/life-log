@@ -15,6 +15,8 @@ import com.personal.lifelog.data.backup.restore.RecoveryStatus
 import com.personal.lifelog.data.backup.restore.RestoreEngine
 import com.personal.lifelog.data.backup.restore.RestoreFaultPoint
 import com.personal.lifelog.data.backup.restore.RestoreResult
+import com.personal.lifelog.data.repository.SleepSummaryRepository
+import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.domain.TimelineEntry
 import com.personal.lifelog.feature.home.HomeViewModel
@@ -281,7 +283,7 @@ class BackupRestoreControllerTest {
         f.seed("虚构旧记录")
         g.seed("虚构新记录")
         val zip = g.zip()
-        val home = HomeViewModel(f.clock, { ZoneId.of("UTC") }, TimelineRepository(f.records, f.workouts))
+        val home = HomeViewModel(f.clock, { ZoneId.of("UTC") }, TimelineRepository(f.records, f.workouts), SleepSummaryRepository(f.db)::observe, f.settings::setTargetSleepMinutes)
         withTimeout(10_000) {
             home.timeline.first { state ->
                 state.entries.any { it is TimelineEntry.Meal && it.text == "虚构旧记录" }

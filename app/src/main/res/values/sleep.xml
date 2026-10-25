@@ -4,7 +4,6 @@
     <string name="sleep_start">准备睡了</string>
     <string name="sleep_finish">起床了</string>
     <string name="sleep_loading">读取作息中…</string>
-    <string name="sleep_manage">查看作息 / 补录</string>
     <string name="sleep_add">补录作息</string>
     <string name="sleep_edit">编辑作息</string>
     <string name="sleep_none">还没有作息记录</string>

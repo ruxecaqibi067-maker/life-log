@@ -26,21 +26,25 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.domain.RecordIds
-import com.personal.lifelog.feature.sleep.SleepHomeStatus
+import com.personal.lifelog.feature.sleep.SleepHomeFeedback
+import com.personal.lifelog.feature.sleep.SleepHomeDialogs
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.timeline.TimelineUiState
 import com.personal.lifelog.feature.timeline.timelineSection
-import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.theme.LogDimens
 import java.time.LocalDate
@@ -71,11 +75,19 @@ fun HomeScreen(
     onOpenWorkout: (String) -> Unit,
     onRetryTimeline: () -> Unit,
     sleepViewModel: SleepViewModel,
+    homeViewModel: HomeViewModel,
 ) {
     val sleepStatus by sleepViewModel.status.collectAsStateWithLifecycle()
     val sleepBusy by sleepViewModel.busy.collectAsStateWithLifecycle()
     val activeSleep = sleepStatus.active
     val startId = remember(activeSleep?.id) { RecordIds.newId() }
+    val sleepCard by homeViewModel.sleep.collectAsStateWithLifecycle()
+    val goal by homeViewModel.goal.collectAsStateWithLifecycle()
+    var confirmSleepUndo by rememberSaveable { mutableStateOf(false) }
+
+    SleepGoalDialog(goal, homeViewModel::goalHours, homeViewModel::goalMinutes,
+        homeViewModel::cancelGoal, homeViewModel::saveGoal)
+    SleepHomeDialogs(sleepViewModel, confirmSleepUndo) { confirmSleepUndo = false }
 
     Scaffold(
         topBar = {
@@ -109,29 +121,18 @@ fun HomeScreen(
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth().testTag("home-timeline"),
                 contentPadding = PaddingValues(horizontal = LogDimens.page, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                item(key = "sleep-status") {
-                    SleepHomeStatus(sleepViewModel, onOpenSleepHistory, onEditSleep)
+                item(key = "sleep-summary") {
+                    SleepSummaryCard(sleepCard, onOpenSleepHistory, homeViewModel::editGoal, homeViewModel::retrySleep)
+                }
+                item(key = "sleep-feedback") {
+                    SleepHomeFeedback(sleepViewModel, onEditSleep) { confirmSleepUndo = true }
                 }
                 item(key = "timeline-header") {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_timeline_title),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        ActionButton(onClick = onOpenWorkoutHistory) {
-                            Text(stringResource(R.string.workout_history))
-                        }
-                    }
+                    TodayTimelineHeader(onOpenWorkoutHistory)
                 }
                 timelineSection(
                     state = timeline,

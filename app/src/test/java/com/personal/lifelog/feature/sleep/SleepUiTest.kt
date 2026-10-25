@@ -43,6 +43,7 @@ class SleepUiTest {
     @get:Rule val compose = createComposeRule()
     private val restoration = StateRestorationTester(compose)
     private lateinit var db: AppDatabase
+    private lateinit var repository: RecordRepository
     private val store = ViewModelStore()
     private var now = Instant.parse("2026-10-22T15:50:00Z")
     private val clock = object : Clock() {
@@ -58,12 +59,12 @@ class SleepUiTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).addCallback(AppDatabase.creationCallback(clock)).build()
         val writes = WriteCoordinator()
-        val repository = RecordRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
+        repository = RecordRepository(db, writes, clock) { ZoneId.of("Asia/Shanghai") }
         val workouts = WorkoutRepository(db, writes, clock)
         val timelineRepository = TimelineRepository(repository, workouts)
         restoration.setContent {
             LifeLogTheme(ThemeMode.SYSTEM) {
-                val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, timelineRepository) }
+                val home = vm(HomeViewModel::class.java) { HomeViewModel(clock, { ZoneId.of("Asia/Shanghai") }, timelineRepository, SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes) }
                 val settings = vm(SettingsViewModel::class.java) { SettingsViewModel(SettingsRepository(db, writes, clock)) }
                 val sleep = vm(SleepViewModel::class.java) { SleepViewModel(repository, clock) { ZoneId.of("Asia/Shanghai") } }
                 LifelogApp(
@@ -134,6 +135,31 @@ class SleepUiTest {
         compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
     }
 
+    @Test fun longFinishConfirmationSurvivesScrollingTheFeedbackOutOfComposition() {
+        val zone = "Asia/Shanghai"
+        runBlocking {
+            repository.startSleep(com.personal.lifelog.domain.RecordIds.newId(), now.minusSeconds(172800).toEpochMilli(), zone)
+            repeat(20) { index ->
+                repository.saveMeal(com.personal.lifelog.domain.MealDraft(com.personal.lifelog.domain.RecordIds.newId(),
+                    now.minusSeconds((20 - index) * 60L).toEpochMilli(), zone, "虚构长列表$index"))
+            }
+        }
+        awaitText("起床了")
+        compose.onNodeWithTag("home-timeline").performScrollToNode(hasText("虚构长列表0"))
+        compose.onNodeWithText("编辑作息").assertDoesNotExist()
+        compose.onNodeWithText("起床了").performClick()
+        awaitText("请检查就寝时段")
+        compose.onNodeWithText("取消").performClick()
+        assertNull(rows().single().endedAtUtcMs)
+        compose.onNodeWithText("起床了").performClick()
+        awaitText("请检查就寝时段")
+        compose.onNodeWithText("确认").performClick()
+        awaitText("准备睡了")
+        assertEquals(now.toEpochMilli(), rows().single().endedAtUtcMs)
+        compose.onNodeWithTag("home-timeline").performScrollToKey("sleep-summary")
+        awaitText("48小时")
+    }
+
     @Test fun failedStartStaysOnHomeAndRetryEntersBedtimeOnlyAfterDatabaseCommit() {
         db.openHelper.writableDatabase.execSQL("CREATE TEMP TRIGGER fail_sleep BEFORE INSERT ON SleepRecord BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END")
         compose.onNodeWithText("准备睡了").performClick()
@@ -147,7 +173,7 @@ class SleepUiTest {
     }
 
     @Test fun supplementShowsCompleteDatesAndDurationAndEditingMovesArchive() {
-        compose.onNodeWithText("查看作息 / 补录").performClick()
+        compose.onNodeWithTag("sleep-summary-history").performClick()
         compose.onNodeWithText("补录作息").performClick()
         awaitText("就寝日期时间")
         compose.pickSleepTime("就寝日期时间", "2026-10-31T23:50")
@@ -168,7 +194,7 @@ class SleepUiTest {
     }
 
     @Test fun leavingDirtySupplementRequiresConfirmationAndNeverSavesOnCancel() {
-        compose.onNodeWithText("查看作息 / 补录").performClick()
+        compose.onNodeWithTag("sleep-summary-history").performClick()
         compose.onNodeWithText("补录作息").performClick()
         awaitText("就寝日期时间")
         compose.pickSleepTime("就寝日期时间", "2026-10-22T12:30")

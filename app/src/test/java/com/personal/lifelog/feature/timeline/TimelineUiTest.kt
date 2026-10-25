@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextReplacement
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -25,6 +26,7 @@ import com.personal.lifelog.data.media.PhotoFixtures
 import com.personal.lifelog.data.media.PhotoNormalizer
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
+import com.personal.lifelog.data.repository.SleepSummaryRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
@@ -115,7 +117,7 @@ class TimelineUiTest {
         )
         seed()
         val settings = SettingsViewModel(SettingsRepository(db, WriteCoordinator(), clock))
-        val home = HomeViewModel(clock, { zone }, timeline)
+        val home = HomeViewModel(clock, { zone }, timeline, SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes)
         val sleep = SleepViewModel(records, clock) { zone }
         compose.setContent {
             LifeLogTheme(ThemeMode.LIGHT) {
@@ -217,6 +219,12 @@ class TimelineUiTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isEmpty() }
     }
 
+    private fun showHomeTimeline() {
+        compose.onNodeWithTag("home-timeline").performScrollToKey("timeline-header")
+        waitText("今日时间线")
+        compose.onNodeWithTag("home-timeline").performScrollToKey("timeline-summary")
+    }
+
     private fun screenshot(path: String) {
         val evidence = File(path).absoluteFile
         evidence.parentFile!!.mkdirs()
@@ -232,6 +240,7 @@ class TimelineUiTest {
     @Test
     fun homeAndReviewShowOneSavedTimelineWithQuickJumpAndEmptyPastDates() {
         waitText("牛肉面")
+        showHomeTimeline()
         compose.onNodeWithText("没吃饱").assertExists()
         compose.onNodeWithText("饮食 1 条 · 作息 1 段 · 训练 1 场 · 2 个动作").assertExists()
         compose.onNodeWithText("卧床 7小时20分", substring = true).assertExists()
@@ -251,17 +260,17 @@ class TimelineUiTest {
         waitText("饮食详情")
         waitText("没吃饱")
         compose.onNodeWithContentDescription("返回").performClick()
-        waitText("今日时间线")
+        showHomeTimeline()
 
         compose.onNodeWithText("作息").performClick()
         waitText("就寝日期时间")
         compose.onNodeWithContentDescription("返回").performClick()
-        waitText("今日时间线")
+        showHomeTimeline()
 
         compose.onNodeWithText("卧推、跑步").performClick()
         waitText("训练详情")
         compose.onNodeWithContentDescription("返回").performClick()
-        waitText("今日时间线")
+        showHomeTimeline()
 
         // 回顾 reuses the same timeline for the selected stored date.
         compose.onNodeWithText("回顾").performClick()
