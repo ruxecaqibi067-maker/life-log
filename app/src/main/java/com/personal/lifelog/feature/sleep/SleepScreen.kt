@@ -96,6 +96,12 @@ fun SleepHomeStatus(viewModel: SleepViewModel, onManage: () -> Unit, onEdit: (St
         onCancel = { confirmUndo = false },
         onConfirm = { confirmUndo = false; viewModel.undoLast() },
     )
+    SleepFinishConfirmation(viewModel)
+}
+
+/** Shared by Home and the dark bedtime page: same captured end instant and validation. */
+@Composable
+internal fun SleepFinishConfirmation(viewModel: SleepViewModel) {
     val pending by viewModel.longFinish.collectAsStateWithLifecycle()
     if (pending != null) LongIntervalDialog(
         onCancel = viewModel::dismissLong,
