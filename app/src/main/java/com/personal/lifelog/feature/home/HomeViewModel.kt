@@ -47,6 +47,7 @@ class HomeViewModel(
     private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     private val retry = MutableStateFlow(0)
+    private val todayRefresh = MutableStateFlow(0)
     private val sleepRetry = MutableStateFlow(0)
     private val initialToday = LocalDate.now(clock.withZone(zoneIdProvider()))
     private var lastSleepDate: LocalDate? = null
@@ -58,8 +59,11 @@ class HomeViewModel(
     ))
     val goal: StateFlow<SleepGoalDraft> = mutableGoal
 
-    val today: StateFlow<LocalDate> = localDateUpdates(clock, zoneIdProvider)
+    val today: StateFlow<LocalDate> = todayRefresh.flatMapLatest { localDateUpdates(clock, zoneIdProvider) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, initialToday)
+
+    /** Re-read a changed phone date/zone after returning from the background and reschedule midnight. */
+    fun refreshToday() { todayRefresh.value++ }
 
     val timeline: StateFlow<TimelineUiState> = combine(today, retry) { date, _ -> date }
         .flatMapLatest { date ->

@@ -23,6 +23,7 @@ object LifelogRoutes {
     const val TODAY = "today"
     const val REVIEW = "review"
     const val SETTINGS = "settings"
+    const val TODOS = "todos"
     const val WORK_HISTORY = "work/history"
     const val WORK_EDIT = "work/edit"
     const val ARG_WORK_ID = "workId"

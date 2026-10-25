@@ -18,12 +18,16 @@ import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -54,6 +58,10 @@ import com.personal.lifelog.feature.sleep.SleepEditorScreen
 import com.personal.lifelog.feature.sleep.SleepEditorViewModel
 import com.personal.lifelog.feature.sleep.SleepHistoryScreen
 import com.personal.lifelog.feature.sleep.SleepViewModel
+import com.personal.lifelog.feature.todo.TodoViewModel
+import com.personal.lifelog.feature.todo.TodoHomeSection
+import com.personal.lifelog.feature.todo.TodoScreen
+import com.personal.lifelog.feature.todo.TodoDialogs
 import com.personal.lifelog.feature.work.*
 import com.personal.lifelog.feature.home.WorkHomeViewModel
 import com.personal.lifelog.feature.workout.*
@@ -83,6 +91,7 @@ fun LifelogApp(
     timelineRepository: TimelineRepository,
     workViewModel: WorkViewModel,
     workHomeViewModel: WorkHomeViewModel,
+    todoViewModel: TodoViewModel? = null,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -99,6 +108,23 @@ fun LifelogApp(
     }
     val today by homeViewModel.today.collectAsStateWithLifecycle()
     val timeline by homeViewModel.timeline.collectAsStateWithLifecycle()
+    LaunchedEffect(currentRoute, todoViewModel) {
+        if (currentRoute == LifelogRoutes.TODAY || currentRoute == LifelogRoutes.TODOS) {
+            homeViewModel.refreshToday()
+            todoViewModel?.refresh()
+        }
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, homeViewModel, todoViewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                homeViewModel.refreshToday()
+                todoViewModel?.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // T04's contract: pages that resume with draft tickets call maintain. The shell
     // performs the general abandoned-ticket sweep once per app composition; failures
@@ -181,7 +207,18 @@ fun LifelogApp(
                     workHomeViewModel = workHomeViewModel,
                     onOpenWorkHistory = { navController.navigateSingle(LifelogRoutes.WORK_HISTORY) },
                     onEditWork = { navController.navigate(LifelogRoutes.workEditor(it)) },
+                    todoContent = {
+                        todoViewModel?.let { model ->
+                            TodoHomeSection(model) {
+                                model.selectDate(null)
+                                navController.navigateSingle(LifelogRoutes.TODOS)
+                            }
+                        }
+                    },
                 )
+            }
+            composable(LifelogRoutes.TODOS) {
+                todoViewModel?.let { TodoScreen(it, onBack = { navController.navigateUp() }) }
             }
             composable(LifelogRoutes.REVIEW) {
                 val reviewViewModel: ReviewViewModel = viewModel {
@@ -323,6 +360,7 @@ fun LifelogApp(
             }
         }
     }
+    todoViewModel?.let { TodoDialogs(it) }
 }
 
 /** Tab switch: single top, keep per-tab saved state, pop nothing but the graph root. */

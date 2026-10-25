@@ -353,6 +353,13 @@ private fun BackupPreviewDialog(
                 Text(countsLine(R.string.backup_preview_items, counts["items"] ?: 0))
                 Text(countsLine(R.string.backup_preview_sets, counts["sets"] ?: 0))
                 Text(countsLine(R.string.backup_preview_media, counts["media"] ?: 0))
+                Text(countsLine(R.string.backup_preview_todos, preview.todoCount))
+                Text(countsLine(R.string.backup_preview_habits, preview.habitCount))
+                if (preview.earliestLocalDate != null && preview.latestLocalDate != null) {
+                    Text(stringResource(R.string.backup_preview_calendar_range,
+                        preview.earliestLocalDate, preview.latestLocalDate), style = MaterialTheme.typography.bodySmall)
+                }
+                Text(stringResource(R.string.backup_preview_todo_replace_note), style = MaterialTheme.typography.bodySmall)
                 Text(range, style = MaterialTheme.typography.bodySmall)
                 Text(stringResource(if (preview.hasActiveWork) R.string.backup_preview_has_active_work
                     else R.string.backup_preview_no_active_work))
