@@ -26,6 +26,7 @@ internal class BackupFixture(val databaseName: String? = null) : AutoCloseable {
         .addCallback(AppDatabase.creationCallback(clock)).build()
     val writes = WriteCoordinator()
     val records = RecordRepository(db, writes, clock) { ZoneId.of("UTC") }
+    val work = WorkRepository(db, writes, clock) { ZoneId.of("UTC") }
     val workouts = WorkoutRepository(db, writes, clock)
     val snapshots = SnapshotRepository(db)
     val settings = SettingsRepository(db, writes, clock)
@@ -51,6 +52,13 @@ internal class BackupFixture(val databaseName: String? = null) : AutoCloseable {
         ), "虚构训练")) is DataResult.Success)
         check(settings.setTheme(ThemeMode.DARK) is DataResult.Success)
         check(settings.setTargetSleepMinutes(targetSleepMinutes) is DataResult.Success)
+        return snapshots.read()
+    }
+    suspend fun seedWithWork(text: String = "虚构午餐", targetSleepMinutes: Int? = null): DataSnapshot {
+        seed(text, targetSleepMinutes)
+        check(work.saveWork(WorkDraft(id(), 1000, "UTC", 2000, "UTC")) is DataResult.Success)
+        check(work.startWork(id(), clock.millis(), "UTC") is DataResult.Success)
+        check(settings.setTargetWorkMinutes(targetSleepMinutes?.plus(15) ?: 420) is DataResult.Success)
         return snapshots.read()
     }
     suspend fun zip(): File = writes.withExclusiveAccess { exporter.prepare(BackupFiles(root).mkdir("fixture-${id()}")) }

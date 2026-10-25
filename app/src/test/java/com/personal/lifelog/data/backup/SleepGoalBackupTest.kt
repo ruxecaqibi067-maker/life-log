@@ -28,11 +28,13 @@ class SleepGoalBackupTest {
     @Before fun setup() { f = BackupFixture() }
     @After fun close() { f.close() }
     private fun <T> DataResult<T>.saved() = (this as DataResult.Success).value
-    private fun evidence(name: String) = File("../artifacts/t18/$name").apply { parentFile!!.mkdirs() }
+    private fun evidence(name: String) = File("../artifacts/t20/sleep-regression/$name").apply { parentFile!!.mkdirs() }
 
     private suspend fun legacy(zip: File, version: Int): File {
         val dataZip = editData(zip, File(f.root, "legacy-data-$version.zip")) { data ->
             data.put("dataVersion", version)
+            data.remove("workRecords")
+            data.getJSONObject("settings").remove("targetWorkMinutes")
             data.getJSONObject("settings").remove("targetSleepMinutes")
             if (version == 1) {
                 val meals = data.getJSONArray("meals")
@@ -41,11 +43,11 @@ class SleepGoalBackupTest {
         }
         val entries = zipEntries(dataZip)
         entries["manifest.json"] = JSONObject(String(entries.getValue("manifest.json"), Charsets.UTF_8))
-            .put("formatVersion", version).toString().toByteArray()
+            .put("formatVersion", version).also { it.getJSONObject("counts").remove("workRecords") }.toString().toByteArray()
         return writeZip(File(f.root, "legacy-$version.zip"), entries)
     }
 
-    @Test fun v3GoalRoundTripsAndSuccessfulExportKeepsGoal() = runBlocking<Unit> {
+    @Test fun currentGoalRoundTripsAndSuccessfulExportKeepsGoal() = runBlocking<Unit> {
         val before = f.seed(targetSleepMinutes = 480)
         val destination = MemoryDestination()
         assertTrue(f.exporter.export(destination) is BackupResult.Success)
@@ -55,8 +57,8 @@ class SleepGoalBackupTest {
         assertEquals(480, f.snapshots.read().settings.targetSleepMinutes)
         assertEquals(f.clock.millis(), f.snapshots.read().settings.lastSuccessfulExportAtUtcMs)
         val entries = zipEntries(zip)
-        assertEquals(3, JSONObject(String(entries.getValue("manifest.json"))).getInt("formatVersion"))
-        assertEquals(3, JSONObject(String(entries.getValue("data.json"))).getInt("dataVersion"))
+        assertEquals(4, JSONObject(String(entries.getValue("manifest.json"))).getInt("formatVersion"))
+        assertEquals(4, JSONObject(String(entries.getValue("data.json"))).getInt("dataVersion"))
         f.settings.setTargetSleepMinutes(null).saved()
         val unset = zipEntries(f.zip())
         assertTrue(JSONObject(String(unset.getValue("data.json"))).getJSONObject("settings").isNull("targetSleepMinutes"))

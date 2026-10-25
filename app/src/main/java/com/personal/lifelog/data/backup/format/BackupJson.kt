@@ -14,13 +14,14 @@ import java.nio.charset.CodingErrorAction
 
 /** Explicit v1 wire fields. Derived keys and local media generations never enter the archive. */
 object BackupJson {
-    const val VERSION = 3
-    /** v1 predates custom satiety; v1/v2 predate the optional daily sleep goal. */
+    const val VERSION = 4
+    /** v1: no custom satiety; v1/v2: no sleep goal; v1-v3: no work records/goal. */
     const val MIN_SUPPORTED_VERSION = 1
     private const val IMPORT_GENERATION = "00000000-0000-0000-0000-000000000000"
     fun encode(data: DataSnapshot): JSONObject = JSONObject().put("dataVersion", VERSION)
         .put("meals", JSONArray(data.meals.map { encode(it) }))
         .put("sleeps", JSONArray(data.sleeps.map { encode(it) }))
+        .put("workRecords", JSONArray(data.workRecords.map { encode(it) }))
         .put("exercises", JSONArray(data.exercises.map { encode(it) }))
         .put("sessions", JSONArray(data.sessions.map { encode(it) }))
         .put("items", JSONArray(data.items.map { encode(it) }))
@@ -40,6 +41,7 @@ object BackupJson {
             sets = json.array("sets").objects().map(::decodeWorkoutSet),
             media = json.array("media").objects().map(::decodeMediaAsset),
             settings = decodeAppSettings(json.obj("settings"), version),
+            workRecords = if (version < 4) emptyList() else json.array("workRecords").objects().map(::decodeWorkRecord),
         )
     }
 
@@ -77,6 +79,27 @@ object BackupJson {
         .put("createdAtUtcMs", v.createdAtUtcMs)
         .put("updatedAtUtcMs", v.updatedAtUtcMs)
     private fun decodeSleepRecord(j: JSONObject): SleepRecord = SleepRecord(
+        id = j.string("id"),
+        startedAtUtcMs = j.long("startedAtUtcMs"),
+        startZoneId = j.string("startZoneId"),
+        endedAtUtcMs = j.nullableLong("endedAtUtcMs"),
+        endZoneId = j.nullableString("endZoneId"),
+        archiveLocalDate = j.string("archiveLocalDate"),
+        activeSlot = if (j.nullableLong("endedAtUtcMs") == null) 1 else null,
+        createdAtUtcMs = j.long("createdAtUtcMs"),
+        updatedAtUtcMs = j.long("updatedAtUtcMs"),
+    )
+
+    private fun encode(v: WorkRecord): JSONObject = JSONObject()
+        .put("id", v.id)
+        .put("startedAtUtcMs", v.startedAtUtcMs)
+        .put("startZoneId", v.startZoneId)
+        .put("endedAtUtcMs", v.endedAtUtcMs ?: JSONObject.NULL)
+        .put("endZoneId", v.endZoneId ?: JSONObject.NULL)
+        .put("archiveLocalDate", v.archiveLocalDate)
+        .put("createdAtUtcMs", v.createdAtUtcMs)
+        .put("updatedAtUtcMs", v.updatedAtUtcMs)
+    private fun decodeWorkRecord(j: JSONObject): WorkRecord = WorkRecord(
         id = j.string("id"),
         startedAtUtcMs = j.long("startedAtUtcMs"),
         startZoneId = j.string("startZoneId"),
@@ -199,12 +222,14 @@ object BackupJson {
         .put("themeMode", v.themeMode.name)
         .put("lastSuccessfulExportAtUtcMs", v.lastSuccessfulExportAtUtcMs ?: JSONObject.NULL)
         .put("targetSleepMinutes", v.targetSleepMinutes ?: JSONObject.NULL)
+        .put("targetWorkMinutes", v.targetWorkMinutes ?: JSONObject.NULL)
         .put("createdAtUtcMs", v.createdAtUtcMs)
         .put("updatedAtUtcMs", v.updatedAtUtcMs)
     private fun decodeAppSettings(j: JSONObject, version: Int): AppSettings = AppSettings(
         id = j.int("id"),
         themeMode = ThemeMode.valueOf(j.string("themeMode")),
         lastSuccessfulExportAtUtcMs = j.nullableLong("lastSuccessfulExportAtUtcMs"),
+        targetWorkMinutes = if (version < 4) null else Rules.targetWorkMinutes(j.nullableInt("targetWorkMinutes")),
         targetSleepMinutes = Rules.targetSleepMinutes(if (version < 3 && !j.has("targetSleepMinutes")) null else j.nullableInt("targetSleepMinutes")),
         createdAtUtcMs = j.long("createdAtUtcMs"),
         updatedAtUtcMs = j.long("updatedAtUtcMs"),
@@ -219,7 +244,8 @@ object BackupJson {
         requireBackup(j.int("formatVersion") in MIN_SUPPORTED_VERSION..VERSION, BackupError.UNSUPPORTED_VERSION)
         val counts = j.obj("counts")
         return BackupManifest(j.string("appVersion"), j.long("exportedAtUtcMs"),
-            listOf("meals", "sleeps", "exercises", "sessions", "items", "sets", "media").associateWith { counts.int(it) },
+            (listOf("meals", "sleeps", "exercises", "sessions", "items", "sets", "media").associateWith { counts.int(it) } +
+                ("workRecords" to if (j.int("formatVersion") < 4) 0 else counts.int("workRecords"))),
             j.array("files").objects().map { FileDigest(it.string("path"), it.long("byteSize"), it.string("sha256")) })
     }
 

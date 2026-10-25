@@ -25,6 +25,15 @@ object Rules {
         return value
     }
 
+    const val TARGET_WORK_MINUTES_MAX = 1440
+
+    fun targetWorkMinutes(value: Int?): Int? {
+        if (value != null && value !in 1..TARGET_WORK_MINUTES_MAX) {
+            reject(ErrorCode.INVALID_NUMBER, "targetWorkMinutes")
+        }
+        return value
+    }
+
     fun id(value: String): String {
         val parsed = runCatching { UUID.fromString(value).toString() }.getOrNull()
         if (parsed != value) reject(ErrorCode.INVALID_ID, "id")

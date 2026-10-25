@@ -15,7 +15,7 @@ def inspect(path):
         assert archive.getinfo('manifest.json').file_size <= 4 * 1024**2, 'Manifest size limit'
         assert archive.getinfo('data.json').file_size <= 32 * 1024**2, 'Data size limit'
         manifest = json.loads(archive.read('manifest.json'))
-        assert manifest['formatVersion'] in (1, 2, 3), 'Unknown format'
+        assert manifest['formatVersion'] in (1, 2, 3, 4), 'Unknown format'
         files = manifest['files']
         assert len(files) == len({item['path'] for item in files}), 'Duplicate manifest path'
         assert {item['path'] for item in files} == set(names) - {'manifest.json'}, 'Incomplete manifest'
@@ -37,7 +37,17 @@ def inspect(path):
             assert 'targetSleepMinutes' in settings, 'Missing sleep goal'
         goal = settings.get('targetSleepMinutes')
         assert goal is None or (type(goal) is int and 1 <= goal <= 1440), 'Invalid sleep goal'
-        counts = {key: len(data[key]) for key in manifest['counts']}
+        version = data['dataVersion']
+        if version >= 4:
+            assert 'targetWorkMinutes' in settings, 'Missing work goal'
+            assert isinstance(data.get('workRecords'), list), 'Missing work records'
+        work_goal = settings.get('targetWorkMinutes')
+        assert work_goal is None or (type(work_goal) is int and 1 <= work_goal <= 1440), 'Invalid work goal'
+        keys = {'meals', 'sleeps', 'exercises', 'sessions', 'items', 'sets', 'media'}
+        if version >= 4:
+            keys.add('workRecords')
+        assert set(manifest['counts']) == keys, 'Missing or unknown count'
+        counts = {key: len(data[key]) for key in keys}
         assert counts == manifest['counts'], 'Count mismatch'
         for key, value in data.items():
             if isinstance(value, list):
@@ -47,16 +57,21 @@ def inspect(path):
 
 
 def migrate_for_comparison(data, target_version):
-    """Only the two defined nullable additions; never remove or normalize record values."""
+    """Only defined additive fields; never remove or normalize record values."""
     version = data['dataVersion']
-    assert (version, target_version) in ((1, 2), (2, 3), (1, 3)), 'Undefined migration'
+    assert (version, target_version) in ((1, 2), (2, 3), (1, 3), (1, 4), (2, 4), (3, 4)), 'Undefined migration'
     if version == 1:
         assert all(row.get('satietyText') is None for row in data['meals']), 'Unexpected v1 custom text'
         for row in data['meals']:
             row['satietyText'] = None
-    if target_version == 3:
+    if version < 3 and target_version >= 3:
         assert data['settings'].get('targetSleepMinutes') is None, 'Unexpected legacy sleep goal'
         data['settings']['targetSleepMinutes'] = None
+    if target_version >= 4:
+        assert not data.get('workRecords'), 'Unexpected legacy work records'
+        assert data['settings'].get('targetWorkMinutes') is None, 'Unexpected legacy work goal'
+        data['workRecords'] = []
+        data['settings']['targetWorkMinutes'] = None
     data['dataVersion'] = target_version
 
 
@@ -73,15 +88,21 @@ def main():
                             help='Compare v2 with its additive v3 migration (targetSleepMinutes=null)')
     migrations.add_argument('--allow-v1-to-v3', action='store_true',
                             help='Compare v1 with the defined v1->v2->v3 nullable additions')
+    for version in (1, 2, 3):
+        migrations.add_argument(f'--allow-v{version}-to-v4', action='store_true',
+                                help=f'Compare v{version} with its defined forward migration to v4')
     args = parser.parse_args()
     before, before_photos, counts = inspect(args.before)
     after, after_photos, after_counts = inspect(args.after)
     versions = [before['dataVersion'], after['dataVersion']]
     migration = ([1, 2] if args.allow_v1_to_v2 else [2, 3] if args.allow_v2_to_v3
-                 else [1, 3] if args.allow_v1_to_v3 else None)
+                 else [1, 3] if args.allow_v1_to_v3 else [1, 4] if args.allow_v1_to_v4
+                 else [2, 4] if args.allow_v2_to_v4 else [3, 4] if args.allow_v3_to_v4 else None)
     if migration:
         assert versions == migration, 'Wrong versions for explicitly requested migration'
         migrate_for_comparison(before, migration[1])
+        if migration[1] == 4:
+            counts['workRecords'] = 0
     if args.ignore_export_clock:
         for data in (before, after):
             for key in ('lastSuccessfulExportAtUtcMs', 'updatedAtUtcMs'):

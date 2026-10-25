@@ -7,6 +7,7 @@ import androidx.room.Query
 @Dao
 interface RestoreDao {
     @Query("DELETE FROM MealRecord") suspend fun clearMeals()
+    @Query("DELETE FROM WorkRecord") suspend fun clearWorkRecords()
     @Query("DELETE FROM SleepRecord") suspend fun clearSleeps()
     @Query("DELETE FROM WorkoutSession") suspend fun clearSessions()
     @Query("DELETE FROM ExerciseDefinition") suspend fun clearExercises()

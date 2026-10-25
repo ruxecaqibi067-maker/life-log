@@ -1,0 +1,792 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 4,
+    "identityHash": "8d70ddeb9a8da27b3a5a71382439592f",
+    "entities": [
+      {
+        "tableName": "MealRecord",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `occurredAtUtcMs` INTEGER NOT NULL, `zoneId` TEXT NOT NULL, `localDate` TEXT NOT NULL, `text` TEXT, `satiety` TEXT, `photoId` TEXT, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, `satietyText` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`photoId`) REFERENCES `MediaAsset`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurredAtUtcMs",
+            "columnName": "occurredAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zoneId",
+            "columnName": "zoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localDate",
+            "columnName": "localDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "satiety",
+            "columnName": "satiety",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "photoId",
+            "columnName": "photoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "satietyText",
+            "columnName": "satietyText",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_MealRecord_localDate",
+            "unique": false,
+            "columnNames": [
+              "localDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_MealRecord_localDate` ON `${TABLE_NAME}` (`localDate`)"
+          },
+          {
+            "name": "index_MealRecord_photoId",
+            "unique": false,
+            "columnNames": [
+              "photoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_MealRecord_photoId` ON `${TABLE_NAME}` (`photoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "MediaAsset",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "photoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "SleepRecord",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `startedAtUtcMs` INTEGER NOT NULL, `startZoneId` TEXT NOT NULL, `endedAtUtcMs` INTEGER, `endZoneId` TEXT, `archiveLocalDate` TEXT NOT NULL, `activeSlot` INTEGER, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAtUtcMs",
+            "columnName": "startedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startZoneId",
+            "columnName": "startZoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedAtUtcMs",
+            "columnName": "endedAtUtcMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endZoneId",
+            "columnName": "endZoneId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "archiveLocalDate",
+            "columnName": "archiveLocalDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeSlot",
+            "columnName": "activeSlot",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_SleepRecord_archiveLocalDate",
+            "unique": false,
+            "columnNames": [
+              "archiveLocalDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_SleepRecord_archiveLocalDate` ON `${TABLE_NAME}` (`archiveLocalDate`)"
+          },
+          {
+            "name": "index_SleepRecord_activeSlot",
+            "unique": true,
+            "columnNames": [
+              "activeSlot"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_SleepRecord_activeSlot` ON `${TABLE_NAME}` (`activeSlot`)"
+          }
+        ]
+      },
+      {
+        "tableName": "WorkRecord",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `startedAtUtcMs` INTEGER NOT NULL, `startZoneId` TEXT NOT NULL, `endedAtUtcMs` INTEGER, `endZoneId` TEXT, `archiveLocalDate` TEXT NOT NULL, `activeSlot` INTEGER, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAtUtcMs",
+            "columnName": "startedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startZoneId",
+            "columnName": "startZoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedAtUtcMs",
+            "columnName": "endedAtUtcMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endZoneId",
+            "columnName": "endZoneId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "archiveLocalDate",
+            "columnName": "archiveLocalDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeSlot",
+            "columnName": "activeSlot",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_WorkRecord_archiveLocalDate",
+            "unique": false,
+            "columnNames": [
+              "archiveLocalDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_WorkRecord_archiveLocalDate` ON `${TABLE_NAME}` (`archiveLocalDate`)"
+          },
+          {
+            "name": "index_WorkRecord_activeSlot",
+            "unique": true,
+            "columnNames": [
+              "activeSlot"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_WorkRecord_activeSlot` ON `${TABLE_NAME}` (`activeSlot`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ExerciseDefinition",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `normalizedName` TEXT NOT NULL, `type` TEXT NOT NULL, `isBuiltin` INTEGER NOT NULL, `isHidden` INTEGER NOT NULL, `activeNameKey` TEXT, `lastUsedAtUtcMs` INTEGER, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedName",
+            "columnName": "normalizedName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isBuiltin",
+            "columnName": "isBuiltin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isHidden",
+            "columnName": "isHidden",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeNameKey",
+            "columnName": "activeNameKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastUsedAtUtcMs",
+            "columnName": "lastUsedAtUtcMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ExerciseDefinition_type_activeNameKey",
+            "unique": true,
+            "columnNames": [
+              "type",
+              "activeNameKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_ExerciseDefinition_type_activeNameKey` ON `${TABLE_NAME}` (`type`, `activeNameKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "WorkoutSession",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `occurredAtUtcMs` INTEGER NOT NULL, `zoneId` TEXT NOT NULL, `localDate` TEXT NOT NULL, `note` TEXT, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurredAtUtcMs",
+            "columnName": "occurredAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zoneId",
+            "columnName": "zoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localDate",
+            "columnName": "localDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_WorkoutSession_localDate",
+            "unique": false,
+            "columnNames": [
+              "localDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_WorkoutSession_localDate` ON `${TABLE_NAME}` (`localDate`)"
+          }
+        ]
+      },
+      {
+        "tableName": "WorkoutItem",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `exerciseId` TEXT NOT NULL, `nameSnapshot` TEXT NOT NULL, `typeSnapshot` TEXT NOT NULL, `sortOrder` INTEGER NOT NULL, `durationSeconds` INTEGER, `distanceMeters` INTEGER, `note` TEXT, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`sessionId`) REFERENCES `WorkoutSession`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`exerciseId`) REFERENCES `ExerciseDefinition`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exerciseId",
+            "columnName": "exerciseId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nameSnapshot",
+            "columnName": "nameSnapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "typeSnapshot",
+            "columnName": "typeSnapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_WorkoutItem_sessionId_sortOrder",
+            "unique": true,
+            "columnNames": [
+              "sessionId",
+              "sortOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_WorkoutItem_sessionId_sortOrder` ON `${TABLE_NAME}` (`sessionId`, `sortOrder`)"
+          },
+          {
+            "name": "index_WorkoutItem_exerciseId",
+            "unique": false,
+            "columnNames": [
+              "exerciseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_WorkoutItem_exerciseId` ON `${TABLE_NAME}` (`exerciseId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "WorkoutSession",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "sessionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "ExerciseDefinition",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "exerciseId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "WorkoutSet",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `itemId` TEXT NOT NULL, `sortOrder` INTEGER NOT NULL, `weightGrams` INTEGER, `repetitions` INTEGER, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`itemId`) REFERENCES `WorkoutItem`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemId",
+            "columnName": "itemId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weightGrams",
+            "columnName": "weightGrams",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "repetitions",
+            "columnName": "repetitions",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_WorkoutSet_itemId_sortOrder",
+            "unique": true,
+            "columnNames": [
+              "itemId",
+              "sortOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_WorkoutSet_itemId_sortOrder` ON `${TABLE_NAME}` (`itemId`, `sortOrder`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "WorkoutItem",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "itemId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "MediaAsset",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `generationId` TEXT NOT NULL, `relativePath` TEXT NOT NULL, `mimeType` TEXT NOT NULL, `width` INTEGER NOT NULL, `height` INTEGER NOT NULL, `byteSize` INTEGER NOT NULL, `sha256` TEXT NOT NULL, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generationId",
+            "columnName": "generationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "relativePath",
+            "columnName": "relativePath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mimeType",
+            "columnName": "mimeType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "width",
+            "columnName": "width",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "height",
+            "columnName": "height",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "byteSize",
+            "columnName": "byteSize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sha256",
+            "columnName": "sha256",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_MediaAsset_relativePath",
+            "unique": true,
+            "columnNames": [
+              "relativePath"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_MediaAsset_relativePath` ON `${TABLE_NAME}` (`relativePath`)"
+          }
+        ]
+      },
+      {
+        "tableName": "AppSettings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `themeMode` TEXT NOT NULL, `lastSuccessfulExportAtUtcMs` INTEGER, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, `targetSleepMinutes` INTEGER, `targetWorkMinutes` INTEGER, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "themeMode",
+            "columnName": "themeMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSuccessfulExportAtUtcMs",
+            "columnName": "lastSuccessfulExportAtUtcMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetSleepMinutes",
+            "columnName": "targetSleepMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "targetWorkMinutes",
+            "columnName": "targetWorkMinutes",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "RestoreState",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `lastCommittedRestoreId` TEXT, `createdAtUtcMs` INTEGER NOT NULL, `updatedAtUtcMs` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastCommittedRestoreId",
+            "columnName": "lastCommittedRestoreId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtUtcMs",
+            "columnName": "createdAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMs",
+            "columnName": "updatedAtUtcMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8d70ddeb9a8da27b3a5a71382439592f')"
+    ]
+  }
+}
