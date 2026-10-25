@@ -28,7 +28,6 @@ T01–T09 的九份任务书已合成一份档案，编号和原文保留；其�
 | T18 | 睡眠目标与今日汇总 | `6d8d54d` | [任务](archive/tasks/T18.md) | [交接](archive/handoffs/T18-睡眠目标与今日汇总.md) |
 | T19 | 睡眠扇形卡片与训练入口 | `8955731` | [任务](archive/tasks/T19.md) | [交接](archive/handoffs/T19-首页睡眠图表与入口优化.md) |
 | T20 | 工作记录、目标与备份数据 | `806dbe4` | [任务](archive/tasks/T20.md) | [交接](archive/handoffs/T20-工作时段与统计数据.md) |
-
 | T21 | 工作界面、双卡与四类时间线 | `32dfba7` | [任务](archive/tasks/T21.md) | [交接](archive/handoffs/T21-工作界面与首页双统计.md) |
 
 ## 使用规则
