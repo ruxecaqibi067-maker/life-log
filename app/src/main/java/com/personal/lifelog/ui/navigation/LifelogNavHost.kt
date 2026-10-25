@@ -164,6 +164,7 @@ fun LifelogApp(
                     onOpenWorkout = { id -> navController.navigate(LifelogRoutes.workoutDetail(id)) },
                     onRetryTimeline = homeViewModel::retry,
                     sleepViewModel = sleepViewModel,
+                    homeViewModel = homeViewModel,
                 )
             }
             composable(LifelogRoutes.REVIEW) {

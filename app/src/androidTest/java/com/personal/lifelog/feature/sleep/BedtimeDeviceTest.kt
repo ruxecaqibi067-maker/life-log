@@ -57,7 +57,7 @@ class BedtimeDeviceTest {
         val records = RecordRepository(db, writes, clock, ZoneId::systemDefault)
         val workouts = WorkoutRepository(db, writes, clock)
         val timeline = TimelineRepository(records, workouts)
-        val home = HomeViewModel(clock, ZoneId::systemDefault, timeline)
+        val home = HomeViewModel(clock, ZoneId::systemDefault, timeline, SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes)
         val settings = SettingsViewModel(SettingsRepository(db, writes, clock))
         val sleep = SleepViewModel(records, clock, ZoneId::systemDefault)
         compose.setContent {
@@ -118,6 +118,15 @@ class BedtimeDeviceTest {
         waitText("起床了")
         assertEquals(saved, runBlocking { db.records().allSleeps().single() })
         compose.onNodeWithText("回顾").assertExists()
+        // Returning content can compose before the platform finishes showing its bars.
+        compose.waitUntil(5_000) {
+            var visible = false
+            compose.runOnIdle {
+                visible = ViewCompat.getRootWindowInsets(compose.activity.window.decorView)
+                    ?.isVisible(WindowInsetsCompat.Type.statusBars()) == true
+            }
+            visible
+        }
         compose.runOnIdle {
             assertTrue(ViewCompat.getRootWindowInsets(compose.activity.window.decorView)!!.isVisible(WindowInsetsCompat.Type.statusBars()))
         }

@@ -45,7 +45,7 @@ class WorkoutDeviceTest {
         val records = RecordRepository(db, writes, clock) { zone }
         val workouts = WorkoutRepository(db, writes, clock)
         val timelineRepository = TimelineRepository(records, workouts)
-        val home = HomeViewModel(clock, { zone }, timelineRepository)
+        val home = HomeViewModel(clock, { zone }, timelineRepository, SleepSummaryRepository(db)::observe, SettingsRepository(db, writes, clock)::setTargetSleepMinutes)
         val settings = SettingsViewModel(SettingsRepository(db, writes, clock))
         val sleep = SleepViewModel(records, clock) { zone }
         val photos = PhotoStorage(context, db, records, writes, clock)

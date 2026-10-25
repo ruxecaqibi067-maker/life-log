@@ -83,6 +83,7 @@ fun SleepSummaryCard(
             if (content != null) Text(targetLabel, style = MaterialTheme.typography.bodyLarge)
             if (state.loading) Text(stringResource(R.string.home_sleep_loading))
             if (state.failed) ErrorState(stringResource(R.string.home_sleep_read_error), onRetry = onRetry)
+            if (state.failed && content != null) Text(stringResource(R.string.home_sleep_stale), style = MaterialTheme.typography.bodyMedium)
             // History is available even before a first successful read or without a target.
             Surface(onClick = onOpenHistory, shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -97,7 +98,8 @@ fun SleepSummaryCard(
                         BoxWithConstraints(Modifier.fillMaxWidth()) {
                             val stacked = maxWidth < 260.dp || LocalDensity.current.fontScale > 1.2f
                             val chart: @Composable () -> Unit = {
-                                SleepProgressRing(sleepProgress(content.recordedDurationMs, content.targetMinutes), description)
+                                SleepProgressRing(if (state.failed || state.loading) null
+                                    else sleepProgress(content.recordedDurationMs, content.targetMinutes), description)
                             }
                             val values: @Composable () -> Unit = {
                                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

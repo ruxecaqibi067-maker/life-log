@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.personal.lifelog.feature.home.HomeViewModel
 import com.personal.lifelog.feature.settings.SettingsViewModel
@@ -36,6 +37,9 @@ class MainActivity : ComponentActivity() {
                     container.clock,
                     container.zoneIdProvider,
                     container.timeline,
+                    container.sleepSummary::observe,
+                    container.settings::setTargetSleepMinutes,
+                    createSavedStateHandle(),
                 )
             }
             val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()

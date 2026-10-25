@@ -19,6 +19,7 @@
     <string name="home_sleep_history">查看 / 补录</string>
     <string name="home_sleep_loading">正在读取今日睡眠…</string>
     <string name="home_sleep_read_error">无法读取今日睡眠，请重试。</string>
+    <string name="home_sleep_stale">暂显示上次读取的记录，重试后更新。</string>
     <string name="home_sleep_goal_title">期望睡眠时长</string>
     <string name="home_sleep_goal_hint">每天想睡多久？按小时和分钟填写。</string>
     <string name="home_sleep_hour_label">小时</string>
