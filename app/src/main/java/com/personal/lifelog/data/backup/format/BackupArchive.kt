@@ -90,12 +90,15 @@ class BackupArchive(val limits: BackupLimits = BackupLimits()) {
             }
         }
         requireBackup("manifest.json" in found && "data.json" in found, BackupError.INVALID_ARCHIVE)
-        val manifest = BackupJson.decodeManifest(BackupJson.read(files.file("manifest.json")))
+        val manifestJson = BackupJson.read(files.file("manifest.json"))
+        val manifest = BackupJson.decodeManifest(manifestJson)
         requireBackup(manifest.appVersion.length in 1..100)
         requireBackup(manifest.files.map { it.path }.distinct().size == manifest.files.size)
         requireBackup(manifest.files.map { it.path }.toSet() == found.keys - "manifest.json", BackupError.HASH_MISMATCH)
         manifest.files.forEach { requireBackup(it == found[it.path], BackupError.HASH_MISMATCH) }
-        val data = BackupJson.decode(BackupJson.read(files.file("data.json")))
+        val dataJson = BackupJson.read(files.file("data.json"))
+        requireBackup(manifestJson.int("formatVersion") == dataJson.int("dataVersion"))
+        val data = BackupJson.decode(dataJson)
         BackupValidation.validate(data, limits)
         requireBackup(manifest.counts == BackupValidation.counts(data))
         requireBackup(found.keys == (data.media.map { "media/${it.id}.jpg" } + listOf("manifest.json", "data.json")).toSet())

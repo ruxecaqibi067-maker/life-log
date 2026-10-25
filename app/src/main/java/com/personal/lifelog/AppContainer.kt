@@ -8,6 +8,7 @@ import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
+import com.personal.lifelog.data.repository.SleepSummaryRepository
 import com.personal.lifelog.data.repository.SnapshotRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
@@ -30,6 +31,7 @@ class AppContainer(
     val workouts: WorkoutRepository by lazy { WorkoutRepository(database, writes, clock) }
     val timeline: TimelineRepository by lazy { TimelineRepository(records, workouts) }
     val settings: SettingsRepository by lazy { SettingsRepository(database, writes, clock) }
+    val sleepSummary: SleepSummaryRepository by lazy { SleepSummaryRepository(database) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
     val backupExporter: BackupExporter by lazy {
         val installedVersion = appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName.orEmpty()

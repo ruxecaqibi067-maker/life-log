@@ -118,7 +118,7 @@ class RestoreEngineTest {
     }
 
     @Test fun rollbackActuallyRestoresPreviousContentAndPhotos() = runBlocking {
-        val old = f.seed("旧"); g.seed("新"); val service = engine()
+        val old = f.seed("旧", 480); g.seed("新", 600); val service = engine()
         assertTrue(service.restore(token(g.zip())) is RestoreResult.Committed)
         val rollback = (service.preflightRollback() as BackupResult.Success).value
         assertTrue(service.restore(rollback.token) is RestoreResult.Committed)
@@ -126,12 +126,12 @@ class RestoreEngineTest {
     }
 
     @Test fun exceptionMatrixPreservesOldBeforeCommitAndNewAfterCommit() = runBlocking {
-        g.seed("新"); val zip = g.zip()
+        g.seed("新", 600); val zip = g.zip()
         val evidence = JSONArray()
         for (point in RestoreFaultPoint.entries) {
             val target = BackupFixture()
             try {
-                val old = target.seed("旧"); val imp = BackupImporter(target.root, target.clock)
+                val old = target.seed("旧", 480); val imp = BackupImporter(target.root, target.clock)
                 val ready = (imp.preflight(BackupSource { zip.inputStream() }) as BackupResult.Success).value
                 val service = RestoreEngine(target.db, target.writes, target.snapshots, target.exporter, imp,
                     target.root, target.clock, syncDirectory = {}, availableBytes = { Long.MAX_VALUE },
@@ -155,12 +155,12 @@ class RestoreEngineTest {
 
     private class AbruptStop : Error()
     @Test fun interruptedOperationsReopenPersistentRoomAndReconcileAtEveryBoundary() = runBlocking {
-        g.seed("新"); val zip = g.zip(); val incoming = g.snapshots.read(); val evidence = JSONArray()
+        g.seed("新", 600); val zip = g.zip(); val incoming = g.snapshots.read(); val evidence = JSONArray()
         for (point in RestoreFaultPoint.entries) {
             val target = BackupFixture("restore-reopen-${id()}.db")
             var reopened: AppDatabase? = null
             try {
-                val old = target.seed("旧"); val imp = BackupImporter(target.root, target.clock)
+                val old = target.seed("旧", 480); val imp = BackupImporter(target.root, target.clock)
                 val ready = (imp.preflight(BackupSource { zip.inputStream() }) as BackupResult.Success).value
                 val service = RestoreEngine(target.db, target.writes, target.snapshots, target.exporter, imp,
                     target.root, target.clock, syncDirectory = {}, availableBytes = { Long.MAX_VALUE },
@@ -213,7 +213,7 @@ class RestoreEngineTest {
     }
 
     @Test fun cancellationBeforeCommitPreservesOldAndCorruptRollbackIsRejected() = runBlocking {
-        val old = f.seed(); g.seed(); val zip = g.zip()
+        val old = f.seed(targetSleepMinutes = 480); g.seed(targetSleepMinutes = 600); val zip = g.zip()
         try { engine({ if (it == RestoreFaultPoint.MEDIA_READY) throw CancellationException() }).restore(token(zip)); fail() }
         catch (_: CancellationException) { }
         assertEquals(semantic(old), semantic(f.snapshots.read())); assertComplete()

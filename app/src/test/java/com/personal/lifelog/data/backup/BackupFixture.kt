@@ -30,7 +30,7 @@ internal class BackupFixture(val databaseName: String? = null) : AutoCloseable {
     val snapshots = SnapshotRepository(db)
     val settings = SettingsRepository(db, writes, clock)
     val exporter = BackupExporter(snapshots, settings, writes, root, clock, "0.1.0")
-    suspend fun seed(text: String = "虚构午餐"): DataSnapshot {
+    suspend fun seed(text: String = "虚构午餐", targetSleepMinutes: Int? = null): DataSnapshot {
         val gen = id(); val photo = id()
         val path = MediaRules.relativePath(gen, photo)
         val file = BackupFiles(root).file(path).apply { parentFile!!.mkdirs() }
@@ -50,6 +50,7 @@ internal class BackupFixture(val databaseName: String? = null) : AutoCloseable {
             ))
         ), "虚构训练")) is DataResult.Success)
         check(settings.setTheme(ThemeMode.DARK) is DataResult.Success)
+        check(settings.setTargetSleepMinutes(targetSleepMinutes) is DataResult.Success)
         return snapshots.read()
     }
     suspend fun zip(): File = writes.withExclusiveAccess { exporter.prepare(BackupFiles(root).mkdir("fixture-${id()}")) }
