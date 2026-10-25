@@ -68,7 +68,6 @@ class WorkUiTest {
     @After fun close() { store.clear(); db.close() }
     private fun waitText(text: String) = compose.waitUntil(10_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     private fun workButton() {
-        compose.onNodeWithTag("home-timeline").performScrollToNode(hasTestTag("work-start-finish"))
         compose.waitUntil(10_000) { runCatching { compose.onNodeWithTag("work-start-finish").assertIsEnabled() }.isSuccess }
         compose.onNodeWithTag("work-start-finish").assertIsDisplayed().assertIsEnabled().performClick()
     }

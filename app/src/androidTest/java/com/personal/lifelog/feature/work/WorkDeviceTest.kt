@@ -39,7 +39,7 @@ class WorkDeviceTest {
     private fun waitText(text: String) = compose.waitUntil(20_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     private fun click(text: String) { waitText(text); val node=compose.onNodeWithText(text); try { node.assertIsDisplayed() } catch (_: AssertionError) { node.performScrollTo() }; node.performClick() }
     private fun tag(tag: String) {
-        compose.onNodeWithTag("home-timeline").performScrollToNode(hasTestTag(tag))
+        if (tag != "work-start-finish") compose.onNodeWithTag("home-timeline").performScrollToNode(hasTestTag(tag))
         compose.waitUntil(20_000) { runCatching { compose.onNodeWithTag(tag).assertIsEnabled() }.isSuccess }
         compose.onNodeWithTag(tag).assertIsDisplayed().performClick()
     }
@@ -151,15 +151,15 @@ class WorkDeviceTest {
             compose.waitUntil(20_000) { summary().targetWorkMinutes==480 }
             assertEquals(18_000_000L,summary().recordedDurationMs);assertEquals(0.625f,durationProgress(summary().recordedDurationMs,480)!!,0.00001f)
             compose.onNodeWithTag("home-timeline").performScrollToIndex(0);capture("light-dual-top")
-            compose.onNodeWithTag("home-timeline").performScrollToKey("work-summary");capture("light-work-five-of-eight")
+            compose.onNodeWithTag("home-timeline").performScrollToKey("duration-summaries");capture("light-work-five-of-eight")
             runBlocking { c.settings.setTheme(ThemeMode.DARK) };compose.waitForIdle();capture("dark-work-five-of-eight")
             compose.onNodeWithTag("home-timeline").performScrollToIndex(0);capture("dark-dual-top")
-            compose.onNodeWithTag("home-timeline").performScrollToKey("work-summary")
+            compose.onNodeWithTag("home-timeline").performScrollToKey("duration-summaries")
             goal("8","0");capture("dark-work-goal");click("取消")
             runBlocking { c.settings.setTargetWorkMinutes(240) }
             compose.waitUntil(20_000) { summary().targetWorkMinutes==240 }
             assertEquals(1f,durationProgress(summary().recordedDurationMs,240)!!)
-            compose.onNodeWithTag("home-timeline").performScrollToKey("work-summary");capture("dark-over-goal")
+            compose.onNodeWithTag("home-timeline").performScrollToKey("duration-summaries");capture("dark-over-goal")
             runBlocking { c.settings.setTargetWorkMinutes(480);c.settings.setTheme(ThemeMode.LIGHT) }
             tag("work-summary-history");waitText("补录工作");capture("work-history-multiple")
             historyRow(morning.id);waitText("开始日期时间");click("开始日期时间");capture("work-native-picker");click("取消")
@@ -224,7 +224,7 @@ class WorkDeviceTest {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 waitText("今日睡眠");assertEquals(1.5f,app.resources.configuration.fontScale,0.01f)
                 capture("large-dual-top")
-                compose.onNodeWithTag("home-timeline").performScrollToNode(hasTestTag("work-start-finish"));capture("large-work-actions")
+                compose.onNodeWithTag("work-start-finish").assertIsDisplayed();capture("large-work-actions")
                 goal("8","0");capture("large-work-goal")
                 shell("settings put secure show_ime_with_hard_keyboard 1")
                 compose.onNodeWithTag("work-goal-minutes").performClick().performTextReplacement("30")

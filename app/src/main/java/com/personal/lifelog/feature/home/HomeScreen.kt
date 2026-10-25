@@ -1,6 +1,9 @@
 package com.personal.lifelog.feature.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,6 +18,8 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.WorkOutline
+import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,8 +59,8 @@ import java.util.Locale
 private val homeDateFormatter = DateTimeFormatter.ofPattern("M月d日 EEEE", Locale.SIMPLIFIED_CHINESE)
 
 /**
- * 今天: three quick entries, the global active-sleep status and the saved-data
- * timeline for the current local date. The timeline owns all three record types;
+ * 今天: side-by-side summaries, four quick entries and the saved-data
+ * timeline for the current local date. The timeline owns all four record types;
  * nothing is shown until Room has emitted for that date. The date itself follows
  * [HomeViewModel.today], which rolls over at local midnight.
  */
@@ -89,6 +94,10 @@ fun HomeScreen(
     val goal by homeViewModel.goal.collectAsStateWithLifecycle()
     val workCard by workHomeViewModel.work.collectAsStateWithLifecycle()
     val workGoal by workHomeViewModel.goal.collectAsStateWithLifecycle()
+    val workStatus by workViewModel.status.collectAsStateWithLifecycle()
+    val workBusy by workViewModel.busy.collectAsStateWithLifecycle()
+    val activeWork = workStatus.active
+    val workStartId = remember(activeWork?.id) { RecordIds.newId() }
     var confirmWorkUndo by rememberSaveable { mutableStateOf(false) }
     DurationGoalDialog(workGoal, workHomeViewModel::goalHours, workHomeViewModel::goalMinutes,
         workHomeViewModel::cancelGoal, workHomeViewModel::saveGoal, R.string.home_work_goal_title,
@@ -136,17 +145,20 @@ fun HomeScreen(
                 contentPadding = PaddingValues(horizontal = LogDimens.page, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                item(key = "sleep-summary") {
-                    SleepSummaryCard(sleepCard, onOpenSleepHistory, homeViewModel::editGoal, homeViewModel::retrySleep)
+                item(key = "duration-summaries") {
+                    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("duration-summaries"),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SleepSummaryCard(sleepCard, onOpenSleepHistory, homeViewModel::editGoal, homeViewModel::retrySleep,
+                            Modifier.weight(1f).fillMaxHeight())
+                        WorkSummaryCard(workCard, onOpenWorkHistory, workHomeViewModel::editGoal, workHomeViewModel::retryWork,
+                            Modifier.weight(1f).fillMaxHeight())
+                    }
                 }
                 item(key = "sleep-feedback") {
                     SleepHomeFeedback(sleepViewModel, onEditSleep) { confirmSleepUndo = true }
                 }
-                item(key = "work-summary") {
-                    WorkSummaryCard(workCard, onOpenWorkHistory, workHomeViewModel::editGoal, workHomeViewModel::retryWork) {
-                        com.personal.lifelog.feature.work.WorkHomeActions(workViewModel, onEditWork, { confirmWorkUndo = true },
-                            summaryReady = !workCard.loading && !workCard.failed)
-                    }
+                item(key = "work-feedback") {
+                    com.personal.lifelog.feature.work.WorkHomeFeedback(workViewModel, onEditWork) { confirmWorkUndo = true }
                 }
                 item(key = "timeline-header") {
                     TodayTimelineHeader(onOpenWorkoutHistory)
@@ -161,38 +173,40 @@ fun HomeScreen(
                     onRetry = onRetryTimeline,
                 )
             }
-            Row(
-                modifier = Modifier.padding(horizontal = LogDimens.page, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
-            ) {
-                QuickActionCard(
-                    label = stringResource(R.string.home_quick_meal),
-                    icon = Icons.Filled.Restaurant,
-                    onClick = onRecordMeal,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionCard(
-                    label = stringResource(
-                        when {
+            Column(Modifier.padding(horizontal = LogDimens.page, vertical = 8.dp).testTag("home-quick-actions"),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    QuickActionCard(
+                        label = stringResource(when {
                             sleepBusy -> R.string.saving
                             !sleepStatus.loaded -> R.string.sleep_loading
                             activeSleep == null -> R.string.sleep_start
                             else -> R.string.sleep_finish
-                        },
-                    ),
-                    icon = Icons.Filled.Bedtime,
-                    onClick = {
-                        if (activeSleep == null) sleepViewModel.start(startId) else sleepViewModel.finish(activeSleep)
-                    },
-                    enabled = sleepStatus.loaded && !sleepBusy,
-                    modifier = Modifier.weight(1f),
-                )
-                QuickActionCard(
-                    label = stringResource(R.string.home_quick_workout),
-                    icon = Icons.Filled.FitnessCenter,
-                    onClick = onRecordWorkout,
-                    modifier = Modifier.weight(1f),
-                )
+                        }),
+                        icon = Icons.Filled.Bedtime,
+                        onClick = { if (activeSleep == null) sleepViewModel.start(startId) else sleepViewModel.finish(activeSleep) },
+                        enabled = sleepStatus.loaded && !sleepBusy,
+                        modifier = Modifier.weight(1f).fillMaxHeight().testTag("sleep-start-finish"),
+                    )
+                    QuickActionCard(
+                        label = stringResource(when {
+                            workBusy -> R.string.saving
+                            !workStatus.loaded -> R.string.work_loading
+                            activeWork == null -> R.string.work_start
+                            else -> R.string.work_finish
+                        }),
+                        icon = if (activeWork == null) Icons.Filled.WorkOutline else Icons.Filled.StopCircle,
+                        onClick = { if (activeWork == null) workViewModel.start(workStartId) else workViewModel.finish(activeWork) },
+                        enabled = workStatus.loaded && !workStatus.failed && !workBusy && !workCard.loading && !workCard.failed,
+                        modifier = Modifier.weight(1f).fillMaxHeight().testTag("work-start-finish"),
+                    )
+                }
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    QuickActionCard(stringResource(R.string.home_quick_meal), Icons.Filled.Restaurant, onRecordMeal,
+                        Modifier.weight(1f).fillMaxHeight())
+                    QuickActionCard(stringResource(R.string.home_quick_workout), Icons.Filled.FitnessCenter, onRecordWorkout,
+                        Modifier.weight(1f).fillMaxHeight())
+                }
             }
         }
     }
@@ -210,29 +224,18 @@ private fun QuickActionCard(
     Surface(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 88.dp),
+        modifier = modifier.heightIn(min = 56.dp),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
-        Column(
-            modifier = Modifier
-                .minimumInteractiveComponentSize()
-                .padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+        Row(
+            Modifier.minimumInteractiveComponentSize().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                textAlign = TextAlign.Center,
-            )
+            Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(label, style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer, textAlign = TextAlign.Center)
         }
     }
 }

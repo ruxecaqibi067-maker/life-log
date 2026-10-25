@@ -52,6 +52,26 @@ class SleepCardPresentationTest {
         assertEquals(1, opens)
     }
 
+    @Test fun completedCardsShowStableFeedbackAndActualTimeWithoutLabelsOrCounts() {
+        val revision = androidx.compose.runtime.mutableIntStateOf(0)
+        compose.setContent {
+            LifeLogTheme(ThemeMode.LIGHT) {
+                androidx.compose.foundation.layout.Column {
+                    androidx.compose.material3.Text("recompose ${revision.intValue}")
+                    SleepSummaryCard(SleepCardState(false, content = SleepCardContent(480, 26_400_000, 7, false)), {}, {}, {})
+                }
+            }
+        }
+        compose.onNodeWithTag("sleep-duration").assertTextEquals("7小时20分")
+        compose.onNodeWithText("已记录").assertDoesNotExist()
+        compose.onAllNodesWithText("段已完成记录", substring = true).assertCountEquals(0)
+        val before = compose.onNodeWithTag("sleep-feedback").fetchSemanticsNode().config[
+            androidx.compose.ui.semantics.SemanticsProperties.Text].single().text
+        assertTrue(before.isNotBlank())
+        compose.runOnIdle { revision.intValue++ }
+        compose.onNodeWithTag("sleep-feedback").assertTextEquals(before)
+    }
+
     @Test fun progressUsesTargetAsWholeRetainsMillisecondsAndOnlyCapsDrawing() {
         assertEquals(440f / 480f, sleepProgress(26_400_000, 480)!!, 0.000001f)
         assertEquals(1f, sleepProgress(32_400_000, 480)!!)
