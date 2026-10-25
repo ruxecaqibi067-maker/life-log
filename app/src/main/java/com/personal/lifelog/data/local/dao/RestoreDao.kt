@@ -6,6 +6,8 @@ import androidx.room.Query
 /** Only called inside the restore engine's single Room transaction, under WriteCoordinator. */
 @Dao
 interface RestoreDao {
+    @Query("DELETE FROM TodoRecord") suspend fun clearTodos()
+    @Query("DELETE FROM HabitRecord") suspend fun clearHabits()
     @Query("DELETE FROM MealRecord") suspend fun clearMeals()
     @Query("DELETE FROM WorkRecord") suspend fun clearWorkRecords()
     @Query("DELETE FROM SleepRecord") suspend fun clearSleeps()

@@ -14,7 +14,7 @@ import java.nio.charset.CodingErrorAction
 
 /** Explicit v1 wire fields. Derived keys and local media generations never enter the archive. */
 object BackupJson {
-    const val VERSION = 5
+    const val VERSION = 6
     /** v1: no custom satiety; v1/v2: no sleep goal; v1-v3: no work records/goal. */
     const val MIN_SUPPORTED_VERSION = 1
     private const val IMPORT_GENERATION = "00000000-0000-0000-0000-000000000000"
@@ -22,6 +22,8 @@ object BackupJson {
         .put("meals", JSONArray(data.meals.map { encode(it) }))
         .put("sleeps", JSONArray(data.sleeps.map { encode(it) }))
         .put("workRecords", JSONArray(data.workRecords.map { encode(it) }))
+        .put("todos", JSONArray(data.todos.map { encode(it) }))
+        .put("habits", JSONArray(data.habits.map { encode(it) }))
         .put("exercises", JSONArray(data.exercises.map { encode(it) }))
         .put("sessions", JSONArray(data.sessions.map { encode(it) }))
         .put("items", JSONArray(data.items.map { encode(it) }))
@@ -42,8 +44,32 @@ object BackupJson {
             media = json.array("media").objects().map(::decodeMediaAsset),
             settings = decodeAppSettings(json.obj("settings"), version),
             workRecords = if (version < 4) emptyList() else json.array("workRecords").objects().map(::decodeWorkRecord),
+            todos = if (version < 6) emptyList() else json.array("todos").objects().map(::decodeTodoRecord),
+            habits = if (version < 6) emptyList() else json.array("habits").objects().map(::decodeHabitRecord),
         )
     }
+
+    private fun encode(v: TodoRecord): JSONObject = JSONObject()
+        .put("id", v.id).put("title", v.title).put("localDate", v.localDate)
+        .put("scheduledMinute", v.scheduledMinute ?: JSONObject.NULL)
+        .put("habitId", v.habitId ?: JSONObject.NULL).put("habitDate", v.habitDate ?: JSONObject.NULL)
+        .put("completedAtUtcMs", v.completedAtUtcMs ?: JSONObject.NULL)
+        .put("deletedAtUtcMs", v.deletedAtUtcMs ?: JSONObject.NULL)
+        .put("createdAtUtcMs", v.createdAtUtcMs).put("updatedAtUtcMs", v.updatedAtUtcMs)
+    private fun decodeTodoRecord(j: JSONObject): TodoRecord = TodoRecord(
+        j.string("id"), j.string("title"), j.string("localDate"), j.nullableInt("scheduledMinute"),
+        j.nullableString("habitId"), j.nullableString("habitDate"), j.nullableLong("completedAtUtcMs"),
+        j.nullableLong("deletedAtUtcMs"), j.long("createdAtUtcMs"), j.long("updatedAtUtcMs"))
+
+    private fun encode(v: HabitRecord): JSONObject = JSONObject()
+        .put("id", v.id).put("title", v.title).put("startDate", v.startDate)
+        .put("scheduledMinute", v.scheduledMinute ?: JSONObject.NULL).put("frequency", v.frequency.name)
+        .put("intervalDays", v.intervalDays).put("weekdaysMask", v.weekdaysMask).put("status", v.status.name)
+        .put("createdAtUtcMs", v.createdAtUtcMs).put("updatedAtUtcMs", v.updatedAtUtcMs)
+    private fun decodeHabitRecord(j: JSONObject): HabitRecord = HabitRecord(
+        j.string("id"), j.string("title"), j.string("startDate"), j.nullableInt("scheduledMinute"),
+        HabitFrequency.valueOf(j.string("frequency")), j.int("intervalDays"), j.int("weekdaysMask"),
+        HabitStatus.valueOf(j.string("status")), j.long("createdAtUtcMs"), j.long("updatedAtUtcMs"))
 
     private fun encode(v: MealRecord): JSONObject = JSONObject()
         .put("id", v.id)
@@ -249,7 +275,8 @@ object BackupJson {
         val counts = j.obj("counts")
         return BackupManifest(j.string("appVersion"), j.long("exportedAtUtcMs"),
             (listOf("meals", "sleeps", "exercises", "sessions", "items", "sets", "media").associateWith { counts.int(it) } +
-                ("workRecords" to if (j.int("formatVersion") < 4) 0 else counts.int("workRecords"))),
+                ("workRecords" to if (j.int("formatVersion") < 4) 0 else counts.int("workRecords")) +
+                listOf("todos", "habits").associateWith { if (j.int("formatVersion") < 6) 0 else counts.int(it) }),
             j.array("files").objects().map { FileDigest(it.string("path"), it.long("byteSize"), it.string("sha256")) })
     }
 
