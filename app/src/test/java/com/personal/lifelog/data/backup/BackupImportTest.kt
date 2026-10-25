@@ -51,7 +51,7 @@ class BackupImportTest {
     private suspend fun mediaDigest() = f.snapshots.read().media.map { digest(BackupFiles(f.root).file(it.relativePath)) }
 
     @Test fun previewCancelAndAllFailuresLeaveDatabaseAndFormalPhotosUnchanged() = runBlocking {
-        val before = f.seed(); val photos = mediaDigest(); val zip = f.zip(); val service = importer()
+        val before = f.seed(targetSleepMinutes = 480); val photos = mediaDigest(); val zip = f.zip(); val service = importer()
         val prepared = (service.preflight(source(zip)) as BackupResult.Success).value
         assertEquals(1, prepared.preview.counts["meals"]); assertEquals(3, prepared.preview.counts["sets"])
         assertTrue(prepared.preview.hasActiveSleep); assertTrue(prepared.preview.replacesAllRecordsAndSettings)
@@ -64,7 +64,7 @@ class BackupImportTest {
     @Test fun invalidDataMatrixIsRejectedWithoutWrites() = runBlocking {
         val before = f.seed(); val photos = mediaDigest(); val zip = f.zip()
         val edits: List<(JSONObject) -> Unit> = listOf(
-            { it.put("dataVersion", 3) },
+            { it.put("dataVersion", BackupJson.VERSION + 1) },
             { it.getJSONArray("meals").getJSONObject(0).put("photoId", id()) },
             { it.getJSONArray("meals").put(it.getJSONArray("meals").getJSONObject(0)) },
             { it.getJSONArray("sets").getJSONObject(0).put("repetitions", 0) },

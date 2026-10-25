@@ -15,7 +15,7 @@ def inspect(path):
         assert archive.getinfo('manifest.json').file_size <= 4 * 1024**2, 'Manifest size limit'
         assert archive.getinfo('data.json').file_size <= 32 * 1024**2, 'Data size limit'
         manifest = json.loads(archive.read('manifest.json'))
-        assert manifest['formatVersion'] in (1, 2), 'Unknown format'
+        assert manifest['formatVersion'] in (1, 2, 3), 'Unknown format'
         files = manifest['files']
         assert len(files) == len({item['path'] for item in files}), 'Duplicate manifest path'
         assert {item['path'] for item in files} == set(names) - {'manifest.json'}, 'Incomplete manifest'
@@ -32,6 +32,11 @@ def inspect(path):
             hashes[name] = digest.hexdigest()
         data = json.loads(archive.read('data.json'))
         assert data['dataVersion'] == manifest['formatVersion'], 'Manifest/data version mismatch'
+        settings = data['settings']
+        if data['dataVersion'] >= 3:
+            assert 'targetSleepMinutes' in settings, 'Missing sleep goal'
+        goal = settings.get('targetSleepMinutes')
+        assert goal is None or (type(goal) is int and 1 <= goal <= 1440), 'Invalid sleep goal'
         counts = {key: len(data[key]) for key in manifest['counts']}
         assert counts == manifest['counts'], 'Count mismatch'
         for key, value in data.items():
@@ -41,24 +46,42 @@ def inspect(path):
         return data, {name: sha for name, sha in hashes.items() if name.startswith('media/')}, counts
 
 
+def migrate_for_comparison(data, target_version):
+    """Only the two defined nullable additions; never remove or normalize record values."""
+    version = data['dataVersion']
+    assert (version, target_version) in ((1, 2), (2, 3), (1, 3)), 'Undefined migration'
+    if version == 1:
+        assert all(row.get('satietyText') is None for row in data['meals']), 'Unexpected v1 custom text'
+        for row in data['meals']:
+            row['satietyText'] = None
+    if target_version == 3:
+        assert data['settings'].get('targetSleepMinutes') is None, 'Unexpected legacy sleep goal'
+        data['settings']['targetSleepMinutes'] = None
+    data['dataVersion'] = target_version
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('before')
     parser.add_argument('after')
     parser.add_argument('--ignore-export-clock', action='store_true',
                         help='Allow only settings export timestamp and updatedAt timestamp to change')
-    parser.add_argument('--allow-v1-to-v2', action='store_true',
+    migrations = parser.add_mutually_exclusive_group()
+    migrations.add_argument('--allow-v1-to-v2', action='store_true',
                         help='Compare a v1 backup with its additive v2 migration (satietyText=null)')
+    migrations.add_argument('--allow-v2-to-v3', action='store_true',
+                            help='Compare v2 with its additive v3 migration (targetSleepMinutes=null)')
+    migrations.add_argument('--allow-v1-to-v3', action='store_true',
+                            help='Compare v1 with the defined v1->v2->v3 nullable additions')
     args = parser.parse_args()
     before, before_photos, counts = inspect(args.before)
     after, after_photos, after_counts = inspect(args.after)
     versions = [before['dataVersion'], after['dataVersion']]
-    if args.allow_v1_to_v2:
-        assert versions == [1, 2], 'Expected exactly a v1 to v2 comparison'
-        assert all(row.get('satietyText') is None for row in before['meals']), 'Unexpected v1 custom text'
-        before['dataVersion'] = 2
-        for row in before['meals']:
-            row['satietyText'] = None
+    migration = ([1, 2] if args.allow_v1_to_v2 else [2, 3] if args.allow_v2_to_v3
+                 else [1, 3] if args.allow_v1_to_v3 else None)
+    if migration:
+        assert versions == migration, 'Wrong versions for explicitly requested migration'
+        migrate_for_comparison(before, migration[1])
     if args.ignore_export_clock:
         for data in (before, after):
             for key in ('lastSuccessfulExportAtUtcMs', 'updatedAtUtcMs'):

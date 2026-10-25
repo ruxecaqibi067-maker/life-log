@@ -14,8 +14,8 @@ import java.nio.charset.CodingErrorAction
 
 /** Explicit v1 wire fields. Derived keys and local media generations never enter the archive. */
 object BackupJson {
-    const val VERSION = 2
-    /** v1 archives predate custom satiety and remain readable (satietyText is absent). */
+    const val VERSION = 3
+    /** v1 predates custom satiety; v1/v2 predate the optional daily sleep goal. */
     const val MIN_SUPPORTED_VERSION = 1
     private const val IMPORT_GENERATION = "00000000-0000-0000-0000-000000000000"
     fun encode(data: DataSnapshot): JSONObject = JSONObject().put("dataVersion", VERSION)
@@ -29,7 +29,8 @@ object BackupJson {
         .put("settings", encode(data.settings))
 
     fun decode(json: JSONObject): DataSnapshot {
-        requireBackup(json.int("dataVersion") in MIN_SUPPORTED_VERSION..VERSION, BackupError.UNSUPPORTED_VERSION)
+        val version = json.int("dataVersion")
+        requireBackup(version in MIN_SUPPORTED_VERSION..VERSION, BackupError.UNSUPPORTED_VERSION)
         return DataSnapshot(
             meals = json.array("meals").objects().map(::decodeMealRecord),
             sleeps = json.array("sleeps").objects().map(::decodeSleepRecord),
@@ -38,7 +39,7 @@ object BackupJson {
             items = json.array("items").objects().map(::decodeWorkoutItem),
             sets = json.array("sets").objects().map(::decodeWorkoutSet),
             media = json.array("media").objects().map(::decodeMediaAsset),
-            settings = decodeAppSettings(json.obj("settings")),
+            settings = decodeAppSettings(json.obj("settings"), version),
         )
     }
 
@@ -197,12 +198,14 @@ object BackupJson {
         .put("id", v.id)
         .put("themeMode", v.themeMode.name)
         .put("lastSuccessfulExportAtUtcMs", v.lastSuccessfulExportAtUtcMs ?: JSONObject.NULL)
+        .put("targetSleepMinutes", v.targetSleepMinutes ?: JSONObject.NULL)
         .put("createdAtUtcMs", v.createdAtUtcMs)
         .put("updatedAtUtcMs", v.updatedAtUtcMs)
-    private fun decodeAppSettings(j: JSONObject): AppSettings = AppSettings(
+    private fun decodeAppSettings(j: JSONObject, version: Int): AppSettings = AppSettings(
         id = j.int("id"),
         themeMode = ThemeMode.valueOf(j.string("themeMode")),
         lastSuccessfulExportAtUtcMs = j.nullableLong("lastSuccessfulExportAtUtcMs"),
+        targetSleepMinutes = Rules.targetSleepMinutes(if (version < 3 && !j.has("targetSleepMinutes")) null else j.nullableInt("targetSleepMinutes")),
         createdAtUtcMs = j.long("createdAtUtcMs"),
         updatedAtUtcMs = j.long("updatedAtUtcMs"),
     )
