@@ -17,12 +17,7 @@
     <string name="exercise_cardio_fields">可选填时长、距离、备注</string>
     <string name="exercise_strength_fields">可选填每组重量与次数、备注</string>
     <string name="exercise_other_fields">可选填时长、备注</string>
-    <string name="exercise_builtin">内置</string>
-    <string name="exercise_custom">自定义</string>
     <string name="exercise_hidden">已隐藏</string>
-    <string name="exercise_available">可用</string>
-    <string name="exercise_identity">%1$s · %2$s · 编号 %3$s</string>
-    <string name="exercise_used">曾使用 · 按最近时间排序</string>
     <string name="exercise_rename">修改名称</string>
     <string name="exercise_hide">隐藏</string>
     <string name="exercise_enable">重新启用</string>

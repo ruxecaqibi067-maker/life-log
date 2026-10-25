@@ -71,7 +71,7 @@ class WorkDeviceTest {
         closeSoftKeyboard()
     }
     @Test fun goalCancelInvalidSaveAndClearKeepSleepTargetIndependent() {
-        assertTrue(app.packageName.endsWith(".t21check"))
+        assertTrue((app.packageName == "com.personal.lifelog.t21check" || app.packageName == "com.personal.lifelog.workoutcheck"))
         runBlocking { c.settings.setTargetSleepMinutes(420);c.settings.setTargetWorkMinutes(null) }
         ActivityScenario.launch(MainActivity::class.java).use {
             waitText("今日睡眠")
@@ -91,7 +91,7 @@ class WorkDeviceTest {
     }
 
     @Test fun longFinishCancelFailureRetryAndSafeUndoUsePersistedState() {
-        assertTrue(app.packageName.endsWith(".t21check"))
+        assertTrue((app.packageName == "com.personal.lifelog.t21check" || app.packageName == "com.personal.lifelog.workoutcheck"))
         runBlocking {
             for (row in c.snapshots.read().workRecords) c.work.deleteWork(row)
             c.settings.setTheme(ThemeMode.LIGHT)
@@ -122,7 +122,7 @@ class WorkDeviceTest {
     }
 
     @Test fun realWorkHomeHistoryGoalsReviewRestoreAndLargeFont() {
-        assertTrue("Only .t21check may receive synthetic records",app.packageName.endsWith(".t21check"))
+        assertTrue("Only the explicit .t21check/.workoutcheck isolated packages may receive synthetic records",(app.packageName == "com.personal.lifelog.t21check" || app.packageName == "com.personal.lifelog.workoutcheck"))
         runBlocking {
             for (r in c.snapshots.read().workRecords) c.work.deleteWork(r)
             for (r in c.snapshots.read().sleeps) c.records.deleteSleep(r)

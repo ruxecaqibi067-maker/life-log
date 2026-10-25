@@ -22,6 +22,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +57,7 @@ class MealEditorViewModel(
         const val KEY_DATE = "meal.draft.date"
         const val KEY_TIME = "meal.draft.time"
         const val KEY_ZONE = "meal.draft.zone"
+        const val KEY_OFFSET = "meal.draft.offset"
         const val KEY_PHOTO_TICKET = "meal.draft.photoTicket"
         const val KEY_CAPTURE_TICKET = "meal.draft.captureTicket"
         const val KEY_PHOTO_REMOVED = "meal.draft.photoRemoved"
@@ -79,6 +82,7 @@ class MealEditorViewModel(
     private var originalTime: LocalTime? = null
     private var originalOccurredAt: Long? = null
     private var originalZoneId: String? = null
+    private var originalOffset: String? = null
     private var closing = false
 
     private val initialLocal = Instant.ofEpochMilli(clock.millis())
@@ -96,6 +100,7 @@ class MealEditorViewModel(
             time = savedStateHandle.get<String>(KEY_TIME)
                 ?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: initialLocal.toLocalTime(),
             zoneId = zoneId,
+            timeOffset = savedStateHandle.get<String>(KEY_OFFSET),
             newPhotoTicket = savedStateHandle.get<String>(KEY_PHOTO_TICKET)?.let(::PhotoTicket),
             captureTicket = savedStateHandle.get<String>(KEY_CAPTURE_TICKET)?.let(::PhotoTicket),
             photoRemoved = savedStateHandle.get<Boolean>(KEY_PHOTO_REMOVED) ?: false,
@@ -130,9 +135,20 @@ class MealEditorViewModel(
         update { it.copy(satietyText = value, error = null) }
     }
 
-    fun onDateChanged(value: LocalDate) = update { it.copy(date = value) }
+    fun onDateChanged(value: LocalDate) = update { it.copy(date = value, timeOffset = null) }
 
-    fun onTimeChanged(value: LocalTime) = update { it.copy(time = value) }
+    fun onTimeChanged(value: LocalTime) = update { it.copy(time = value, timeOffset = null) }
+
+    /** One atomic confirmation, including an explicitly selected repeated DST occurrence. */
+    fun onDateTimePicked(value: LocalDateTime, offset: ZoneOffset) {
+        update {
+            val local = LocalDateTime.of(it.date, it.time)
+            val previousOffset = it.timeOffset ?: originalOffset
+                ?: ZoneId.of(it.zoneId).rules.getValidOffsets(local).singleOrNull()?.id
+            if (local.truncatedTo(ChronoUnit.MINUTES) == value.truncatedTo(ChronoUnit.MINUTES) && previousOffset == offset.id) it
+            else it.copy(date = value.toLocalDate(), time = value.toLocalTime().truncatedTo(ChronoUnit.MINUTES), timeOffset = offset.id)
+        }
+    }
 
     /** null is the system picker's cancel path: keep the current text and photo untouched. */
     fun onPhotoPicked(uri: Uri?) {
@@ -349,8 +365,9 @@ class MealEditorViewModel(
             // An existing instant already disambiguates a repeated DST local time.
             // Editing text/photo must preserve that exact instant, including milliseconds.
             originalOccurredAt?.takeIf {
-                current.date == originalDate && current.time == originalTime && current.zoneId == originalZoneId
-            } ?: RecordTime.resolve(LocalDateTime.of(current.date, current.time), current.zoneId)
+                current.date == originalDate && current.time == originalTime && current.zoneId == originalZoneId &&
+                    (current.timeOffset == null || current.timeOffset == originalOffset)
+            } ?: RecordTime.resolve(LocalDateTime.of(current.date, current.time), current.zoneId, current.timeOffset?.let(ZoneOffset::of))
         } catch (_: DataViolation) {
             update { it.copy(error = MealUiError.INVALID_TIME) }
             return
@@ -441,6 +458,7 @@ class MealEditorViewModel(
             val local = Instant.ofEpochMilli(existing.occurredAtUtcMs).atZone(MealTimeDisplay.zone(existing.zoneId))
             originalDate = local.toLocalDate()
             originalTime = local.toLocalTime()
+            originalOffset = local.offset.id
             _state.update { it.copy(originalPhotoId = existing.photoId) }
         }
         val restored = savedStateHandle.get<Boolean>(KEY_LOADED) == true
@@ -455,6 +473,7 @@ class MealEditorViewModel(
                         date = originalDate ?: it.date,
                         time = originalTime ?: it.time,
                         zoneId = existing.zoneId,
+                        timeOffset = originalOffset,
                     )
                 }
             }
@@ -579,6 +598,7 @@ class MealEditorViewModel(
             (if (originalSatiety == Satiety.CUSTOM) originalSatietyText ?: "" else "") ||
             current.date != originalDate ||
             current.time != originalTime ||
+            (current.timeOffset != null && originalOffset != null && current.timeOffset != originalOffset) ||
             current.newPhotoTicket != null ||
             current.captureTicket != null ||
             (current.photoRemoved && originalPhotoId != null)
@@ -593,6 +613,7 @@ class MealEditorViewModel(
         savedStateHandle[KEY_DATE] = current.date.toString()
         savedStateHandle[KEY_TIME] = current.time.toString()
         savedStateHandle[KEY_ZONE] = current.zoneId
+        savedStateHandle[KEY_OFFSET] = current.timeOffset
         savedStateHandle[KEY_PHOTO_TICKET] = current.newPhotoTicket?.id
         savedStateHandle[KEY_CAPTURE_TICKET] = current.captureTicket?.id
         savedStateHandle[KEY_PHOTO_REMOVED] = current.photoRemoved
@@ -601,7 +622,7 @@ class MealEditorViewModel(
     private fun clearDraft() {
         listOf(
             KEY_ID, KEY_LOADED, KEY_TEXT, KEY_SATIETY, KEY_SATIETY_TEXT, KEY_DATE, KEY_TIME, KEY_ZONE,
-            KEY_PHOTO_TICKET, KEY_CAPTURE_TICKET, KEY_PHOTO_REMOVED,
+            KEY_PHOTO_TICKET, KEY_CAPTURE_TICKET, KEY_PHOTO_REMOVED, KEY_OFFSET,
         ).forEach { savedStateHandle.remove<Any?>(it) }
     }
 }

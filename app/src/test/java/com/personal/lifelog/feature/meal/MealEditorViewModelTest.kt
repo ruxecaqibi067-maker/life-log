@@ -596,6 +596,25 @@ class MealEditorViewModelTest {
         assertNotNull(singleMeal().photoId)
     }
 
+    @Test fun wheelConfirmKeepsOldMillisecondsAndExplicitOtherOccurrenceSurvivesRecreation() = runBlocking<Unit> {
+        val occurred = Instant.parse("2026-11-01T05:30:12.123Z").toEpochMilli()
+        val seeded = (photos.saveMeal(MealDraft(RecordIds.newId(), occurred, "America/New_York", "虚构饮食")) as PhotoResult.Success).value
+        val handle = SavedStateHandle()
+        val vm = editor(seeded.id, handle)
+        awaitLoaded(vm)
+        vm.onDateTimePicked(LocalDateTime.parse("2026-11-01T01:30"), ZoneOffset.of("-04:00"))
+        assertFalse(vm.state.value.dirty)
+        assertEquals(12, vm.state.value.time.second)
+        assertEquals(123000000, vm.state.value.time.nano)
+        vm.onDateTimePicked(LocalDateTime.parse("2026-11-01T01:30"), ZoneOffset.of("-05:00"))
+        assertTrue(vm.state.value.dirty)
+        val restored = editor(seeded.id, SavedStateHandle(handle.keys().associateWith { handle.get<Any?>(it) }))
+        awaitLoaded(restored)
+        restored.save(); awaitSaved(restored)
+        assertEquals(Instant.parse("2026-11-01T06:30:00Z").toEpochMilli(), singleMeal().occurredAtUtcMs)
+        assertEquals("America/New_York", singleMeal().zoneId)
+    }
+
     @Test
     fun editingTextPreservesTheExactInstantInsideADstOverlap() = runBlocking<Unit> {
         val occurred = Instant.parse("2026-11-01T06:30:12.123Z").toEpochMilli()

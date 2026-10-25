@@ -192,17 +192,10 @@ private fun ExerciseRow(
         Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(row.name, style = MaterialTheme.typography.titleMedium)
             Text(stringResource(row.type.labelRes()), style = MaterialTheme.typography.labelLarge)
-            Text(stringResource(row.type.fieldsRes()), style = MaterialTheme.typography.bodySmall)
-            Text(
-                stringResource(R.string.exercise_identity,
-                    stringResource(if (row.isBuiltin) R.string.exercise_builtin else R.string.exercise_custom),
-                    stringResource(if (row.isHidden) R.string.exercise_hidden else R.string.exercise_available), row.id.takeLast(8)),
-                style = MaterialTheme.typography.bodySmall,
-            )
-            if (row.lastUsedAtUtcMs != null) Text(stringResource(R.string.exercise_used), style = MaterialTheme.typography.labelSmall)
+            if (onSelected == null && row.isHidden) Text(stringResource(R.string.exercise_hidden), style = MaterialTheme.typography.labelSmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                ActionButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.exercise_rename)) }
                 if (onSelected == null) {
+                    ActionButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.exercise_rename)) }
                     ActionButton(onClick = onToggleHidden, enabled = !busy) {
                         Text(stringResource(if (row.isHidden) R.string.exercise_enable else R.string.exercise_hide))
                     }

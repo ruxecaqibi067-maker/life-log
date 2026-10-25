@@ -1,6 +1,6 @@
-# 备份格式（v1 基础与 v2/v3/v4 增量）
+# 备份格式（v1 基础与 v2/v3/v4/v5 增量）
 
-0.1.4 当前导出 `formatVersion/dataVersion=4`，读取兼容 v1/v2/v3/v4；App交付与升级证据见 [0.1.4报告](releases/0.1.4.md)。以下 v1 字段为基础，v2/v3/v4 增量见文末。manifest 与 data 的版本必须相同。
+本开发分支导出 `formatVersion/dataVersion=5`，读取兼容 v1–v5；已发布 0.1.4 的格式仍为 v4，App交付与升级证据见 [0.1.4报告](releases/0.1.4.md)。本轮运动录入优化尚待主管整合及发布，不代表已有新版安装包。以下 v1 字段为基础，后续增量见文末。manifest 与 data 的版本必须相同。
 
 ZIP 只允许 `manifest.json`、`data.json` 和 `media/<规范小写UUID>.jpg`，不包含目录条目、系统文件、设备路径、运行时 generation 或恢复日志。ZIP64、多卷、加密和符号链接不支持。未加密，T14 须在保存前说明包含生活记录和照片。
 
@@ -45,3 +45,11 @@ v2 为饮食新增可空 `satietyText`，支持 `NOT_FULL` 和 `CUSTOM`；只有
 - `BackupPreview` 在旧字段后增加 `hasActiveWork: Boolean`、`targetSleepMinutes: Int?`、`targetWorkMinutes: Int?`；`counts` 对所有支持的版本均包含归一后的 `workRecords`。时间范围包含工作开始/结束点。T21负责预览与结果页面显示，本包只交付字段。
 - 新App读取v1–v4；只支持至v3的旧App拒绝v4，不提供降级导出。当前公开0.1.3仍为v2；Room/备份v4不等于App versionCode或已发布版本。
 - 比较脚本保留1→2、2→3、1→3，增加 `--allow-v1-to-v4`、`--allow-v2-to-v4`、`--allow-v3-to-v4`。仅在显式正确方向下为旧格式补定义的空工作列表/null工作目标，并按原链补satietyText及睡眠目标；v3非空睡眠目标必须保持。真实工作、其他记录、两个目标或照片字节发生改变仍失败；`--ignore-export-clock`仍只忽略两个既定导出时钟字段。脚本用于虚构升级样例的语义比较，不能替代App完整预检。
+
+## v5 运动后感觉增量（2026-10-26 用户反馈）
+
+- 每个 `sessions` 对象新增必需的可空字段：`effort` 和 `effortText`。`effort` 为 `EASY / MODERATE / HARD / VERY_HARD / CUSTOM` 或 null，依次显示轻松、适中、吃力、非常吃力、自定义。评价属于整次训练，选填；未评价保持 null，不根据训练量或项目类型推断。
+- 仅 `CUSTOM` 可以携带 `effortText`，须为去首尾空白后的 1–40 个 Unicode 码点；其余评价或 null 必须搭配 `effortText=null`。未知枚举、字段缺失、类型不符、空白/超长自定义、非自定义携带文字均拒绝预检。
+- v1–v4 读取时统一补 `effort=null, effortText=null`，不把旧备注解释为评价；既有工作、目标、照片、训练项目与组、历史快照及时间语义全部保留。新导出只用 v5，旧版 App 会拒绝 v5，不提供降级导出。
+- Room 同时新增真实 v4→v5 加列迁移；旧训练保持未评价，无删表或重建训练量。快速输入的“组数、每组次数、重量”在保存时展开为原有的独立组，`items/sets` 结构、单位和 ID 语义未变，因此备份仍可保留各组不同训练量。
+- 全量恢复和回滚使用同一完整 `DataSnapshot`，包含评价字段。比较脚本新增 `--allow-v1-to-v5` 至 `--allow-v4-to-v5`；只补已定义的空评价及必要的旧格式增量，4→5 保留工作及两个目标，任何真实记录/评价/照片变化仍应失败。

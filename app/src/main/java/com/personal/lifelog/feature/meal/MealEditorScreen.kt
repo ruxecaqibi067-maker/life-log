@@ -24,8 +24,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -34,14 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +50,8 @@ import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PickMealPhoto
 import com.personal.lifelog.data.media.TakeMealPhoto
 import com.personal.lifelog.domain.Satiety
+import com.personal.lifelog.ui.components.RecordDateTimePicker
+import com.personal.lifelog.ui.components.RecordTimeChoice
 import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
@@ -64,8 +60,6 @@ import com.personal.lifelog.ui.components.RecordTextField
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.SecondaryButton
 import com.personal.lifelog.ui.theme.LogDimens
-import java.time.Instant
-import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -87,7 +81,6 @@ fun MealEditorScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showDiscard by rememberSaveable { mutableStateOf(false) }
-    var showDatePicker by rememberSaveable { mutableStateOf(false) }
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
 
     val pickLauncher = rememberLauncherForActivityResult(PickMealPhoto()) { uri ->
@@ -176,7 +169,6 @@ fun MealEditorScreen(
                 onTextChanged = viewModel::onTextChanged,
                 onToggleSatiety = viewModel::toggleSatiety,
                 onSatietyTextChanged = viewModel::onSatietyTextChanged,
-                onShowDatePicker = { showDatePicker = true },
                 onShowTimePicker = { showTimePicker = true },
                 onTakePhoto = viewModel::beginCapture,
                 onPickPhoto = { pickLauncher.launch(Unit) },
@@ -207,59 +199,13 @@ fun MealEditorScreen(
         )
     }
 
-    if (showDatePicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.date
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant()
-                .toEpochMilli(),
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                ActionButton(
-                    onClick = {
-                        pickerState.selectedDateMillis?.let { millis ->
-                            viewModel.onDateChanged(
-                                Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate(),
-                            )
-                        }
-                        showDatePicker = false
-                    },
-                ) { Text(stringResource(R.string.meal_confirm)) }
-            },
-            dismissButton = {
-                ActionButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(R.string.meal_cancel))
-                }
-            },
-        ) { DatePicker(state = pickerState) }
-    }
-
     if (showTimePicker) {
-        val pickerState = rememberTimePickerState(
-            initialHour = state.time.hour,
-            initialMinute = state.time.minute,
-            is24Hour = true,
-        )
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            title = { Text(stringResource(R.string.meal_time_of_day_label)) },
-            text = { TimePicker(state = pickerState) },
-            confirmButton = {
-                ActionButton(
-                    onClick = {
-                        viewModel.onTimeChanged(LocalTime.of(pickerState.hour, pickerState.minute))
-                        showTimePicker = false
-                    },
-                ) { Text(stringResource(R.string.meal_confirm)) }
-            },
-            dismissButton = {
-                ActionButton(onClick = { showTimePicker = false }) {
-                    Text(stringResource(R.string.meal_cancel))
-                }
-            },
-        )
+        val zone = ZoneId.of(state.zoneId)
+        val local = java.time.LocalDateTime.of(state.date, state.time)
+        val initial = java.time.ZonedDateTime.ofLocal(local, zone, state.timeOffset?.let(ZoneOffset::of))
+        RecordDateTimePicker(R.string.picker_meal_title, initial, zone, { showTimePicker = false }, { selected, offset ->
+            viewModel.onDateTimePicked(selected, offset); showTimePicker = false
+        })
     }
 }
 
@@ -270,7 +216,6 @@ private fun MealForm(
     onTextChanged: (String) -> Unit,
     onToggleSatiety: (Satiety) -> Unit,
     onSatietyTextChanged: (String) -> Unit,
-    onShowDatePicker: () -> Unit,
     onShowTimePicker: () -> Unit,
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
@@ -343,28 +288,9 @@ private fun MealForm(
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-            Text(
-                text = stringResource(R.string.meal_time_label),
-                style = MaterialTheme.typography.titleSmall,
-            )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                SecondaryButton(onClick = onShowDatePicker, enabled = !state.saving) {
-                    Text(state.date.format(editorDateFormatter))
-                }
-                SecondaryButton(onClick = onShowTimePicker, enabled = !state.saving) {
-                    Text(state.time.format(editorTimeFormatter))
-                }
-            }
-            val systemZone = remember { ZoneId.systemDefault().id }
-            if (state.zoneId != systemZone) {
-                Text(
-                    text = stringResource(R.string.meal_time_zone_note, state.zoneId),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        RecordTimeChoice(R.string.meal_time_label,
+            "${state.date.format(editorDateFormatter)} ${state.time.format(editorTimeFormatter)}",
+            enabled = !state.saving, onClick = onShowTimePicker)
 
         state.error?.let { error ->
             ErrorState(message = stringResource(error.messageRes()))

@@ -2,6 +2,7 @@ package com.personal.lifelog.core.validation
 
 import com.personal.lifelog.domain.ErrorCode
 import com.personal.lifelog.domain.Satiety
+import com.personal.lifelog.domain.WorkoutEffort
 import com.personal.lifelog.domain.reject
 import java.math.BigDecimal
 import java.text.Normalizer
@@ -15,6 +16,17 @@ object Rules {
     const val EXERCISE_NAME_LIMIT = 40
     const val WORKOUT_ITEMS_LIMIT = 100
     const val SETS_PER_ITEM_LIMIT = 100
+    const val EFFORT_TEXT_LIMIT = 40
+
+    fun effortText(effort: WorkoutEffort?, value: String?): String? {
+        val trimmed = value?.trim()?.takeIf { it.isNotEmpty() }
+        if (effort == WorkoutEffort.CUSTOM) {
+            if (trimmed == null || trimmed.codePointCount(0, trimmed.length) > EFFORT_TEXT_LIMIT) reject(ErrorCode.INVALID_EFFORT)
+            return trimmed
+        }
+        if (trimmed != null) reject(ErrorCode.INVALID_EFFORT)
+        return null
+    }
     const val PHOTO_BYTES_LIMIT = 8 * 1024 * 1024L
     const val TARGET_SLEEP_MINUTES_MAX = 1440
 

@@ -52,6 +52,7 @@ data class MealEditorUiState(
     val date: LocalDate = LocalDate.now(),
     val time: LocalTime = LocalTime.now(),
     val zoneId: String = ZoneId.systemDefault().id,
+    val timeOffset: String? = null,
     val originalPhotoId: String? = null,
     val newPhotoTicket: PhotoTicket? = null,
     val captureTicket: PhotoTicket? = null,

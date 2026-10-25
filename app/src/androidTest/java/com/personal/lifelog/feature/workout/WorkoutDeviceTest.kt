@@ -17,6 +17,9 @@ import com.personal.lifelog.feature.settings.SettingsViewModel
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.ui.navigation.LifelogApp
 import com.personal.lifelog.ui.theme.LifeLogTheme
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -36,6 +39,7 @@ class WorkoutDeviceTest {
     private val clock = Clock.fixed(Instant.parse("2026-10-23T03:00:00Z"), ZoneOffset.UTC)
     private val zone = ZoneId.of("Asia/Shanghai")
     private lateinit var db: AppDatabase
+    private val appTheme = androidx.compose.runtime.mutableStateOf(ThemeMode.LIGHT)
     @Before fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
@@ -54,7 +58,7 @@ class WorkoutDeviceTest {
         val workHomeVM = com.personal.lifelog.feature.home.WorkHomeViewModel(home.today,
             com.personal.lifelog.data.repository.WorkSummaryRepository(db)::observe,
             com.personal.lifelog.data.repository.SettingsRepository(db, writes, clock)::setTargetWorkMinutes)
-        compose.setContent { LifeLogTheme(ThemeMode.LIGHT) {
+        compose.setContent { LifeLogTheme(appTheme.value) {
             LifelogApp(home, settings, records, photos, clock, { zone }, sleep, workouts, timelineRepository, workVM, workHomeVM)
         } }
     }
@@ -134,6 +138,7 @@ class WorkoutDeviceTest {
         waitText("卧推")
         compose.onNodeWithText("卧推").performScrollTo().performClick(); waitText("第 1 组：20 kg，8 次")
         compose.onNodeWithText("编辑训练").performScrollTo().performClick(); waitText("保存训练")
+        compose.onNodeWithText("逐组调整").performScrollTo().performClick()
         compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag("${set.id}-kg"))
         compose.onNodeWithTag("${set.id}-kg").performScrollTo().performTextClearance()
         compose.onNodeWithTag("${set.id}-kg").performTextInput("25.125")
@@ -142,9 +147,60 @@ class WorkoutDeviceTest {
         compose.onNodeWithText("放弃修改").performClick(); waitText("第 1 组：20 kg，8 次")
         assertEquals(record, runBlocking { repository.workout(record.session.id) })
         compose.onNodeWithText("编辑训练").performScrollTo().performClick(); waitText("保存训练")
+        compose.onNodeWithText("逐组调整").performScrollTo().performClick()
         compose.onNodeWithTag("workout-form").performScrollToNode(hasText("添加3个空白组"))
         compose.onNodeWithText("添加3个空白组").performClick()
         compose.onNodeWithText("保存训练").performClick(); waitText("第 1 组：20 kg，8 次")
         assertEquals(listOf(set.id), runBlocking { db.workouts().allSets().map { it.id } })
+    }
+
+    @Test fun compactStrengthEffortAndUnifiedWheelSaveInOnePass() {
+        compose.runOnUiThread { appTheme.value = ThemeMode.DARK }
+        compose.onNodeWithText("记运动").performClick(); waitText("保存训练")
+        compose.onNodeWithText("时区", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("运动时间").performClick()
+        compose.onNodeWithTag("record-wheel-分").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(17f) }
+        screenshot("workout-wheel")
+        compose.onNodeWithText("确认").performClick()
+        compose.onNodeWithText("2026年10月23日 11:17").assertExists()
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasText("添加项目"))
+        compose.onNodeWithText("添加项目").performClick(); waitText("搜索项目名称")
+        compose.onNodeWithText("搜索项目名称").performTextInput("俯卧撑")
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("选择").fetchSemanticsNodes().size == 1 }
+        compose.onNodeWithText("编号", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("修改名称").assertDoesNotExist()
+        screenshot("exercise-picker")
+        compose.onNodeWithText("选择").performScrollTo().performClick(); waitText("保存训练")
+        enter("组数（选填，默认 1 组）", "3")
+        enter("每组次数（选填）", "12")
+        enter("重量（kg，选填）", "0")
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasText("逐组调整"))
+        screenshot("strength-quick-entry")
+        compose.onNodeWithTag("workout-form").performScrollToNode(hasTestTag("workout-effort-HARD"))
+        compose.onNodeWithTag("workout-effort-HARD").performClick()
+        screenshot("workout-effort")
+        compose.onNodeWithText("保存训练").performClick(); waitText("俯卧撑")
+        val session = runBlocking { db.workouts().allSessions().single() }
+        assertEquals(WorkoutEffort.HARD, session.effort)
+        assertEquals(Instant.parse("2026-10-23T03:17:00Z").toEpochMilli(), session.occurredAtUtcMs)
+        val sets = runBlocking { db.workouts().allSets() }
+        assertEquals(3, sets.size); assertEquals(3, sets.map { it.id }.distinct().size)
+        assertTrue(sets.all { it.weightGrams == 0L && it.repetitions == 12 })
+        compose.onNodeWithText("俯卧撑").performScrollTo().performClick(); waitText("训练详情")
+        compose.onNodeWithText("运动后感觉：吃力").assertExists()
+        compose.onNodeWithText("时区", substring = true).assertDoesNotExist()
+        screenshot("workout-detail")
+    }
+
+    private fun screenshot(name: String) {
+        compose.waitForIdle()
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.waitForIdleSync()
+        android.os.SystemClock.sleep(400)
+        val bitmap = instrumentation.uiAutomation.takeScreenshot()
+        val file = File(instrumentation.targetContext.getExternalFilesDir(null), "workout-polish/$name.png")
+        file.parentFile!!.mkdirs()
+        file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        bitmap.recycle()
     }
 }

@@ -32,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,7 +49,6 @@ import com.personal.lifelog.ui.components.ErrorState
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.SecondaryButton
 import com.personal.lifelog.ui.theme.LogDimens
-import java.time.ZoneId
 
 /**
  * Read-only meal detail with edit and confirmed delete. Deleting goes through
@@ -218,14 +216,6 @@ private fun MealDetailContent(
             label = stringResource(R.string.meal_time_label),
             value = MealTimeDisplay.full(meal.occurredAtUtcMs, meal.zoneId),
         )
-        val systemZone = remember { ZoneId.systemDefault().id }
-        if (meal.zoneId != systemZone) {
-            Text(
-                text = stringResource(R.string.meal_time_zone_note, meal.zoneId),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
 
         state.deleteError?.let { error ->
             ErrorState(message = stringResource(error.messageRes()))

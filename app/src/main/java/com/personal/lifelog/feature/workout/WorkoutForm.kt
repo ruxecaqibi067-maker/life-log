@@ -23,6 +23,7 @@ data class WorkoutItemForm(
     val kilometers: String = "",
     val note: String = "",
     val sets: List<WorkoutSetForm> = emptyList(),
+    val batch: StrengthBatch? = null,
 ) {
     fun draft(): WorkoutItemDraft {
         val duration = if (minutes.isBlank() && seconds.isBlank()) null else {
@@ -36,7 +37,7 @@ data class WorkoutItemForm(
             Rules.positive(total, "durationSeconds")
         }
         return WorkoutItemDraft(id, exerciseId, duration, Units.kilometersToMeters(kilometers),
-            Rules.text(note, Rules.NOTE_LIMIT), sets.map { it.draft() })
+            Rules.text(note, Rules.NOTE_LIMIT), (batch?.sets() ?: sets).map { it.draft() })
     }
 }
 
@@ -47,22 +48,32 @@ data class WorkoutForm(
     val offset: String,
     val note: String = "",
     val items: List<WorkoutItemForm> = emptyList(),
+    val effort: WorkoutEffort? = null,
+    val effortText: String = "",
 ) {
     val local: LocalDateTime get() = LocalDateTime.parse(localDateTime)
     fun draft() = WorkoutDraft(id,
         RecordTime.resolve(local, zoneId, offset.takeIf(String::isNotEmpty)?.let(ZoneOffset::of)),
-        zoneId, items.map { it.draft() }, Rules.text(note, Rules.NOTE_LIMIT))
+        zoneId, items.map { it.draft() }, Rules.text(note, Rules.NOTE_LIMIT), effort, Rules.effortText(effort, effortText))
 
     fun atLocal(value: LocalDateTime) = copy(localDateTime = value.toString(), offset = "")
+
+    /** Confirming the unchanged minute keeps original seconds/milliseconds and DST occurrence. */
+    fun pickTime(value: LocalDateTime, selectedOffset: ZoneOffset): WorkoutForm =
+        if (local.truncatedTo(java.time.temporal.ChronoUnit.MINUTES) == value.truncatedTo(java.time.temporal.ChronoUnit.MINUTES) &&
+            offset == selectedOffset.id) this
+        else copy(localDateTime = value.truncatedTo(java.time.temporal.ChronoUnit.MINUTES).toString(), offset = selectedOffset.id)
 
     fun saved() = Bundle().apply {
         putString("id", id); putString("local", localDateTime); putString("zone", zoneId)
         putString("offset", offset); putString("note", note)
+        putString("effort", effort?.name); putString("effortText", effortText)
         putParcelableArrayList("items", ArrayList(items.map { row -> Bundle().apply {
             putString("id", row.id); putString("exercise", row.exerciseId); putString("name", row.name)
             putString("type", row.type.name); putString("minutes", row.minutes); putString("seconds", row.seconds)
             putString("km", row.kilometers); putString("note", row.note)
             putParcelableArrayList("sets", ArrayList(row.sets.map(WorkoutSetForm::saved)))
+            putBundle("batch", row.batch?.saved())
         } }))
     }
 
@@ -73,13 +84,16 @@ data class WorkoutForm(
         }
         fun from(record: WorkoutWithItems): WorkoutForm = at(record.session.id,
             record.session.occurredAtUtcMs, record.session.zoneId).copy(note = record.session.note.orEmpty(),
+            effort = record.session.effort, effortText = record.session.effortText.orEmpty(),
             items = record.sorted().items.map { row ->
                 val item = row.item
                 WorkoutItemForm(item.id, item.exerciseId, item.nameSnapshot, item.typeSnapshot,
                     item.durationSeconds?.let { if (it < 60) "" else (it / 60).toString() }.orEmpty(),
                     item.durationSeconds?.let { if (it % 60 == 0L) "" else (it % 60).toString() }.orEmpty(),
                     item.distanceMeters?.let { BigDecimal.valueOf(it, 3).stripTrailingZeros().toPlainString() }.orEmpty(),
-                    item.note.orEmpty(), row.sets.map { WorkoutSetForm.from(WorkoutSetDraft(it.id, it.weightGrams, it.repetitions)) })
+                    item.note.orEmpty(), row.sets.map { WorkoutSetForm.from(WorkoutSetDraft(it.id, it.weightGrams, it.repetitions)) }).let {
+                        if (it.type == ExerciseType.STRENGTH) it.copy(batch = StrengthBatch.from(it.sets)) else it
+                    }
             })
 
         @Suppress("DEPRECATION")
@@ -90,7 +104,8 @@ data class WorkoutForm(
                 WorkoutItemForm(row.getString("id")!!, row.getString("exercise")!!, row.getString("name")!!,
                     ExerciseType.valueOf(row.getString("type")!!), row.getString("minutes")!!,
                     row.getString("seconds")!!, row.getString("km")!!, row.getString("note")!!,
-                    row.getParcelableArrayList<Bundle>("sets").orEmpty().map(WorkoutSetForm::restore))
-            })
+                    row.getParcelableArrayList<Bundle>("sets").orEmpty().map(WorkoutSetForm::restore),
+                    row.getBundle("batch")?.let(StrengthBatch::restore))
+            }, bundle.getString("effort")?.let(WorkoutEffort::valueOf), bundle.getString("effortText").orEmpty())
     }
 }

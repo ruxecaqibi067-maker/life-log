@@ -18,6 +18,9 @@ val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPas
     .all { !releaseSecrets.getProperty(it).isNullOrBlank() }
 val requestedVersionCode = providers.gradleProperty("releaseVersionCode").orElse("6").get().toInt()
 val requestedVersionName = providers.gradleProperty("releaseVersionName").orElse("0.1.4").get()
+// Device verification uses an isolated package, preserving any installed personal-data build.
+val debugTestSuffix = providers.gradleProperty("debugTestSuffix").orNull
+require(debugTestSuffix == null || debugTestSuffix.matches(Regex("\\.[a-z][a-z0-9]*")))
 require(requestedVersionCode > 0) { "versionCode must be positive" }
 require(requestedVersionName.matches(Regex("\\d+\\.\\d+\\.\\d+([-.][A-Za-z0-9.-]+)?"))) { "Invalid versionName" }
 
@@ -55,6 +58,9 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            if (debugTestSuffix != null) applicationIdSuffix = debugTestSuffix
+        }
         getByName("release") {
             isDebuggable = false
             isMinifyEnabled = true

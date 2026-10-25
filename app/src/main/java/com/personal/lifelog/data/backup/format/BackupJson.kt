@@ -14,7 +14,7 @@ import java.nio.charset.CodingErrorAction
 
 /** Explicit v1 wire fields. Derived keys and local media generations never enter the archive. */
 object BackupJson {
-    const val VERSION = 4
+    const val VERSION = 5
     /** v1: no custom satiety; v1/v2: no sleep goal; v1-v3: no work records/goal. */
     const val MIN_SUPPORTED_VERSION = 1
     private const val IMPORT_GENERATION = "00000000-0000-0000-0000-000000000000"
@@ -36,7 +36,7 @@ object BackupJson {
             meals = json.array("meals").objects().map(::decodeMealRecord),
             sleeps = json.array("sleeps").objects().map(::decodeSleepRecord),
             exercises = json.array("exercises").objects().map(::decodeExerciseDefinition),
-            sessions = json.array("sessions").objects().map(::decodeWorkoutSession),
+            sessions = json.array("sessions").objects().map { decodeWorkoutSession(it, version) },
             items = json.array("items").objects().map(::decodeWorkoutItem),
             sets = json.array("sets").objects().map(::decodeWorkoutSet),
             media = json.array("media").objects().map(::decodeMediaAsset),
@@ -139,9 +139,11 @@ object BackupJson {
         .put("zoneId", v.zoneId)
         .put("localDate", v.localDate)
         .put("note", v.note ?: JSONObject.NULL)
+        .put("effort", v.effort?.name ?: JSONObject.NULL)
+        .put("effortText", v.effortText ?: JSONObject.NULL)
         .put("createdAtUtcMs", v.createdAtUtcMs)
         .put("updatedAtUtcMs", v.updatedAtUtcMs)
-    private fun decodeWorkoutSession(j: JSONObject): WorkoutSession = WorkoutSession(
+    private fun decodeWorkoutSession(j: JSONObject, version: Int): WorkoutSession = WorkoutSession(
         id = j.string("id"),
         occurredAtUtcMs = j.long("occurredAtUtcMs"),
         zoneId = j.string("zoneId"),
@@ -149,6 +151,8 @@ object BackupJson {
         note = j.nullableString("note"),
         createdAtUtcMs = j.long("createdAtUtcMs"),
         updatedAtUtcMs = j.long("updatedAtUtcMs"),
+        effort = if (version < 5) null else j.nullableString("effort")?.let(WorkoutEffort::valueOf),
+        effortText = if (version < 5) null else j.nullableString("effortText"),
     )
 
     private fun encode(v: WorkoutItem): JSONObject = JSONObject()

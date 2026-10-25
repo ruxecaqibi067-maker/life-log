@@ -6,6 +6,7 @@ import java.util.UUID
 // at the end; never rename or remove an existing name (Room and backups store it).
 enum class Satiety { FIVE, SEVEN, NINE, FULL, NOT_FULL, CUSTOM }
 enum class ExerciseType { CARDIO, STRENGTH, OTHER }
+enum class WorkoutEffort { EASY, MODERATE, HARD, VERY_HARD, CUSTOM }
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 object RecordIds {
@@ -41,6 +42,8 @@ data class WorkoutDraft(
     val zoneId: String,
     val items: List<WorkoutItemDraft>,
     val note: String? = null,
+    val effort: WorkoutEffort? = null,
+    val effortText: String? = null,
 )
 
 data class WorkoutItemDraft(
@@ -65,7 +68,7 @@ enum class ErrorCode {
     INVALID_NUMBER, EMPTY_WORKOUT, TOO_MANY_ITEMS, TOO_MANY_SETS,
     DUPLICATE_ID, INVALID_FIELDS_FOR_TYPE, NOT_FOUND, HIDDEN_EXERCISE,
     USED_EXERCISE_TYPE, INVALID_MEDIA, IMMUTABLE_MEDIA, STORAGE, STORAGE_FULL, STORAGE_UNAVAILABLE,
-    INVALID_SATIETY, OVERLAPPING_WORK,
+    INVALID_SATIETY, OVERLAPPING_WORK, INVALID_EFFORT,
 }
 
 data class DataError(val code: ErrorCode, val field: String? = null)
