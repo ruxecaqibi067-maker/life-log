@@ -164,6 +164,7 @@ fun TodoScreen(viewModel: TodoViewModel, onBack: () -> Unit) {
         onConfirm = { viewModel.selectDate(it); datePicker = false })
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HabitRow(habit: HabitRecord, busy: Boolean, onEdit: () -> Unit, onPause: () -> Unit, onArchive: () -> Unit) {
     RecordCard(Modifier.fillMaxWidth().testTag("habit-row-${habit.id}")) {
@@ -180,7 +181,7 @@ private fun HabitRow(habit: HabitRecord, busy: Boolean, onEdit: () -> Unit, onPa
             Text(listOfNotNull(recurrence, habit.scheduledMinute?.let(::minuteText),
                 if (habit.status == HabitStatus.PAUSED) stringResource(R.string.todo_habit_paused) else null).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 ActionButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.todo_edit_short)) }
                 ActionButton(onClick = onPause, enabled = !busy) {
                     Text(stringResource(if (habit.status == HabitStatus.PAUSED) R.string.todo_habit_resume else R.string.todo_habit_pause))
@@ -196,7 +197,7 @@ private fun HabitRow(habit: HabitRecord, busy: Boolean, onEdit: () -> Unit, onPa
 fun TodoDialogs(viewModel: TodoViewModel) {
     val draft by viewModel.editor.collectAsStateWithLifecycle()
     val commands by viewModel.commands.collectAsStateWithLifecycle()
-    draft?.let { EditorDialog(it, commands, viewModel) }
+    draft?.takeIf { commands.deletion == null }?.let { EditorDialog(it, commands, viewModel) }
     commands.deletion?.let { request ->
         AlertDialog(onDismissRequest = viewModel::cancelDelete,
             title = { Text(stringResource(if (request.habit) R.string.todo_habit_archive_confirm else R.string.todo_delete_confirm)) },

@@ -108,6 +108,12 @@ fun LifelogApp(
     }
     val today by homeViewModel.today.collectAsStateWithLifecycle()
     val timeline by homeViewModel.timeline.collectAsStateWithLifecycle()
+    LaunchedEffect(currentRoute, todoViewModel) {
+        if (currentRoute == LifelogRoutes.TODAY || currentRoute == LifelogRoutes.TODOS) {
+            homeViewModel.refreshToday()
+            todoViewModel?.refresh()
+        }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, homeViewModel, todoViewModel) {
         val observer = LifecycleEventObserver { _, event ->
