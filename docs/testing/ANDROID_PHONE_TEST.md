@@ -1,6 +1,8 @@
 # Android手机实机测试
 
-测试候选：随手记 0.1.4，versionCode 6；包名 `com.personal.lifelog`。适用于支持 APK 安装的 Android 9 及以上手机。先用虚构数据检查；不同品牌系统交互和性能仍需实测。
+本轮本地测试：随手记0.1.5，versionCode7；包名 `com.personal.lifelog`。适用于支持 APK 安装的 Android 9 及以上手机。先用虚构数据检查；不同品牌系统交互和性能仍需实测。
+
+本轮APK只由电脑本地`artifacts/phone-test/随手记.apk`复制到手机，GitHub仍为0.1.4。重点见[本轮说明](../releases/0.1.5-local.md)。旧清单中卡内工作按钮和纵排布局已改为底部2×2及并排双卡；备份现在导出v5、可读v1–v4。
 
 ## 1. 下载与安装
 
@@ -71,7 +73,7 @@
 
 ```text
 手机型号：；Android：；厂商系统版本：
-App：0.1.4 / 6；日期：；字体大小：
+App：0.1.5 / 7；日期：；字体大小：
 步骤编号：
 操作：
 预期：

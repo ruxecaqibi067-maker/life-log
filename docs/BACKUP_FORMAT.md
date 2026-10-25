@@ -1,6 +1,6 @@
 # 备份格式（v1 基础与 v2/v3/v4/v5 增量）
 
-本开发分支导出 `formatVersion/dataVersion=5`，读取兼容 v1–v5；已发布 0.1.4 的格式仍为 v4，App交付与升级证据见 [0.1.4报告](releases/0.1.4.md)。本轮运动录入优化尚待主管整合及发布，不代表已有新版安装包。以下 v1 字段为基础，后续增量见文末。manifest 与 data 的版本必须相同。
+本地0.1.5导出 `formatVersion/dataVersion=5`，读取兼容 v1–v5；已发布 0.1.4 的格式仍为 v4，App交付与升级证据见 [0.1.4报告](releases/0.1.4.md)。本轮已整合，APK只本地交付，不发布GitHub安装包；见[0.1.5本地说明](releases/0.1.5-local.md)。以下 v1 字段为基础，后续增量见文末。manifest 与 data 的版本必须相同。
 
 ZIP 只允许 `manifest.json`、`data.json` 和 `media/<规范小写UUID>.jpg`，不包含目录条目、系统文件、设备路径、运行时 generation 或恢复日志。ZIP64、多卷、加密和符号链接不支持。未加密，T14 须在保存前说明包含生活记录和照片。
 
