@@ -124,9 +124,11 @@ fun WorkHistoryScreen(viewModel: WorkViewModel, onAdd: () -> Unit, onEdit: (Stri
     WorkScaffold(R.string.work_title, onBack) { modifier ->
         LazyColumn(modifier.testTag("work-history"), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
             item {
-                PrimaryButton(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.work_add)) }
-                Text(stringResource(R.string.work_note), modifier = Modifier.padding(vertical = 8.dp))
-                WorkHomeFeedback(viewModel, onEdit, { confirmUndo = true })
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                    PrimaryButton(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.work_add)) }
+                    Text(stringResource(R.string.work_note))
+                    WorkHomeFeedback(viewModel, onEdit, { confirmUndo = true })
+                }
             }
             val rows = history.records
             when {
