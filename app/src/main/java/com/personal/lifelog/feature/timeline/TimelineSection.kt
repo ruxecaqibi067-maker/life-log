@@ -170,7 +170,8 @@ private fun MealTimelineRow(
     onClick: () -> Unit,
 ) {
     val title = entry.text?.takeIf { it.isNotBlank() } ?: stringResource(R.string.meal_photo_only)
-    val secondary = satietyDisplayText(entry.satiety, entry.satietyText)
+    val secondary = listOfNotNull(satietyDisplayText(entry.satiety, entry.satietyText),
+        if (entry.photoCount > 1) stringResource(R.string.meal_photos_timeline, entry.photoCount) else null).joinToString(" · ").ifEmpty { null }
     TimelineCard(
         onClick = onClick,
         onClickLabel = stringResource(R.string.timeline_open_meal),

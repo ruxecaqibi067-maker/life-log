@@ -28,6 +28,7 @@ sealed interface TimelineEntry {
         val satiety: Satiety?,
         val satietyText: String?,
         val photoId: String?,
+        val photoCount: Int = if (photoId == null) 0 else 1,
     ) : TimelineEntry {
         override val kind: TimelineKind get() = TimelineKind.MEAL
     }

@@ -19,6 +19,7 @@ import java.util.Locale
 /** Stable presentation errors; screens map these to resources, never to raw exception text. */
 enum class MealUiError {
     EMPTY_MEAL,
+    PHOTO_LIMIT,
     TEXT_TOO_LONG,
     INVALID_TIME,
     PHOTO_INVALID,
@@ -41,7 +42,10 @@ enum class MealPhotoStatus { NONE, PROCESSING, READY, CAPTURE_PENDING, ERROR }
  * loaded record (or "nothing entered" for a new meal) and only guards the back/cancel
  * prompt; the repository remains the final validator.
  */
+data class MealPhotoItem(val photoId: String, val ticket: PhotoTicket? = null, val preview: Uri? = null, val missing: Boolean = false)
+
 data class MealEditorUiState(
+    val photoItems: List<MealPhotoItem> = emptyList(),
     val loading: Boolean = true,
     val missing: Boolean = false,
     val loadFailed: Boolean = false,
@@ -80,6 +84,7 @@ data class MealDetail(
 )
 
 data class MealDetailUiState(
+    val photoItems: List<MealPhotoItem> = emptyList(),
     val loading: Boolean = true,
     val missing: Boolean = false,
     val loadError: MealUiError? = null,

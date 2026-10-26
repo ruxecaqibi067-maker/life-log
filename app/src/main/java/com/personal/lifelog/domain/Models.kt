@@ -23,6 +23,8 @@ data class MealDraft(
     val photoId: String? = null,
     /** Only meaningful when [satiety] is [Satiety.CUSTOM]; trimmed and length-checked by Rules. */
     val satietyText: String? = null,
+    /** null preserves legacy cover semantics; non-null replaces the complete ordered list. */
+    val photoIds: List<String>? = null,
 )
 
 data class SleepDraft(

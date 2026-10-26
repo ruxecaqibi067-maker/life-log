@@ -16,7 +16,7 @@ def inspect(path):
         assert archive.getinfo('manifest.json').file_size <= 4 * 1024**2, 'Manifest size limit'
         assert archive.getinfo('data.json').file_size <= 32 * 1024**2, 'Data size limit'
         manifest = json.loads(archive.read('manifest.json'))
-        assert manifest['formatVersion'] in (1, 2, 3, 4, 5, 6), 'Unknown format'
+        assert manifest['formatVersion'] in (1, 2, 3, 4, 5, 6, 7), 'Unknown format'
         files = manifest['files']
         assert len(files) == len({item['path'] for item in files}), 'Duplicate manifest path'
         assert {item['path'] for item in files} == set(names) - {'manifest.json'}, 'Incomplete manifest'
@@ -59,15 +59,39 @@ def inspect(path):
         if version >= 6:
             keys.update(('todos', 'habits'))
             validate_todos(data)
+        if version >= 7:
+            keys.add('mealPhotos')
+            validate_meal_photos(data)
         assert set(manifest['counts']) == keys, 'Missing or unknown count'
         counts = {key: len(data[key]) for key in keys}
         assert counts == manifest['counts'], 'Count mismatch'
         assert sum(counts.get(key, 0) for key in ('meals', 'sleeps', 'sessions', 'workRecords', 'todos', 'habits')) <= 10000, 'Record limit'
         for key, value in data.items():
             if isinstance(value, list):
-                assert len(value) == len({row['id'] for row in value}), 'Duplicate ID'
-                value.sort(key=lambda row: row['id'])
+                if key == 'mealPhotos':
+                    assert len(value) == len({(row['mealId'], row['photoId']) for row in value}), 'Duplicate meal photo'
+                    value.sort(key=lambda row: (row['mealId'], row['sortOrder']))
+                else:
+                    assert len(value) == len({row['id'] for row in value}), 'Duplicate ID'
+                    value.sort(key=lambda row: row['id'])
         return data, {name: sha for name, sha in hashes.items() if name.startswith('media/')}, counts
+
+
+def validate_meal_photos(data):
+    assert isinstance(data.get('mealPhotos'), list), 'Missing meal photos'
+    meals = {row['id']: row for row in data['meals']}
+    media = {row['id'] for row in data['media']}
+    links = {}
+    for row in data['mealPhotos']:
+        assert row['mealId'] in meals and row['photoId'] in media, 'Invalid meal photo reference'
+        assert type(row['sortOrder']) is int and 0 <= row['sortOrder'] <= 8, 'Invalid photo order'
+        links.setdefault(row['mealId'], []).append(row)
+    for meal in meals.values():
+        photos = sorted(links.get(meal['id'], []), key=lambda p: p['sortOrder'])
+        assert len(photos) <= 9 and [p['sortOrder'] for p in photos] == list(range(len(photos))), 'Photo order gap/duplicate'
+        assert len({p['photoId'] for p in photos}) == len(photos), 'Duplicate photo'
+        assert meal.get('photoId') == (photos[0]['photoId'] if photos else None), 'Cover mismatch'
+    assert {row['photoId'] for row in data['mealPhotos']} == media, 'Unreferenced/missing media'
 
 
 def validate_todos(data):
@@ -112,7 +136,7 @@ def validate_todos(data):
 def migrate_for_comparison(data, target_version):
     """Only defined additive fields; never remove or normalize record values."""
     version = data['dataVersion']
-    assert 1 <= version < target_version <= 6, 'Undefined migration'
+    assert 1 <= version < target_version <= 7, 'Undefined migration'
     if version == 1:
         assert all(row.get('satietyText') is None for row in data['meals']), 'Unexpected v1 custom text'
         for row in data['meals']:
@@ -134,6 +158,10 @@ def migrate_for_comparison(data, target_version):
         assert not data.get('todos') and not data.get('habits'), 'Unexpected legacy todo/habit data'
         data['todos'] = []
         data['habits'] = []
+    if version < 7 and target_version >= 7:
+        assert not data.get('mealPhotos'), 'Unexpected legacy meal photos'
+        data['mealPhotos'] = [{'mealId': row['id'], 'photoId': row['photoId'], 'sortOrder': 0} for row in data['meals'] if row.get('photoId') is not None]
+        data['mealPhotos'].sort(key=lambda row: (row['mealId'], row['sortOrder']))
     data['dataVersion'] = target_version
 
 
@@ -159,6 +187,8 @@ def main():
     for version in (1, 2, 3, 4, 5):
         migrations.add_argument(f'--allow-v{version}-to-v6', action='store_true',
                                 help=f'Compare v{version} with additive empty todo/habit tables in v6')
+    for version in range(1, 7):
+        migrations.add_argument(f'--allow-v{version}-to-v7', action='store_true', help='Compare ordered single-photo migration to v7')
     args = parser.parse_args()
     before, before_photos, counts = inspect(args.before)
     after, after_photos, after_counts = inspect(args.after)
@@ -172,9 +202,14 @@ def main():
     for version in (1, 2, 3, 4, 5):
         if getattr(args, f'allow_v{version}_to_v6'):
             migration = [version, 6]
+    for version in range(1, 7):
+        if getattr(args, f'allow_v{version}_to_v7'):
+            migration = [version, 7]
     if migration:
         assert versions == migration, 'Wrong versions for explicitly requested migration'
         migrate_for_comparison(before, migration[1])
+        if migration[1] >= 7:
+            counts['mealPhotos'] = len(before['mealPhotos'])
         if migration[0] < 4 and migration[1] >= 4:
             counts['workRecords'] = 0
         if migration[0] < 6 and migration[1] >= 6:

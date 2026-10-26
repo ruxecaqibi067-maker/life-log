@@ -31,6 +31,8 @@ class VerifyBackupTest(unittest.TestCase):
         if version >= 6:
             data['todos'] = todos or []
             data['habits'] = habits or []
+        if version >= 7:
+            data['mealPhotos'] = []
         data['sessions'] = sessions or []
         files = {'data.json': json.dumps(data).encode(), 'media/synthetic.jpg': photo}
         manifest = {'formatVersion': version, 'counts': {key: len(value) for key, value in data.items() if isinstance(value, list)},
@@ -49,7 +51,7 @@ class VerifyBackupTest(unittest.TestCase):
 
     def test_all_defined_forward_migrations_require_explicit_flags(self):
         for old, new in ((1, 2), (2, 3), (1, 3), (1, 4), (2, 4), (3, 4), (1, 5), (2, 5), (3, 5), (4, 5),
-                         (1, 6), (2, 6), (3, 6), (4, 6), (5, 6)):
+                         (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7)):
             before = self.archive(f'before-{old}.zip', old)
             after = self.archive(f'after-{new}.zip', new)
             self.assertNotEqual(0, self.compare(before, after).returncode)
@@ -122,6 +124,17 @@ class VerifyBackupTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             verify_backup.inspect(self.archive('duplicate-source.zip', 6,
                                                todos=[todo, dict(todo, id='other')], habits=[habit]))
+
+    def test_v7_order_cover_and_references_are_strict(self):
+        data = {'meals': [{'id': 'meal', 'photoId': 'a'}], 'media': [{'id': 'a'}, {'id': 'b'}],
+                'mealPhotos': [{'mealId': 'meal', 'photoId': 'a', 'sortOrder': 0}, {'mealId': 'meal', 'photoId': 'b', 'sortOrder': 1}]}
+        verify_backup.validate_meal_photos(data)
+        for edit in ({'sortOrder': 0}, {'sortOrder': 9}, {'photoId': 'missing'}, {'mealId': 'missing'}):
+            changed = dict(data, mealPhotos=[data['mealPhotos'][0], dict(data['mealPhotos'][1], **edit)])
+            with self.assertRaises(AssertionError):
+                verify_backup.validate_meal_photos(changed)
+        with self.assertRaises(AssertionError):
+            verify_backup.validate_meal_photos(dict(data, meals=[{'id': 'meal', 'photoId': 'b'}]))
 
 
 if __name__ == '__main__':

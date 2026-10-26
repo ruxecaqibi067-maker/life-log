@@ -165,6 +165,41 @@ class PhotoStorage internal constructor(
         }
     }.flatten()
 
+    /** Atomic ordered append/edit. Tickets are immutable prepared files; existing photos are not removed before commit. */
+    suspend fun saveMealPhotos(draft: MealDraft, tickets: List<PhotoTicket>): PhotoResult<MealRecord> = operation {
+        val ids = draft.photoIds ?: throw PhotoException(PhotoError.INVALID_TICKET)
+        if (ids.size > 9 || ids.distinct().size != ids.size || tickets.distinct().size != tickets.size || tickets.any { it.id !in ids }) {
+            throw PhotoException(PhotoError.INVALID_TICKET)
+        }
+        val prepared = tickets.map { ticket -> prepared(touch(ticket)) }
+        ids.forEach { id ->
+            val photo = prepared.find { it.asset.id == id }
+            if (photo == null) {
+                val existing = db.metadata().media(id) ?: throw PhotoException(PhotoError.MISSING_PHOTO)
+                verify(files.formal(existing), existing)
+            } else {
+                val asset = photo.asset
+                val destination = files.formal(asset)
+                if (!destination.exists()) {
+                    verify(files.normalized(photo.ticket), asset)
+                    files.mkdir(destination.parentFile!!)
+                    fault(PhotoFaultPoint.BEFORE_PLACE)
+                    if (!files.normalized(photo.ticket).renameTo(destination)) throw IOException("media placement failed")
+                    fault(PhotoFaultPoint.PLACED)
+                }
+                verify(destination, asset)
+                syncDirectory(destination.parentFile!!)
+            }
+        }
+        if (prepared.isNotEmpty()) { syncDirectory(files.media); syncDirectory(files.root) }
+        currentCoroutineContext().ensureActive()
+        fault(PhotoFaultPoint.BEFORE_DATABASE)
+        when (val result = records.saveMealPhotos(draft.copy(photoId = ids.firstOrNull()), prepared.map { it.asset })) {
+            is DataResult.Failure -> PhotoResult.Failure(PhotoError.DATABASE, result.error)
+            is DataResult.Success -> { afterCommit(); PhotoResult.Success(result.value) }
+        }
+    }.flatten()
+
     suspend fun deleteMeal(id: String): PhotoResult<Boolean> = operation {
         when (val result = records.deleteMeal(id)) {
             is DataResult.Failure -> PhotoResult.Failure(PhotoError.DATABASE, result.error)
