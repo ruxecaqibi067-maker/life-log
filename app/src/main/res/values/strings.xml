@@ -155,8 +155,6 @@
     <string name="meal_saving">正在保存…</string>
     <string name="meal_cancel">取消</string>
     <string name="meal_photo_take">拍照</string>
-    <string name="meal_photo_pick">从相册选择</string>
-    <string name="meal_photo_replace">替换照片</string>
     <string name="meal_photo_remove">移除照片</string>
     <string name="meal_photo_retry_capture">继续拍照</string>
     <string name="meal_photo_processing">正在处理照片…</string>

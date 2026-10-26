@@ -1,5 +1,4 @@
 <resources>
-    <string name="home_duration_history">查看 / 补录</string>
     <string name="home_sleep_open_history">查看或补录睡眠记录</string>
     <string name="home_work_open_history">查看或补录工作记录</string>
     <string name="home_duration_goal_loading">正在读取目标…</string>
