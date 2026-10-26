@@ -1,6 +1,6 @@
 # 备份格式（v1 基础与 v2–v7 增量）
 
-本轮T27多照片实现导出`formatVersion/dataVersion=7`，读取兼容v1–v7；已公开0.1.6/code9仍为格式v6。Room/备份格式版本与App版本独立，实际安装包和接受状态以[主管进度板](STATUS.md)为准，本任务不发布APK。以下v1字段为基础，后续增量见文末；manifest与data版本必须相同。
+当前源码/本地0.1.7多照片实现导出`formatVersion/dataVersion=7`，读取兼容v1–v7；已公开0.1.6/code9仍为格式v6。Room/备份格式版本与App版本独立，实际安装包和接受状态以[主管进度板](STATUS.md)为准，本轮APK仅本地，详见[本地报告](releases/0.1.7-local.md)。以下v1字段为基础，后续增量见文末；manifest与data版本必须相同。
 
 ZIP 只允许 `manifest.json`、`data.json` 和 `media/<规范小写UUID>.jpg`，不包含目录条目、系统文件、设备路径、运行时 generation 或恢复日志。ZIP64、多卷、加密和符号链接不支持。未加密，T14 须在保存前说明包含生活记录和照片。
 

@@ -332,3 +332,9 @@ T15放行仅针对候选功能、数据可靠性与性能，不要求尚未发�
 SleepHistoryViewModel复用RecordRepository.sleeps的Room流及首页today，SavedStateHandle保存可空日期选择，前台刷新手机时区；只读分析在Default调度器计算。列表用已保存archiveLocalDate，SleepDayAnalysis使用自然日真实起止时点裁切，近七日复用同一投影，23/25小时日按真实长度绘制。
 
 SleepHistoryScreen单LazyColumn管理筛日、记录、当天图和七日图，分析Canvas只绘制状态，不读DAO；导航sleepDate可空，仅用于新建草稿初始日，旧编辑保留时间/时区精度。补丁`625910a`不修改schema、数据、备份或依赖，发布内部code8→9，版本名仍0.1.6；详细口径与验收见[报告](releases/0.1.6.md)。
+
+## 16. 多照片与首页交互（0.1.7本地）
+
+Room6→7新增MealPhoto(mealId,photoId,sortOrder)及级联/引用索引，迁移旧photoId为第1张；MealRecord.photoId保留封面，MealDraft末尾photoIds可空兼容旧调用，非空为完整有序列表。RecordRepository/PhotoStorage新增saveMealPhotos，放置全部准备图后以同一Room事务提交餐/媒体/关联，旧文字编辑保留非封面图。引用清理、Snapshot、备份7/恢复/回滚均遍历全部关联；旧1–6读取时派生一张/无图。
+
+首页进行中仅是Clock+真实开始点的前台投影，两个来源均确认活动后才加到圆环，避免结束时Room两流短暂不同步双计；不按tick累加或写库。中央入口/目标分流、历史操作、rememberSaveable折叠和运动布局只改表现层。单一FeedbackRoundTwoDeviceTest覆盖组合交互、图库及ZIP恢复，隔离包后缀.feedback2；各agent不重复设备。详见[报告](releases/0.1.7-local.md)。

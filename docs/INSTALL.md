@@ -1,8 +1,14 @@
 # 安装、更新与备份
 
-当前随手记0.1.6 / versionCode9，沿用长期签名，面向Android9及以上手机。[下载APK](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.6/suishouji-0.1.6.apk)，[版本页与校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.6)。本次用户明确授权公开安装包；以后仍默认不上传，除非明确要求。
+当前公开下载为随手记0.1.6 / versionCode9，沿用长期签名，面向Android9及以上手机。[下载APK](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.6/suishouji-0.1.6.apk)，[版本页与校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.6)。本次用户明确授权公开安装包；以后仍默认不上传，除非明确要求。
 
-## 本轮手机安装
+## 最新本地0.1.7/code10
+
+本轮7项反馈只更新电脑`artifacts/phone-test/随手记.apk`，不替换GitHub附件。先在旧版导出备份，再复制APK到手机覆盖安装，不卸载/清存储；code9→10，沿用包名和长期签名。检查中央卡片入口/进行中扇形、历史编辑撤销、四入口折叠、运动选择及同餐多照片，见[报告](releases/0.1.7-local.md)。
+
+本地版新备份7包含所有照片/顺序，可读旧1–6；公开0.1.6仍用v6，不能读新7。旧备份全量恢复会清空其原本没有的新数据。本轮设备为隔离debug包，正式包实机覆盖和真实相机/图库仍需手机测试。
+
+## 公开0.1.6安装
 
 1. 在旧App设置中导出备份，确认成功并保留ZIP。
 2. 下载APK，或从电脑复制`artifacts/phone-test/随手记.apk`到手机，在文件管理器打开并覆盖安装；不要卸载或清除存储。包名仍为`com.personal.lifelog`，code6/7/8→9，因此此前同名0.1.6本地包也能覆盖。
@@ -25,4 +31,4 @@
 .\scripts\Build-Release.ps1 -SigningProperties "$env:LOCALAPPDATA\LifeLogAndroid\signing\signing.properties"
 ```
 
-默认0.1.6/code9，标准输出在`artifacts/t16/v0.1.6-9/`。固定入口为`artifacts/phone-test/随手记.apk`及安装说明，记录版本、源提交和SHA。继续递增code，不重生成密钥或上传私钥；未来GitHub安装包更新须明确授权。
+默认本地0.1.7/code10，标准输出在`artifacts/t16/v0.1.7-10/`。固定入口为`artifacts/phone-test/随手记.apk`及安装说明，记录版本、源提交和SHA。继续递增code，不重生成密钥或上传私钥；未来GitHub安装包更新须明确授权。

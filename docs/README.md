@@ -1,13 +1,13 @@
 # 文档导航
 
-当前随手记0.1.6 / versionCode9，用户已明确授权加入作息补丁并公开GitHub安装包。当前状态见[主管进度板](STATUS.md)，下载、检查和交付见[发布报告](releases/0.1.6.md)；此前code8本地现场见[历史说明](releases/0.1.6-local.md)。后续GitHub安装包更新仍须用户明确要求。
+当前源码/本地随手记0.1.7 / code10，Room/备份v7；公开安装包仍0.1.6/code9。状态见[主管进度板](STATUS.md)，第二轮反馈和集中验收见[0.1.7本地报告](releases/0.1.7-local.md)，公开下载见[0.1.6报告](releases/0.1.6.md)。本轮不更新GitHub安装包，后续仍须明确要求。
 
 | 你想了解什么 | 从这里开始 |
 | --- | --- |
 | 下载、安装、更新后保留数据 | [安装与更新](INSTALL.md) |
 | 手机上应该测哪些功能 | [手机测试清单](testing/ANDROID_PHONE_TEST.md)、[兼容性](COMPATIBILITY.md) |
 | 做完了哪些、接下来做什么 | [主管进度板](STATUS.md)、[任务索引](TASKS.md) |
-| 当前任务及已完成交付 | [任务入口](tasks/README.md)、[最新整合报告](releases/0.1.6.md) |
+| 当前任务及已完成交付 | [任务入口](tasks/README.md)、[最新整合报告](releases/0.1.7-local.md) |
 | 每日待办、21天自动结束与保留历史 | [习惯规则](HABIT_RULES.md) |
 | 产品与代码逻辑 | [产品范围](V1_SPEC.md)、[技术路线](TECHNICAL_ROADMAP.md) |
 | 配色、字体、按钮和首页卡片规则 | [视觉规范](UI_STYLE_GUIDE.md) |
