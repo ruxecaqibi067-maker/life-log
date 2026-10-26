@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="time_analysis_no_completed">暂无已完成时段</string>
+    <string name="time_analysis_under_minute">已记录不足1分钟</string>
+    <string name="time_analysis_duration">已记录%1$d小时%2$d分</string>
+    <string name="time_analysis_week_range">%1$s — %2$s · 截至所选日期</string>
+</resources>

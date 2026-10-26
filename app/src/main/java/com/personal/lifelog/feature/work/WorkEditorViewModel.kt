@@ -27,6 +27,7 @@ class WorkEditorViewModel(
     private val recordId: String?,
     private val saved: SavedStateHandle,
     private val onDeleted: (WorkRecord) -> Unit = {},
+    private val initialDate: java.time.LocalDate? = null,
 ) : ViewModel() {
     val state = MutableStateFlow(WorkEditorState())
     private val id = recordId ?: saved.get<String>("id") ?: RecordIds.newId().also { saved["id"] = it }
@@ -49,8 +50,11 @@ class WorkEditorViewModel(
                 // A recreated stale draft must keep the exact row it originally edited.
                 expected = saved.get<ArrayList<String>>("expected")?.let(::restoreWorkRow) ?: old
                 expected?.let { saved["expected"] = saveWorkRow(it) }
-                val initial = old?.let { WorkForm.from(it, clock.millis(), zoneIdProvider().id) }
-                    ?: WorkForm.at(clock.millis(), zoneIdProvider().id)
+                val zone = zoneIdProvider()
+                val initialInstant = initialDate?.atTime(clock.instant().atZone(zone).toLocalTime())?.atZone(zone)?.toInstant()?.toEpochMilli()
+                    ?: clock.millis()
+                val initial = old?.let { WorkForm.from(it, clock.millis(), zone.id) }
+                    ?: WorkForm.at(initialInstant, zone.id)
                 val original = saved.get<ArrayList<String>>("original")?.let(WorkForm::restore) ?: initial
                 val form = saved.get<ArrayList<String>>("form")?.let(WorkForm::restore) ?: initial
                 saved["original"] = original.saved()

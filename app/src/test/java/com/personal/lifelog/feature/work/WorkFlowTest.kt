@@ -41,8 +41,8 @@ class WorkFlowTest {
             @Suppress("UNCHECKED_CAST") override fun <V : ViewModel> create(c: Class<V>): V = factory() as V
         })[id(), type]
     private fun commands() = vm(WorkViewModel::class.java) { WorkViewModel(work, clock) { zone } }
-    private fun editor(row: String? = null, saved: SavedStateHandle = SavedStateHandle(), deleted: (com.personal.lifelog.data.local.entity.WorkRecord) -> Unit = {}) =
-        vm(WorkEditorViewModel::class.java) { WorkEditorViewModel(work, clock, { zone }, row, saved, deleted) }
+    private fun editor(row: String? = null, saved: SavedStateHandle = SavedStateHandle(), deleted: (com.personal.lifelog.data.local.entity.WorkRecord) -> Unit = {}, date: LocalDate? = null) =
+        vm(WorkEditorViewModel::class.java) { WorkEditorViewModel(work, clock, { zone }, row, saved, deleted, date) }
     private suspend fun WorkViewModel.ready() { withTimeout(5000) { status.first { it.loaded }; busy.first { !it } } }
     private suspend fun WorkEditorViewModel.ready() { withTimeout(5000) { state.first { !it.loading && !it.busy } } }
     @Before fun setup() {
@@ -186,4 +186,26 @@ class WorkFlowTest {
         assertNull(durationProgress(null, 480))
         assertNull(durationProgress(18_000_000, null))
     }
+
+    @Test fun historicalDraftUsesSelectedDateWithoutWritingAndExistingEditKeepsOriginalInstants() = runBlocking<Unit> {
+        val selected = LocalDate.of(2026, 9, 30)
+        val saved = SavedStateHandle()
+        val first = editor(saved = saved, date = selected); first.ready()
+        val form = first.state.value.form!!
+        assertEquals(selected, form.startAt(zone).toLocalDate())
+        assertEquals(now.atZone(zone).toLocalTime(), form.startAt(zone).toLocalTime())
+        assertEquals(selected, form.endAt(zone).toLocalDate())
+        assertFalse(first.state.value.dirty)
+        assertTrue(work.works().first().isEmpty())
+        now = now.plusSeconds(3600)
+        val restored = editor(saved = saved, date = selected); restored.ready()
+        assertEquals(form, restored.state.value.form)
+        assertTrue(work.works().first().isEmpty())
+        val row = work.saveWork(WorkDraft(id(), now.toEpochMilli() + 123, zone.id,
+            now.toEpochMilli() + 3_600_456, zone.id)).value()
+        val editing = editor(row.id, date = selected); editing.ready()
+        assertEquals(row.startedAtUtcMs, editing.state.value.form!!.draft(row.id).startedAtUtcMs)
+        assertEquals(row.endedAtUtcMs, editing.state.value.form!!.draft(row.id).endedAtUtcMs)
+    }
+
 }

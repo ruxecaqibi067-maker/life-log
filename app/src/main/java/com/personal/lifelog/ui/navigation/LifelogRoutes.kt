@@ -27,8 +27,13 @@ object LifelogRoutes {
     const val WORK_HISTORY = "work/history"
     const val WORK_EDIT = "work/edit"
     const val ARG_WORK_ID = "workId"
-    const val WORK_EDIT_PATTERN = "$WORK_EDIT?$ARG_WORK_ID={$ARG_WORK_ID}"
-    fun workEditor(id: String? = null): String = editorRoute(WORK_EDIT, ARG_WORK_ID, id)
+    const val ARG_WORK_DATE = "workDate"
+    const val WORK_EDIT_PATTERN = "$WORK_EDIT?$ARG_WORK_ID={$ARG_WORK_ID}&$ARG_WORK_DATE={$ARG_WORK_DATE}"
+    fun workEditor(id: String? = null, date: java.time.LocalDate? = null): String {
+        val route = editorRoute(WORK_EDIT, ARG_WORK_ID, id)
+        return if (date == null) route else route + (if ('?' in route) "&" else "?") + "$ARG_WORK_DATE=$date"
+    }
+    val workDateArgument = navArgument(ARG_WORK_DATE) { type = NavType.StringType; nullable = true; defaultValue = null }
     val workIdArgument = navArgument(ARG_WORK_ID) { type = NavType.StringType; nullable = true; defaultValue = null }
 
     const val SLEEP_HISTORY = "sleep/history"
