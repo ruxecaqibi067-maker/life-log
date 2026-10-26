@@ -36,6 +36,8 @@ T01–T09任务已合并到`docs/archive/tasks/T01-T09-基础功能任务.md`，
 
 ## 验证
 
+本轮T25–T27用户明确要求减少子agent设备重复：实现agent仅做必要编译/定向主机检查，不自行启动模拟器、连接手机或执行设备测试；由主管整合后统一一轮隔离设备验证。失败或实际修改只重跑受影响项，不重复全套。详见`docs/tasks/FEEDBACK-2026-10-26-第二轮界面与饮食照片.md`。
+
 ```powershell
 .\gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest
 # 仅在隔离包或明确安排的设备上执行：
