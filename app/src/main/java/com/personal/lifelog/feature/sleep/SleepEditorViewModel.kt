@@ -26,6 +26,7 @@ class SleepEditorViewModel(
     private val zoneIdProvider: () -> ZoneId,
     private val recordId: String?,
     private val saved: SavedStateHandle,
+    private val initialDate: java.time.LocalDate? = null,
 ) : ViewModel() {
     val state = MutableStateFlow(SleepEditorState())
     private val id = recordId ?: saved.get<String>("id") ?: RecordIds.newId().also { saved["id"] = it }
@@ -46,8 +47,11 @@ class SleepEditorViewModel(
                     return@launch
                 }
                 expected = old
-                val initial = old?.let { SleepForm.from(it, clock.millis(), zoneIdProvider().id) }
-                    ?: SleepForm.at(clock.millis(), zoneIdProvider().id)
+                val zone = zoneIdProvider()
+                val initialInstant = initialDate?.atTime(clock.instant().atZone(zone).toLocalTime())?.atZone(zone)?.toInstant()?.toEpochMilli()
+                    ?: clock.millis()
+                val initial = old?.let { SleepForm.from(it, clock.millis(), zone.id) }
+                    ?: SleepForm.at(initialInstant, zone.id)
                 val original = saved.get<ArrayList<String>>("original")?.let(SleepForm::restore) ?: initial
                 val form = saved.get<ArrayList<String>>("form")?.let(SleepForm::restore) ?: initial
                 saved["original"] = original.saved()

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_history_other">查看其他日期作息</string>
+    <string name="sleep_history_choose">选择作息日期</string>
+    <string name="sleep_history_today">回到今天</string>
+    <string name="sleep_history_previous">前一天</string>
+    <string name="sleep_history_next">后一天</string>
+    <string name="sleep_history_rule">记录归到起床当天；未结束的暂列就寝日，结束后自动归到起床日。</string>
+    <string name="sleep_history_records">当天作息记录</string>
+    <string name="sleep_history_empty">这一天没有作息记录</string>
+    <string name="sleep_history_error">无法读取作息与分析，请重试。</string>
+    <string name="sleep_analysis_day">当天作息时间分布</string>
+    <string name="sleep_analysis_week">近七天作息分析</string>
+    <string name="sleep_analysis_week_range">%1$s — %2$s · 截至所选日期</string>
+    <string name="sleep_analysis_week_hint">每条横轴是一整天，着色部分是已记录的休息时段。点击日期行可查看当天。</string>
+    <string name="sleep_analysis_no_completed">暂无已完成时段</string>
+    <string name="sleep_analysis_under_minute">已记录不足1分钟</string>
+    <string name="sleep_analysis_duration">已记录%1$d小时%2$d分</string>
+    <string name="sleep_analysis_open_starts">空心点：%1$s开始，尚未结束，不计时长。</string>
+    <string name="sleep_analysis_explanation">按手机当前时区（%1$s）展示自然日；跨夜分到各天，空白不代表没有休息。仅分析已完成的就寝记录。</string>
+</resources>

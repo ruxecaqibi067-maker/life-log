@@ -93,6 +93,16 @@ class SleepUiTest {
     @After fun close() { store.clear(); db.close() }
     private fun awaitText(text: String) = compose.waitUntil(10_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     private fun rows() = runBlocking { db.records().allSleeps() }
+    private fun selectHistoryDate(value: String) {
+        val date = java.time.LocalDate.parse(value)
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("sleep-history-list").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("sleep-history-list").performScrollToIndex(0)
+        compose.onNodeWithTag("sleep-history-choose").performClick()
+        listOf("年" to date.year, "月" to date.monthValue, "日" to date.dayOfMonth).forEach { (unit, number) ->
+            compose.onNodeWithTag("record-wheel-$unit").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.SetProgress) { it(number.toFloat()) }
+        }
+        compose.onNodeWithText("确认").performClick()
+    }
 
     @Test fun oneTapPersistsStartAndFinishAndUndoAndDeleteHaveSafeCancelPaths() {
         compose.onNodeWithText("准备睡了").performClick()
@@ -247,6 +257,8 @@ class SleepUiTest {
         compose.pickSleepTime("就寝日期时间", "2026-10-31T23:50")
         compose.pickSleepTime("起床日期时间", "2026-11-01T07:10")
         compose.onNodeWithText("保存作息").performScrollTo().performClick()
+        awaitText("补录作息")
+        selectHistoryDate("2026-11-01")
         awaitText("卧床时长：7小时20分")
         compose.onNodeWithText("就寝时间：2026年10月31日", substring = true).assertExists()
         compose.onNodeWithText("起床时间：2026年11月1日", substring = true).assertExists()
@@ -256,7 +268,9 @@ class SleepUiTest {
         compose.pickSleepTime("就寝日期时间", "2026-12-31T23:50")
         compose.pickSleepTime("起床日期时间", "2027-01-01T07:10")
         compose.onNodeWithText("保存作息").performScrollTo().performClick()
-        awaitText("归档日期：2027-01-01")
+        awaitText("补录作息")
+        selectHistoryDate("2027-01-01")
+        awaitText("就寝时间：2026年12月31日 23:50")
         assertEquals("2027-01-01", rows().single().archiveLocalDate)
         assertEquals(1, rows().size)
     }
@@ -273,7 +287,7 @@ class SleepUiTest {
         assertTrue(rows().isEmpty())
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("确认").performClick()
-        awaitText("还没有作息记录")
+        awaitText("这一天没有作息记录")
         assertTrue(rows().isEmpty())
     }
 }

@@ -34,7 +34,7 @@ private fun recordedTime(instant: Long, zone: String): String =
     chineseSleepTime(Instant.ofEpochMilli(instant).atZone(RecordTime.zone(zone)))
 
 @Composable
-fun SleepRecordSummary(record: SleepRecord) {
+fun SleepRecordSummary(record: SleepRecord, showArchive: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.sleep_start_value, recordedTime(record.startedAtUtcMs, record.startZoneId)))
         val end = record.endedAtUtcMs
@@ -45,7 +45,7 @@ fun SleepRecordSummary(record: SleepRecord) {
             Text(if (seconds < 60) stringResource(R.string.sleep_duration_seconds, seconds)
                 else stringResource(R.string.sleep_duration, seconds / 3600, seconds % 3600 / 60))
         }
-        Text(stringResource(R.string.sleep_archive, record.archiveLocalDate), style = MaterialTheme.typography.bodySmall)
+        if (showArchive) Text(stringResource(R.string.sleep_archive, record.archiveLocalDate), style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -109,37 +109,6 @@ internal fun SleepFinishConfirmation(viewModel: SleepViewModel) {
         onConfirm = viewModel::confirmLong,
         details = "${recordedTime(pending!!.record.startedAtUtcMs, pending!!.record.startZoneId)}\n${recordedTime(pending!!.instant, pending!!.zone)}",
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SleepHistoryScreen(viewModel: SleepViewModel, onAdd: () -> Unit, onEdit: (String) -> Unit, onBack: () -> Unit) {
-    val history by viewModel.history.collectAsStateWithLifecycle()
-    SleepScaffold(R.string.sleep_title, onBack) { modifier ->
-        Column(modifier) {
-            PrimaryButton(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.sleep_add)) }
-            Text(stringResource(R.string.sleep_note), modifier = Modifier.padding(vertical = 8.dp))
-            val rows = history.records
-            when {
-                history.failed -> {
-                    SleepError(ErrorCode.STORAGE_UNAVAILABLE)
-                    ActionButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
-                }
-                rows == null -> {
-                    Text(stringResource(R.string.sleep_loading))
-                    ActionButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
-                }
-                rows.isEmpty() -> EmptyState(stringResource(R.string.sleep_none), hint = stringResource(R.string.sleep_empty_hint))
-                else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                    items(rows, key = { it.id }) { record ->
-                        RecordCard(onClick = { onEdit(record.id) }, modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(LogDimens.card)) { SleepRecordSummary(record) }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable
