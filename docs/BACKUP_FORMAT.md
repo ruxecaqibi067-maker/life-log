@@ -1,6 +1,6 @@
 # 备份格式（v1 基础与 v2–v6 增量）
 
-当前数据实现导出 `formatVersion/dataVersion=6`，读取兼容 v1–v6；Room/备份格式版本与 App 版本独立。安装包与整合状态以 [主管进度板](STATUS.md) 为准。本轮 APK 只本地交付，不发布 GitHub 安装包。以下 v1 字段为基础，后续增量见文末；manifest 与 data 的版本必须相同。
+当前数据实现导出 `formatVersion/dataVersion=6`，读取兼容 v1–v6；Room/备份格式版本与 App 版本独立。安装包与整合状态以[主管进度板](STATUS.md)为准，当前授权发布0.1.6/code9，作息分析补丁不改备份格式。以下v1字段为基础，后续增量见文末；manifest与data的版本必须相同。
 
 ZIP 只允许 `manifest.json`、`data.json` 和 `media/<规范小写UUID>.jpg`，不包含目录条目、系统文件、设备路径、运行时 generation 或恢复日志。ZIP64、多卷、加密和符号链接不支持。未加密，T14 须在保存前说明包含生活记录和照片。
 

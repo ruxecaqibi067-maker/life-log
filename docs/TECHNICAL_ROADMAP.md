@@ -326,3 +326,9 @@ T15放行仅针对候选功能、数据可靠性与性能，不要求尚未发�
 同一habitId和原生成habitDate唯一；单条编辑日期不改变去重键，删除保留墓碑避免自动复活。习惯修改只影响未来生成，21自然日按开始日期计算，与勾选次数无关。Room5→6新增两表，备份6通过完整Snapshot/校验/预览/恢复/回滚链涵盖新表；读取1–5时新列表为空。详情见[习惯规则](HABIT_RULES.md)、[备份格式](BACKUP_FORMAT.md)及[本地整合说明](releases/0.1.6-local.md)。
 
 首页HomeScreen通过todoContent插槽显示待办；外导航留出的bottom padding在传给内层Scaffold时消费，避免重复系统底部空间。原生公共滚轮是后续所有日期/钟点输入的默认实现。发布默认仅推送源码/文档，GitHub安装包更新需用户明确要求。
+
+## 15. 作息按日和七日分析补丁（0.1.6/code9）
+
+SleepHistoryViewModel复用RecordRepository.sleeps的Room流及首页today，SavedStateHandle保存可空日期选择，前台刷新手机时区；只读分析在Default调度器计算。列表用已保存archiveLocalDate，SleepDayAnalysis使用自然日真实起止时点裁切，近七日复用同一投影，23/25小时日按真实长度绘制。
+
+SleepHistoryScreen单LazyColumn管理筛日、记录、当天图和七日图，分析Canvas只绘制状态，不读DAO；导航sleepDate可空，仅用于新建草稿初始日，旧编辑保留时间/时区精度。补丁`625910a`不修改schema、数据、备份或依赖，发布内部code8→9，版本名仍0.1.6；详细口径与验收见[报告](releases/0.1.6.md)。
