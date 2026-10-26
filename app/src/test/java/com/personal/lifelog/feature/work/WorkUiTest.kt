@@ -62,6 +62,7 @@ class WorkUiTest {
             LifelogApp(home, settingsVM, records, PhotoStorage(context, db, records, writes, clock), clock,
                 { zone }, sleep, workouts, timeline, workVM, workHome)
         } }
+        compose.waitForIdle()
         compose.waitUntil(10_000) { workVM.status.value.loaded && !workHome.work.value.loading }
         waitText("今日睡眠")
     }
@@ -83,6 +84,8 @@ class WorkUiTest {
         compose.waitUntil(10_000) { runBlocking { db.work().activeWorkNow() != null } }
         compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
         compose.onNodeWithText("记饮食").assertExists()
+        compose.onNodeWithText("编辑工作").assertDoesNotExist()
+        compose.onNodeWithText("撤销上次工作操作").assertDoesNotExist()
         assertTrue(runBlocking { db.records().allSleeps().isEmpty() })
         now = now.plusSeconds(5 * 3600)
         compose.waitUntil(10_000) { compose.onAllNodesWithText("结束工作").fetchSemanticsNodes().isNotEmpty() }

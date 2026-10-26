@@ -1,0 +1,9 @@
+<resources>
+    <string name="home_active_elapsed">本次已持续 %1$s</string>
+    <string name="home_completed_duration">已完成 %1$s</string>
+    <string name="home_active_preview_hint">圆环含进行中时长</string>
+    <string name="home_quick_collapse">收起快捷记录</string>
+    <string name="home_quick_expand">展开快捷记录</string>
+    <string name="sleep_current_actions">进行中的作息</string>
+    <string name="work_current_actions">进行中的工作</string>
+</resources>

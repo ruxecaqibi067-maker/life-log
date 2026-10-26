@@ -25,10 +25,13 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun SleepHistoryScreen(viewModel: SleepHistoryViewModel, onAdd: () -> Unit, onEdit: (String) -> Unit, onBack: () -> Unit) {
+fun SleepHistoryScreen(viewModel: SleepHistoryViewModel, onAdd: () -> Unit, onEdit: (String) -> Unit, onBack: () -> Unit,
+    commands: SleepViewModel? = null) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val today by viewModel.today.collectAsStateWithLifecycle()
     var picking by rememberSaveable { mutableStateOf(false) }
+    var confirmUndo by rememberSaveable { mutableStateOf(false) }
+    commands?.let { SleepHomeDialogs(it, confirmUndo) { confirmUndo = false } }
     val scroll = rememberLazyListState()
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, viewModel) {
@@ -72,6 +75,9 @@ fun SleepHistoryScreen(viewModel: SleepHistoryViewModel, onAdd: () -> Unit, onEd
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            commands?.let { model -> item("record-actions") {
+                SleepHomeFeedback(model, onEdit, { confirmUndo = true })
+            } }
             when {
                 state.loading -> item("loading") { Text(stringResource(R.string.sleep_loading)) }
                 state.failed -> item("error") { ErrorState(stringResource(R.string.sleep_history_error), onRetry = viewModel::retry) }

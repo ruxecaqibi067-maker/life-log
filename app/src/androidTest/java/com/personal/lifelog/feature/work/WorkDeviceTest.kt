@@ -112,6 +112,8 @@ class WorkDeviceTest {
             val before=c.clock.millis();click("确认")
             compose.waitUntil(20_000) { runBlocking { c.work.work(old.id)!!.endedAtUtcMs!=null } }
             assertTrue(runBlocking { c.work.work(old.id)!!.endedAtUtcMs!! } <= before)
+            compose.onNodeWithTag("home-timeline").performScrollToIndex(0)
+            tag("work-summary-history");waitText("补录工作")
             tag("work-undo");click("取消")
             assertNotNull(runBlocking { c.work.work(old.id)!!.endedAtUtcMs })
             tag("work-undo");click("确认")

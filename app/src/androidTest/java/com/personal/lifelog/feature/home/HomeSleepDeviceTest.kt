@@ -179,8 +179,12 @@ class HomeSleepDeviceTest {
             back()
             waitText("作息进行中")
             assertTrue(summary().hasActiveSleep)
+            compose.onNodeWithTag("home-timeline").performScrollToIndex(0)
+            compose.onNodeWithTag("sleep-summary-history").performClick()
+            waitText("补录作息")
             compose.onNodeWithText("编辑作息").performScrollTo().performClick()
             click("删除作息"); click("确认")
+            waitText("补录作息");back()
             waitText("准备睡了")
             assertFalse(summary().hasActiveSleep)
             assertEquals(26_400_000L, summary().recordedDurationMs)
@@ -199,9 +203,14 @@ class HomeSleepDeviceTest {
             pressBack()
             waitText("起床了")
             val started = runBlocking { container.records.activeSleep().first()!! }
+            compose.onNodeWithTag("home-timeline").performScrollToIndex(0)
+            compose.onNodeWithTag("sleep-summary-history").performClick()
+            waitText("补录作息")
             click("撤销上次作息操作"); click("取消")
             assertEquals(started.id, runBlocking { container.records.activeSleep().first()!!.id })
             click("撤销上次作息操作"); click("确认")
+            compose.waitUntil(20_000) { runBlocking { container.records.activeSleep().first() == null } }
+            back()
             waitText("准备睡了")
             assertFalse(summary().hasActiveSleep)
 

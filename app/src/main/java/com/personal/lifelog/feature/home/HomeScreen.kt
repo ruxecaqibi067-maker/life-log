@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.filled.StopCircle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,11 +48,12 @@ import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.domain.RecordIds
 import com.personal.lifelog.feature.sleep.SleepHomeFeedback
-import com.personal.lifelog.feature.sleep.SleepHomeDialogs
+import com.personal.lifelog.feature.sleep.SleepFinishConfirmation
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.timeline.TimelineUiState
 import com.personal.lifelog.feature.timeline.timelineSection
 import com.personal.lifelog.ui.components.RecordTopBar
+import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.theme.LogDimens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -99,16 +102,17 @@ fun HomeScreen(
     val workBusy by workViewModel.busy.collectAsStateWithLifecycle()
     val activeWork = workStatus.active
     val workStartId = remember(activeWork?.id) { RecordIds.newId() }
-    var confirmWorkUndo by rememberSaveable { mutableStateOf(false) }
+    val sleepElapsed by rememberActiveElapsed(activeSleep?.startedAtUtcMs, sleepViewModel.clock)
+    val workElapsed by rememberActiveElapsed(activeWork?.startedAtUtcMs, workViewModel.clock)
+    var quickExpanded by rememberSaveable { mutableStateOf(true) }
     DurationGoalDialog(workGoal, workHomeViewModel::goalHours, workHomeViewModel::goalMinutes,
         workHomeViewModel::cancelGoal, workHomeViewModel::saveGoal, R.string.home_work_goal_title,
         R.string.home_work_goal_hint, "work", workHomeViewModel::clearGoal)
-    com.personal.lifelog.feature.work.WorkHomeDialogs(workViewModel, confirmWorkUndo) { confirmWorkUndo = false }
-    var confirmSleepUndo by rememberSaveable { mutableStateOf(false) }
+    com.personal.lifelog.feature.work.WorkFinishConfirmation(workViewModel)
 
     SleepGoalDialog(goal, homeViewModel::goalHours, homeViewModel::goalMinutes,
         homeViewModel::cancelGoal, homeViewModel::saveGoal)
-    SleepHomeDialogs(sleepViewModel, confirmSleepUndo) { confirmSleepUndo = false }
+    SleepFinishConfirmation(sleepViewModel)
 
     Scaffold(
         topBar = {
@@ -150,19 +154,19 @@ fun HomeScreen(
                     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("duration-summaries"),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SleepSummaryCard(sleepCard, onOpenSleepHistory, homeViewModel::editGoal, homeViewModel::retrySleep,
-                            Modifier.weight(1f).fillMaxHeight())
+                            Modifier.weight(1f).fillMaxHeight(), activeDurationMs = sleepElapsed.takeIf { sleepCard.content?.hasActiveSleep == true })
                         WorkSummaryCard(workCard, onOpenWorkHistory, workHomeViewModel::editGoal, workHomeViewModel::retryWork,
-                            Modifier.weight(1f).fillMaxHeight())
+                            Modifier.weight(1f).fillMaxHeight(), activeDurationMs = workElapsed.takeIf { workCard.content?.hasActiveWork == true })
                     }
                 }
                 item(key = "daily-todos") {
                     todoContent()
                 }
                 item(key = "sleep-feedback") {
-                    SleepHomeFeedback(sleepViewModel, onEditSleep) { confirmSleepUndo = true }
+                    SleepHomeFeedback(sleepViewModel, onEditSleep, {}, showRecordActions = false)
                 }
                 item(key = "work-feedback") {
-                    com.personal.lifelog.feature.work.WorkHomeFeedback(workViewModel, onEditWork) { confirmWorkUndo = true }
+                    com.personal.lifelog.feature.work.WorkHomeFeedback(workViewModel, onEditWork, {}, showRecordActions = false)
                 }
                 item(key = "timeline-header") {
                     TodayTimelineHeader(onOpenWorkoutHistory)
@@ -177,7 +181,12 @@ fun HomeScreen(
                     onRetry = onRetryTimeline,
                 )
             }
-            Column(Modifier.padding(horizontal = LogDimens.page, vertical = 4.dp).testTag("home-quick-actions"),
+            ActionButton(onClick = { quickExpanded = !quickExpanded },
+                modifier = Modifier.fillMaxWidth().testTag("home-quick-toggle")) {
+                Icon(if (quickExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, Modifier.size(20.dp))
+                Text(stringResource(if (quickExpanded) R.string.home_quick_collapse else R.string.home_quick_expand))
+            }
+            if (quickExpanded) Column(Modifier.padding(horizontal = LogDimens.page, vertical = 4.dp).testTag("home-quick-actions"),
                 verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QuickActionCard(
