@@ -6,7 +6,6 @@
     <string name="sleep_loading">读取作息中…</string>
     <string name="sleep_add">补录作息</string>
     <string name="sleep_edit">编辑作息</string>
-    <string name="sleep_none">还没有作息记录</string>
     <string name="sleep_empty_hint">可以补录夜间就寝或午睡，未记录不代表零小时。</string>
     <string name="sleep_active">未结束 · 已保存就寝时间</string>
     <string name="sleep_start_value">就寝时间：%1$s</string>

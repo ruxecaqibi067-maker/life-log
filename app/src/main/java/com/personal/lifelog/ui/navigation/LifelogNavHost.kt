@@ -57,6 +57,7 @@ import com.personal.lifelog.feature.sleep.BedtimeScreen
 import com.personal.lifelog.feature.sleep.SleepEditorScreen
 import com.personal.lifelog.feature.sleep.SleepEditorViewModel
 import com.personal.lifelog.feature.sleep.SleepHistoryScreen
+import com.personal.lifelog.feature.sleep.SleepHistoryViewModel
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.todo.TodoViewModel
 import com.personal.lifelog.feature.todo.TodoHomeSection
@@ -282,8 +283,11 @@ fun LifelogApp(
                 WorkEditorScreen(editor, editing = id != null, onBack = { navController.navigateUp() })
             }
             composable(LifelogRoutes.SLEEP_HISTORY) {
-                SleepHistoryScreen(sleepViewModel,
-                    onAdd = { navController.navigate(LifelogRoutes.sleepEditor()) },
+                val history: SleepHistoryViewModel = viewModel {
+                    SleepHistoryViewModel(records::sleeps, homeViewModel.today, zoneIdProvider, createSavedStateHandle())
+                }
+                SleepHistoryScreen(history,
+                    onAdd = { navController.navigate(LifelogRoutes.sleepEditor(date = history.state.value.date)) },
                     onEdit = { navController.navigate(LifelogRoutes.sleepEditor(it)) },
                     onBack = { navController.navigateUp() })
             }
@@ -311,12 +315,13 @@ fun LifelogApp(
             }
             composable(
                 route = LifelogRoutes.SLEEP_EDIT_PATTERN,
-                arguments = listOf(LifelogRoutes.sleepIdArgument),
+                arguments = listOf(LifelogRoutes.sleepIdArgument, LifelogRoutes.sleepDateArgument),
             ) { entry ->
                 val sleepId = entry.arguments?.getString(LifelogRoutes.ARG_SLEEP_ID)
                 val editor: SleepEditorViewModel = viewModel {
                     SleepEditorViewModel(sleepViewModel.repository, sleepViewModel.clock,
-                        sleepViewModel.zoneIdProvider, sleepId, createSavedStateHandle())
+                        sleepViewModel.zoneIdProvider, sleepId, createSavedStateHandle(),
+                        entry.arguments?.getString(LifelogRoutes.ARG_SLEEP_DATE)?.let(java.time.LocalDate::parse))
                 }
                 SleepEditorScreen(
                     viewModel = editor,

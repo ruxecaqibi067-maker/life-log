@@ -47,20 +47,24 @@ object LifelogRoutes {
 
     const val ARG_MEAL_ID = "mealId"
     const val ARG_SLEEP_ID = "sleepId"
+    const val ARG_SLEEP_DATE = "sleepDate"
     const val ARG_WORKOUT_ID = "workoutId"
 
     // Patterns registered with composable(): the query template is required for
     // navigation-compose to parse optional query arguments (see the class comment).
     const val MEAL_EDIT_PATTERN = "$MEAL_EDIT?$ARG_MEAL_ID={$ARG_MEAL_ID}"
     const val MEAL_DETAIL_PATTERN = "$MEAL_DETAIL?$ARG_MEAL_ID={$ARG_MEAL_ID}"
-    const val SLEEP_EDIT_PATTERN = "$SLEEP_EDIT?$ARG_SLEEP_ID={$ARG_SLEEP_ID}"
+    const val SLEEP_EDIT_PATTERN = "$SLEEP_EDIT?$ARG_SLEEP_ID={$ARG_SLEEP_ID}&$ARG_SLEEP_DATE={$ARG_SLEEP_DATE}"
     const val WORKOUT_EDIT_PATTERN = "$WORKOUT_EDIT?$ARG_WORKOUT_ID={$ARG_WORKOUT_ID}"
     const val WORKOUT_DETAIL_PATTERN = "$WORKOUT_DETAIL?$ARG_WORKOUT_ID={$ARG_WORKOUT_ID}"
 
     /** Optional record UUIDs are URL-encoded by the navigation library when navigating. */
     fun mealEditor(id: String? = null): String = editorRoute(MEAL_EDIT, ARG_MEAL_ID, id)
     fun mealDetail(id: String): String = "$MEAL_DETAIL?$ARG_MEAL_ID=$id"
-    fun sleepEditor(id: String? = null): String = editorRoute(SLEEP_EDIT, ARG_SLEEP_ID, id)
+    fun sleepEditor(id: String? = null, date: java.time.LocalDate? = null): String {
+        val route = editorRoute(SLEEP_EDIT, ARG_SLEEP_ID, id)
+        return if (date == null) route else route + (if ('?' in route) "&" else "?") + "$ARG_SLEEP_DATE=$date"
+    }
     fun workoutEditor(id: String? = null): String = editorRoute(WORKOUT_EDIT, ARG_WORKOUT_ID, id)
     fun workoutDetail(id: String): String = "$WORKOUT_DETAIL?$ARG_WORKOUT_ID=$id"
 
@@ -73,6 +77,11 @@ object LifelogRoutes {
         defaultValue = null
     }
     val sleepIdArgument = navArgument(ARG_SLEEP_ID) {
+        type = NavType.StringType
+        nullable = true
+        defaultValue = null
+    }
+    val sleepDateArgument = navArgument(ARG_SLEEP_DATE) {
         type = NavType.StringType
         nullable = true
         defaultValue = null
