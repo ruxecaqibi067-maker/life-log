@@ -33,13 +33,13 @@ class HomeDualDeviceTest {
     private fun shell(command: String) = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command).use {
         android.os.ParcelFileDescriptor.AutoCloseInputStream(it).bufferedReader().readText()
     }
-    private fun waitTag(tag: String) = compose.waitUntil(20_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+    private fun waitTag(tag: String) = compose.waitUntil(20_000) { compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
     private fun ready() { waitTag("sleep-feedback");waitTag("work-feedback") }
     private fun clickTag(tag: String) {
         compose.waitUntil(20_000) { runCatching { compose.onNodeWithTag(tag).assertIsEnabled() }.isSuccess }
         compose.onNodeWithTag(tag).assertIsDisplayed().performClick()
     }
-    private fun text(tag: String) = compose.onNodeWithTag(tag).fetchSemanticsNode().config[SemanticsProperties.Text].single().text
+    private fun text(tag: String) = compose.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().config[SemanticsProperties.Text].single().text
     private fun top() { compose.onNodeWithTag("home-timeline").performScrollToIndex(0) }
     private fun capture(name: String) {
         compose.waitForIdle();android.os.SystemClock.sleep(250)
@@ -77,8 +77,8 @@ class HomeDualDeviceTest {
         seed()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             ready();assertParallelCards()
-            compose.onNodeWithTag("sleep-duration").assertTextEquals("6小时")
-            compose.onNodeWithTag("work-duration").assertTextEquals("10小时")
+            compose.onNodeWithTag("sleep-duration", useUnmergedTree = true).assertTextEquals("6小时")
+            compose.onNodeWithTag("work-duration", useUnmergedTree = true).assertTextEquals("10小时")
             assertTrue(app.resources.getStringArray(R.array.sleep_feedback_short).contains(text("sleep-feedback")))
             assertTrue(app.resources.getStringArray(R.array.work_feedback_long).contains(text("work-feedback")))
             compose.onAllNodesWithText("已记录",substring=true).assertCountEquals(0)

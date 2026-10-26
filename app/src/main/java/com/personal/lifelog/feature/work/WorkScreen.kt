@@ -68,7 +68,8 @@ fun WorkError(code: ErrorCode) {
 
 /** Command feedback remains scrollable; the fixed home actions own start/finish. */
 @Composable
-fun WorkHomeFeedback(viewModel: WorkViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit) {
+fun WorkHomeFeedback(viewModel: WorkViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit,
+    showRecordActions: Boolean = true) {
     val status by viewModel.status.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -79,12 +80,14 @@ fun WorkHomeFeedback(viewModel: WorkViewModel, onEdit: (String) -> Unit, onReque
             WorkError(ErrorCode.STORAGE_UNAVAILABLE)
             SecondaryButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
         }
-        active?.let {
+        if (showRecordActions) active?.let {
+            Text(stringResource(R.string.work_current_actions), style = MaterialTheme.typography.titleSmall)
             Text(stringResource(R.string.work_start_value, recordedTime(it.startedAtUtcMs, it.startZoneId)))
-            SecondaryButton(onClick = { onEdit(it.id) }, enabled = !busy) { Text(stringResource(R.string.work_edit)) }
+            SecondaryButton(onClick = { onEdit(it.id) }, enabled = !busy,
+                modifier = Modifier.testTag("work-edit-active")) { Text(stringResource(R.string.work_edit)) }
         }
         error?.let { WorkError(it) }
-        if (undo != null) SecondaryButton(onClick = onRequestUndo, enabled = !busy,
+        if (showRecordActions && undo != null) SecondaryButton(onClick = onRequestUndo, enabled = !busy,
             modifier = Modifier.testTag("work-undo")) { Text(stringResource(R.string.work_undo)) }
     }
 }
@@ -117,19 +120,13 @@ internal fun WorkFinishConfirmation(viewModel: WorkViewModel) {
 fun WorkHistoryScreen(viewModel: WorkViewModel, onAdd: () -> Unit, onEdit: (String) -> Unit, onBack: () -> Unit) {
     val history by viewModel.history.collectAsStateWithLifecycle()
     var confirmUndo by rememberSaveable { mutableStateOf(false) }
-    val undo by viewModel.undo.collectAsStateWithLifecycle()
-    val busy by viewModel.busy.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
     WorkHomeDialogs(viewModel, confirmUndo) { confirmUndo = false }
     WorkScaffold(R.string.work_title, onBack) { modifier ->
         LazyColumn(modifier.testTag("work-history"), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
             item {
                 PrimaryButton(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.work_add)) }
                 Text(stringResource(R.string.work_note), modifier = Modifier.padding(vertical = 8.dp))
-                error?.let { WorkError(it) }
-                if (undo != null) SecondaryButton(onClick = { confirmUndo = true }, enabled = !busy) {
-                    Text(stringResource(R.string.work_undo))
-                }
+                WorkHomeFeedback(viewModel, onEdit, { confirmUndo = true })
             }
             val rows = history.records
             when {

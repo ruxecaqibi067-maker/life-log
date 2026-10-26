@@ -117,12 +117,16 @@ class SleepUiTest {
         compose.onNodeWithText("起床了").performClick()
         awaitText("准备睡了")
         assertEquals("2026-10-23", rows().single().archiveLocalDate)
+        compose.onNodeWithText("撤销上次作息操作").assertDoesNotExist()
+        compose.onNodeWithText("编辑作息").assertDoesNotExist()
+        compose.onNodeWithTag("sleep-summary-history").performClick()
+        awaitText("补录作息")
         compose.onNodeWithText("撤销上次作息操作").performClick()
         compose.onNodeWithText("取消").performClick()
         assertNotNull(rows().single().endedAtUtcMs)
         compose.onNodeWithText("撤销上次作息操作").performClick()
         compose.onNodeWithText("确认").performClick()
-        awaitText("起床了")
+        awaitText("编辑作息")
         assertNull(rows().single().endedAtUtcMs)
         compose.onNodeWithText("编辑作息").performClick()
         compose.onNodeWithText("删除作息").performScrollTo().performClick()
@@ -130,6 +134,8 @@ class SleepUiTest {
         assertEquals(1, rows().size)
         compose.onNodeWithText("删除作息").performScrollTo().performClick()
         compose.onNodeWithText("确认").performClick()
+        awaitText("补录作息")
+        pressBack()
         awaitText("准备睡了")
         assertTrue(rows().isEmpty())
     }
@@ -189,7 +195,7 @@ class SleepUiTest {
         assertEquals(1, rows().size)
     }
 
-    @Test fun wakeOnBedtimeAfterRecreationFinishesSameRecordAndHomeUndoStillWorks() {
+    @Test fun wakeOnBedtimeAfterRecreationFinishesSameRecordAndHistoryUndoStillWorks() {
         compose.onNodeWithText("准备睡了").performClick()
         awaitText("23:50")
         val started = rows().single()
@@ -204,11 +210,15 @@ class SleepUiTest {
         assertEquals(started.startedAtUtcMs, completed.startedAtUtcMs)
         assertEquals(now.toEpochMilli(), completed.endedAtUtcMs)
         assertEquals("2026-10-23", completed.archiveLocalDate)
+        compose.onNodeWithTag("sleep-summary-history").performClick()
+        awaitText("补录作息")
         compose.onNodeWithText("撤销上次作息操作").performClick()
         compose.onNodeWithText("确认").performClick()
-        awaitText("起床了")
+        awaitText("编辑作息")
         assertNull(rows().single().endedAtUtcMs)
         assertEquals(started.id, rows().single().id)
+        pressBack()
+        awaitText("起床了")
     }
 
     @Test fun failedWakeKeepsDarkPageAndRecordThenRetrySavesOnce() {

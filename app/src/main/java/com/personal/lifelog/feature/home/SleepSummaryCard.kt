@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.unit.dp
 import com.personal.lifelog.R
 
@@ -63,6 +65,7 @@ fun SleepSummaryCard(
     onEditTarget: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    activeDurationMs: Long? = null,
 ) {
     DurationSummaryCard(
         kind = DurationKind.SLEEP,
@@ -76,6 +79,7 @@ fun SleepSummaryCard(
         onEditTarget = onEditTarget,
         onRetry = onRetry,
         modifier = modifier,
+        activeDurationMs = activeDurationMs,
     )
 }
 
@@ -83,7 +87,10 @@ fun SleepSummaryCard(
 internal fun DurationProgressRing(progress: Float?, description: String, icon: ImageVector = Icons.Filled.Bedtime, tag: String = "sleep-progress", diameterDp: androidx.compose.ui.unit.Dp = 112.dp) {
     val track = MaterialTheme.colorScheme.outlineVariant
     val fill = MaterialTheme.colorScheme.primary
-    Box(Modifier.size(diameterDp).semantics { contentDescription = description }.testTag(tag), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(diameterDp).semantics {
+        contentDescription = description
+        if (progress != null) progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)
+    }.testTag(tag), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val stroke = (if (diameterDp < 100.dp) 10.dp else 12.dp).toPx()
             val inset = stroke / 2

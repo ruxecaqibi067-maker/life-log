@@ -289,7 +289,7 @@ fun LifelogApp(
                 SleepHistoryScreen(history,
                     onAdd = { navController.navigate(LifelogRoutes.sleepEditor(date = history.state.value.date)) },
                     onEdit = { navController.navigate(LifelogRoutes.sleepEditor(it)) },
-                    onBack = { navController.navigateUp() })
+                    onBack = { navController.navigateUp() }, commands = sleepViewModel)
             }
             composable(
                 route = LifelogRoutes.MEAL_DETAIL_PATTERN,

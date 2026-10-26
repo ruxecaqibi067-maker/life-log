@@ -3,6 +3,7 @@ package com.personal.lifelog.feature.home
 import android.app.Application
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.semantics.SemanticsProperties
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.ui.theme.LifeLogTheme
 import org.junit.Assert.*
@@ -31,6 +32,7 @@ class SleepCardPresentationTest {
         assertEquals(0, opens)
         compose.onNodeWithTag("sleep-summary-history").performClick()
         assertEquals(1, opens)
+        compose.onNodeWithText("查看 / 补录").assertDoesNotExist()
         compose.onNodeWithText("暂无已完成记录").assertExists()
         compose.onNodeWithText("作息进行中").assertExists()
         compose.onAllNodesWithText("0小时", substring = true).assertCountEquals(0)
@@ -62,14 +64,29 @@ class SleepCardPresentationTest {
                 }
             }
         }
-        compose.onNodeWithTag("sleep-duration").assertTextEquals("7小时20分")
+        compose.onNodeWithTag("sleep-duration", useUnmergedTree = true).assertTextEquals("7小时20分")
         compose.onNodeWithText("已记录").assertDoesNotExist()
         compose.onAllNodesWithText("段已完成记录", substring = true).assertCountEquals(0)
-        val before = compose.onNodeWithTag("sleep-feedback").fetchSemanticsNode().config[
+        val before = compose.onNodeWithTag("sleep-feedback", useUnmergedTree = true).fetchSemanticsNode().config[
             androidx.compose.ui.semantics.SemanticsProperties.Text].single().text
         assertTrue(before.isNotBlank())
         compose.runOnIdle { revision.intValue++ }
-        compose.onNodeWithTag("sleep-feedback").assertTextEquals(before)
+        compose.onNodeWithTag("sleep-feedback", useUnmergedTree = true).assertTextEquals(before)
+    }
+
+    @Test fun activeWorkRingIncludesCurrentTimeAndKeepsCompletedTimeClearlySeparate() {
+        val content = WorkCardContent(240, 3_600_000, 1, true)
+        compose.setContent {
+            LifeLogTheme(ThemeMode.LIGHT) {
+                WorkSummaryCard(WorkCardState(false, content = content), {}, {}, {}, activeDurationMs = 3_600_000)
+            }
+        }
+        compose.onNodeWithTag("work-active-duration", useUnmergedTree = true).assertTextEquals("本次已持续 1小时")
+        compose.onNodeWithTag("work-duration", useUnmergedTree = true).assertTextEquals("已完成 1小时")
+        val range = compose.onNodeWithTag("work-progress", useUnmergedTree = true).fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo]
+        assertEquals(0.5f, range.current, 0.000001f)
+        assertEquals(3_600_000L, content.recordedDurationMs)
+        compose.onNodeWithText("查看 / 补录").assertDoesNotExist()
     }
 
     @Test fun progressUsesTargetAsWholeRetainsMillisecondsAndOnlyCapsDrawing() {

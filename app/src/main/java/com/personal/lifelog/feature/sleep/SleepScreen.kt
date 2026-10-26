@@ -65,7 +65,8 @@ fun SleepError(code: ErrorCode) {
 }
 
 @Composable
-fun SleepHomeFeedback(viewModel: SleepViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit) {
+fun SleepHomeFeedback(viewModel: SleepViewModel, onEdit: (String) -> Unit, onRequestUndo: () -> Unit,
+    showRecordActions: Boolean = true) {
     val status by viewModel.status.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
@@ -75,13 +76,16 @@ fun SleepHomeFeedback(viewModel: SleepViewModel, onEdit: (String) -> Unit, onReq
             SleepError(ErrorCode.STORAGE_UNAVAILABLE)
             ActionButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
         } else if (!status.loaded) Text(stringResource(R.string.sleep_loading))
-        status.active?.let { record ->
+        if (showRecordActions) status.active?.let { record ->
+            Text(stringResource(R.string.sleep_current_actions), style = MaterialTheme.typography.titleSmall)
             Text(stringResource(R.string.sleep_start_value, recordedTime(record.startedAtUtcMs, record.startZoneId)),
                 style = MaterialTheme.typography.bodyMedium)
-            ActionButton(onClick = { onEdit(record.id) }) { Text(stringResource(R.string.sleep_edit)) }
+            ActionButton(onClick = { onEdit(record.id) }, enabled = !busy,
+                modifier = Modifier.testTag("sleep-edit-active")) { Text(stringResource(R.string.sleep_edit)) }
         }
         error?.let { SleepError(it) }
-        if (undo != null) ActionButton(onClick = onRequestUndo, enabled = !busy) {
+        if (showRecordActions && undo != null) ActionButton(onClick = onRequestUndo, enabled = !busy,
+            modifier = Modifier.testTag("sleep-undo")) {
             Text(stringResource(R.string.sleep_undo))
         }
     }

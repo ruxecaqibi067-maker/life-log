@@ -24,6 +24,7 @@ fun WorkSummaryCard(
     onEditTarget: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    activeDurationMs: Long? = null,
 ) {
     DurationSummaryCard(
         kind = DurationKind.WORK,
@@ -37,5 +38,6 @@ fun WorkSummaryCard(
         onEditTarget = onEditTarget,
         onRetry = onRetry,
         modifier = modifier,
+        activeDurationMs = activeDurationMs,
     )
 }
