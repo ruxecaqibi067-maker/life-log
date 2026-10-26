@@ -25,6 +25,7 @@ class TimelineRepository(
     private val workoutsOn: (String) -> Flow<List<WorkoutWithItems>>,
     private val workOn: (String) -> Flow<List<WorkRecord>> = { flowOf(emptyList()) },
     private val workDates: () -> Flow<List<String>> = { flowOf(emptyList()) },
+    private val mealPhotos: () -> Flow<List<com.personal.lifelog.data.local.entity.MealPhoto>> = { flowOf(emptyList()) },
 ) {
     constructor(records: RecordRepository, workouts: WorkoutRepository, work: WorkRepository? = null) : this(
         datesWithRecordsFlow = records::datesWithRecords,
@@ -33,6 +34,7 @@ class TimelineRepository(
         workoutsOn = workouts::workoutsOn,
         workOn = { date -> work?.worksOn(date) ?: flowOf(emptyList()) },
         workDates = { work?.datesWithRecords() ?: flowOf(emptyList()) },
+        mealPhotos = records::observeAllMealPhotos,
     )
 
     /** Dates that have at least one saved record in any table, newest first. */
@@ -45,7 +47,12 @@ class TimelineRepository(
         sleepsOn(date),
         workoutsOn(date),
         workOn(date),
-    ) { meals, sleeps, workouts, work -> mergeTimeline(meals, sleeps, workouts, work) }
+    ) { meals, sleeps, workouts, work -> mergeTimeline(meals, sleeps, workouts, work) }.let { timeline ->
+        combine(timeline, mealPhotos()) { entries, links ->
+            val counts = links.groupingBy { it.mealId }.eachCount()
+            entries.map { if (it is TimelineEntry.Meal) it.copy(photoCount = counts[it.id] ?: it.photoCount) else it }
+        }
+    }
 }
 
 /**

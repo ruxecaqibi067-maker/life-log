@@ -158,6 +158,7 @@ class RestoreEngine(
 
     private suspend fun replaceDatabase(data: DataSnapshot, restoreId: String) = db.withTransaction {
         db.restore().clearTodos(); db.restore().clearHabits()
+        db.mealPhotos().clearAll()
         db.restore().clearMeals(); db.restore().clearSleeps(); db.restore().clearWorkRecords(); db.restore().clearSessions()
         db.restore().clearExercises(); db.restore().clearMedia()
         fault(RestoreFaultPoint.IN_TRANSACTION)
@@ -165,7 +166,8 @@ class RestoreEngine(
         data.todos.forEach { db.todos().insertTodo(it) }
         data.media.forEach { db.metadata().insertMedia(it) }
         data.exercises.forEach { db.workouts().insertExercise(it) }
-        data.meals.forEach { db.records().putMeal(it) }; data.sleeps.forEach { db.records().insertSleep(it) }
+        data.meals.forEach { db.records().putMeal(it) }; db.mealPhotos().insert(data.mealPhotos)
+        data.sleeps.forEach { db.records().insertSleep(it) }
         data.workRecords.forEach { db.work().insertWork(it) }
         data.sessions.forEach { db.workouts().putSession(it) }
         db.workouts().insertItems(data.items); db.workouts().insertSets(data.sets)

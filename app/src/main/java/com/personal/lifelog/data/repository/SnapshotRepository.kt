@@ -18,16 +18,18 @@ data class DataSnapshot(
     /** Includes deletion tombstones so restored habits cannot recreate removed instances. */
     val todos: List<TodoRecord> = emptyList(),
     val habits: List<HabitRecord> = emptyList(),
+    val mealPhotos: List<MealPhoto> = meals.mapNotNull { meal -> meal.photoId?.let { MealPhoto(meal.id, it, 0) } },
 )
 
 class SnapshotRepository(private val db: AppDatabase) {
     /** DB-consistent read. T11 must also hold WriteCoordinator through associated photo copying. */
     suspend fun read(): DataSnapshot = db.withTransaction {
         val meals = db.records().allMeals()
-        val photoIds = meals.mapNotNull { it.photoId }.toSet()
+        val links = db.mealPhotos().all()
+        val photoIds = links.map { it.photoId }.toSet()
         DataSnapshot(meals, db.records().allSleeps(), db.workouts().allExercises(),
             db.workouts().allSessions(), db.workouts().allItems(), db.workouts().allSets(),
             db.metadata().allMedia().filter { it.id in photoIds }, db.metadata().settingsNow(),
-            workRecords = db.work().allWorks(), todos = db.todos().allTodos(), habits = db.todos().allHabits())
+            workRecords = db.work().allWorks(), todos = db.todos().allTodos(), habits = db.todos().allHabits(), mealPhotos = links)
     }
 }

@@ -38,6 +38,7 @@ class MealDetailViewModel(
         val loadFailed: Boolean = false,
         val photoUri: android.net.Uri? = null,
         val photoMissing: Boolean = false,
+        val photoItems: List<MealPhotoItem> = emptyList(),
     )
 
     private data class DeleteState(
@@ -51,14 +52,19 @@ class MealDetailViewModel(
 
     private val loaded: Flow<Loaded> = refresh.flatMapLatest {
         if (runCatching { Rules.id(mealId) }.isSuccess) {
-            records.observeMeal(mealId)
-                .mapLatest { meal ->
+            combine(records.observeMeal(mealId), records.observeMealPhotos(mealId)) { meal, links -> meal to links }
+                .mapLatest { (meal, links) ->
                     if (meal == null) {
                         Loaded(meal = null)
                     } else {
+                        val items = links.map { link ->
+                            val result = photos.photoUri(link.photoId)
+                            MealPhotoItem(link.photoId, preview = (result as? PhotoResult.Success)?.value, missing = result !is PhotoResult.Success)
+                        }
                         val photo = meal.photoId?.let { photos.photoUri(it) }
                         Loaded(
                             meal = meal,
+                            photoItems = items,
                             photoUri = (photo as? PhotoResult.Success)?.value,
                             photoMissing = photo is PhotoResult.Failure,
                         )
@@ -76,6 +82,7 @@ class MealDetailViewModel(
             missing = load.meal == null,
             loadError = if (load.loadFailed) MealUiError.LOAD_FAILED else null,
             meal = load.meal?.toDetail(),
+            photoItems = load.photoItems,
             photoUri = load.photoUri,
             photoMissing = load.photoMissing,
             deleting = deletion.deleting,

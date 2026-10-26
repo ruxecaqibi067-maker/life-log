@@ -14,12 +14,13 @@ import java.nio.charset.CodingErrorAction
 
 /** Explicit v1 wire fields. Derived keys and local media generations never enter the archive. */
 object BackupJson {
-    const val VERSION = 6
+    const val VERSION = 7
     /** v1: no custom satiety; v1/v2: no sleep goal; v1-v3: no work records/goal. */
     const val MIN_SUPPORTED_VERSION = 1
     private const val IMPORT_GENERATION = "00000000-0000-0000-0000-000000000000"
     fun encode(data: DataSnapshot): JSONObject = JSONObject().put("dataVersion", VERSION)
         .put("meals", JSONArray(data.meals.map { encode(it) }))
+        .put("mealPhotos", JSONArray(data.mealPhotos.map { JSONObject().put("mealId", it.mealId).put("photoId", it.photoId).put("sortOrder", it.sortOrder) }))
         .put("sleeps", JSONArray(data.sleeps.map { encode(it) }))
         .put("workRecords", JSONArray(data.workRecords.map { encode(it) }))
         .put("todos", JSONArray(data.todos.map { encode(it) }))
@@ -34,8 +35,11 @@ object BackupJson {
     fun decode(json: JSONObject): DataSnapshot {
         val version = json.int("dataVersion")
         requireBackup(version in MIN_SUPPORTED_VERSION..VERSION, BackupError.UNSUPPORTED_VERSION)
+        val meals = json.array("meals").objects().map(::decodeMealRecord)
         return DataSnapshot(
-            meals = json.array("meals").objects().map(::decodeMealRecord),
+            meals = meals,
+            mealPhotos = if (version < 7) meals.mapNotNull { m -> m.photoId?.let { MealPhoto(m.id, it, 0) } }
+                else json.array("mealPhotos").objects().map { MealPhoto(it.string("mealId"), it.string("photoId"), it.int("sortOrder")) },
             sleeps = json.array("sleeps").objects().map(::decodeSleepRecord),
             exercises = json.array("exercises").objects().map(::decodeExerciseDefinition),
             sessions = json.array("sessions").objects().map { decodeWorkoutSession(it, version) },
@@ -276,7 +280,8 @@ object BackupJson {
         return BackupManifest(j.string("appVersion"), j.long("exportedAtUtcMs"),
             (listOf("meals", "sleeps", "exercises", "sessions", "items", "sets", "media").associateWith { counts.int(it) } +
                 ("workRecords" to if (j.int("formatVersion") < 4) 0 else counts.int("workRecords")) +
-                listOf("todos", "habits").associateWith { if (j.int("formatVersion") < 6) 0 else counts.int(it) }),
+                listOf("todos", "habits").associateWith { if (j.int("formatVersion") < 6) 0 else counts.int(it) } +
+                (if (j.int("formatVersion") < 7) emptyMap() else mapOf("mealPhotos" to counts.int("mealPhotos")))),
             j.array("files").objects().map { FileDigest(it.string("path"), it.long("byteSize"), it.string("sha256")) })
     }
 

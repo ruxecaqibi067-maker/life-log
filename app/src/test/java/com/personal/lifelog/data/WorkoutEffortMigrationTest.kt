@@ -54,7 +54,7 @@ class WorkoutEffortMigrationTest {
                 val db = AppDatabase.create(context, Clock.systemUTC(), name)
                 try {
                     val record = db.workouts().workout(sessionId)!!
-                    assertEquals(6, db.openHelper.readableDatabase.version)
+                    assertEquals(7, db.openHelper.readableDatabase.version)
                     assertEquals("虚构旧训练", record.session.note)
                     assertEquals(1001L, record.session.occurredAtUtcMs)
                     assertNull(record.session.effort); assertNull(record.session.effortText)

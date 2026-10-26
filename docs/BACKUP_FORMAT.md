@@ -1,6 +1,6 @@
-# 备份格式（v1 基础与 v2–v6 增量）
+# 备份格式（v1 基础与 v2–v7 增量）
 
-当前数据实现导出 `formatVersion/dataVersion=6`，读取兼容 v1–v6；Room/备份格式版本与 App 版本独立。安装包与整合状态以[主管进度板](STATUS.md)为准，当前授权发布0.1.6/code9，作息分析补丁不改备份格式。以下v1字段为基础，后续增量见文末；manifest与data的版本必须相同。
+本轮T27多照片实现导出`formatVersion/dataVersion=7`，读取兼容v1–v7；已公开0.1.6/code9仍为格式v6。Room/备份格式版本与App版本独立，实际安装包和接受状态以[主管进度板](STATUS.md)为准，本任务不发布APK。以下v1字段为基础，后续增量见文末；manifest与data版本必须相同。
 
 ZIP 只允许 `manifest.json`、`data.json` 和 `media/<规范小写UUID>.jpg`，不包含目录条目、系统文件、设备路径、运行时 generation 或恢复日志。ZIP64、多卷、加密和符号链接不支持。未加密，T14 须在保存前说明包含生活记录和照片。
 
@@ -64,3 +64,13 @@ v2 为饮食新增可空 `satietyText`，支持 `NOT_FULL` 和 `CUSTOM`；只有
 - `DataSnapshot`、导出自检、预检、全量恢复、恢复前回滚档案均包含两表所有行。读取v1–v5时两表默认为空；确认恢复旧包会全量清空当前待办/习惯。取消、提交前异常或数据库事务失败保留旧完整状态；恢复回滚档案会恢复墓碑及完成状态。
 - `BackupPreview` 新增 `todoCount/habitCount`（默认0）、`earliestLocalDate/latestLocalDate`（待办日期与习惯起始日范围，默认null）。原UTC时点范围仍用于原四类记录，不把无时区日期转换成虚构UTC时点。`counts` 对旧包也补齐两项0。
 - Room v5→v6仅新增两表、外键、索引及校验触发器，保留schema1–5。新App读v1–v6，旧App拒绝v6；比较脚本增加 `--allow-v1-to-v6` 至 `--allow-v5-to-v6`，仅补齐定义的空新表与既定旧字段。
+
+
+## v7 同一餐有序多照片（T27）
+
+- 新增必需数组`data.mealPhotos`和整数`manifest.counts.mealPhotos`，无关联时显式`[]`/0。每项仅`mealId: UUID`、`photoId: UUID`、`sortOrder: int`；引用已存在的meal/media，单餐最多9张，顺序必须连续0..n-1，单餐内photoId唯一。允许不同餐共享同一media，不能全局限制photoId唯一。
+- `MealRecord.photoId`保留为兼容封面，必须等于该餐第一项photoId；无照片时为null。非封面文件与封面同样进入media和ZIP自检/哈希，所有media必须至少被一个关联引用，不能只根据封面过滤。`counts.media`为独立照片总数，关联计数可能因跨餐共享而更大。
+- 读取真实v1–v6时从每条meal.photoId构建sortOrder=0的关联，无照片构建空；旧manifest不要求包含mealPhotos计数，验证后补为真实派生数量。新导出只用v7，旧App不能读取v7；不是把多照片截成一张来兼容旧版。
+- Room6→7只新增MealPhoto及外键/索引/顺序约束并迁移旧封面；旧schema1–6不改。事务保存MealRecord封面与完整关联，单独删除旧图不提前删除其文件；媒体清理、引用计数、Snapshot、全量恢复及回滚都遍历全部关联。旧单照片API在封面未变的文字编辑中保留全部照片。
+- 恢复先清关联再清餐/媒体，先插媒体与餐再插关联；与原四类/待办/习惯同一事务。失败/取消保留旧完整数据库与媒体，回滚包含照片顺序/封面；预览照片总数继续来自counts.media。数量/引用/连续顺序/重复/封面不符/照片哈希及格式任一无效即拒绝，不部分恢复。
+- 比较工具新增显式`--allow-v1-to-v7`至`--allow-v6-to-v7`，只把原单图映射成一项，不改变实际照片字节、原记录或偏好。照片上限仍10000、单图8MiB、总记录10000等既有资源限制保留，关联另外受每餐9项和32MiB data.json上限约束。

@@ -359,7 +359,7 @@ class MealEditorViewModelTest {
     }
 
     @Test
-    fun replacingPhotoSwitchesTheReferenceAndCleansTheOldFile() = runBlocking<Unit> {
+    fun addingPhotoPreservesOldCoverAndKeepsBothFiles() = runBlocking<Unit> {
         val seeded = seedMeal(text = "带照片", withPhoto = true)
         val oldAsset = requireNotNull(seeded.photoId?.let { db.metadata().media(it) })
         assertTrue(formalFile(oldAsset).isFile)
@@ -372,10 +372,14 @@ class MealEditorViewModelTest {
         awaitSaved(vm)
 
         val meal = singleMeal()
-        assertNotEquals(oldAsset.id, meal.photoId)
-        assertNull(db.metadata().media(oldAsset.id))
-        assertFalse(formalFile(oldAsset).exists())
-        val newAsset = requireNotNull(meal.photoId?.let { db.metadata().media(it) })
+        assertEquals(oldAsset.id, meal.photoId)
+        assertNotNull(db.metadata().media(oldAsset.id))
+        assertTrue(formalFile(oldAsset).isFile)
+        val ids = records.mealPhotoIds(meal.id)
+        assertEquals(2, ids.size)
+        assertEquals(oldAsset.id, ids.first())
+        val newAsset = requireNotNull(db.metadata().media(ids.last()))
+        assertNotEquals(oldAsset.id, newAsset.id)
         assertTrue(formalFile(newAsset).isFile)
     }
 

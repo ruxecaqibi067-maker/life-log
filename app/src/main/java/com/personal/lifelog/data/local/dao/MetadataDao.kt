@@ -14,9 +14,9 @@ interface MetadataDao {
     @Query("SELECT * FROM MediaAsset WHERE id = :id") suspend fun media(id: String): MediaAsset?
     @Query("SELECT * FROM MediaAsset ORDER BY id") suspend fun allMedia(): List<MediaAsset>
     @Insert suspend fun insertMedia(media: MediaAsset)
-    @Query("SELECT * FROM MediaAsset WHERE NOT EXISTS (SELECT 1 FROM MealRecord WHERE photoId = MediaAsset.id) ORDER BY id")
+    @Query("SELECT * FROM MediaAsset WHERE NOT EXISTS (SELECT 1 FROM MealRecord WHERE photoId = MediaAsset.id) AND NOT EXISTS (SELECT 1 FROM MealPhoto WHERE photoId = MediaAsset.id) ORDER BY id")
     suspend fun unreferencedMedia(): List<MediaAsset>
-    @Query("DELETE FROM MediaAsset WHERE id = :id AND NOT EXISTS (SELECT 1 FROM MealRecord WHERE photoId = :id)")
+    @Query("DELETE FROM MediaAsset WHERE id = :id AND NOT EXISTS (SELECT 1 FROM MealRecord WHERE photoId = :id) AND NOT EXISTS (SELECT 1 FROM MealPhoto WHERE photoId = :id)")
     suspend fun deleteUnreferencedMedia(id: String): Int
     @Query("SELECT * FROM AppSettings WHERE id = 1") fun settings(): Flow<AppSettings>
     @Query("SELECT * FROM AppSettings WHERE id = 1") suspend fun settingsNow(): AppSettings

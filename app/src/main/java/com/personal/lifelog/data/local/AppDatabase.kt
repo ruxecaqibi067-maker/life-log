@@ -22,8 +22,8 @@ import java.time.Clock
 @Database(
     entities = [MealRecord::class, SleepRecord::class, WorkRecord::class, ExerciseDefinition::class,
         WorkoutSession::class, WorkoutItem::class, WorkoutSet::class,
-        MediaAsset::class, AppSettings::class, RestoreState::class, TodoRecord::class, HabitRecord::class],
-    version = 6,
+        MediaAsset::class, AppSettings::class, RestoreState::class, TodoRecord::class, HabitRecord::class, MealPhoto::class],
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -36,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun work(): WorkDao
     abstract fun workSummaries(): WorkSummaryDao
     abstract fun todos(): TodoDao
+    abstract fun mealPhotos(): com.personal.lifelog.data.local.dao.MealPhotoDao
 
     companion object {
         const val NAME = "life-log.db"
@@ -43,7 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun create(context: Context, clock: Clock, name: String = NAME): AppDatabase =
             Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, name)
                 .addCallback(creationCallback(clock))
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 // First real schema was v1. Every later version has an explicit tested migration.
                 // Never add fallbackToDestructiveMigration to the user database.
                 .build()
@@ -107,6 +108,22 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_TodoRecord_localDate ON TodoRecord (localDate)")
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_TodoRecord_habitId_habitDate ON TodoRecord (habitId, habitDate)")
                 installTodoGuards(db)
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS MealPhoto (mealId TEXT NOT NULL, photoId TEXT NOT NULL, sortOrder INTEGER NOT NULL, PRIMARY KEY(mealId, photoId), FOREIGN KEY(mealId) REFERENCES MealRecord(id) ON UPDATE NO ACTION ON DELETE CASCADE, FOREIGN KEY(photoId) REFERENCES MediaAsset(id) ON UPDATE NO ACTION ON DELETE RESTRICT)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_MealPhoto_photoId ON MealPhoto (photoId)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_MealPhoto_mealId_sortOrder ON MealPhoto (mealId, sortOrder)")
+                db.execSQL("INSERT INTO MealPhoto(mealId,photoId,sortOrder) SELECT id,photoId,0 FROM MealRecord WHERE photoId IS NOT NULL")
+                installMealPhotoGuards(db)
+            }
+        }
+
+        private fun installMealPhotoGuards(db: SupportSQLiteDatabase) {
+            listOf("INSERT", "UPDATE").forEach { op ->
+                db.execSQL("CREATE TRIGGER guard_MealPhoto_$op BEFORE $op ON MealPhoto WHEN NEW.sortOrder NOT BETWEEN 0 AND 8 BEGIN SELECT RAISE(ABORT, 'invalid MealPhoto order'); END")
             }
         }
 
@@ -198,6 +215,7 @@ abstract class AppDatabase : RoomDatabase() {
             installWorkGuard(db)
             installEffortGuard(db)
             installTodoGuards(db)
+            installMealPhotoGuards(db)
             guard("RestoreState", "NEW.id != 1")
             guard("SleepRecord", "(NEW.endedAtUtcMs IS NULL AND (NEW.activeSlot IS NOT 1 OR NEW.endZoneId IS NOT NULL)) OR (NEW.endedAtUtcMs IS NOT NULL AND (NEW.activeSlot IS NOT NULL OR NEW.endZoneId IS NULL OR NEW.endedAtUtcMs <= NEW.startedAtUtcMs))")
             guard("ExerciseDefinition", "(NEW.isHidden = 0 AND NEW.activeNameKey IS NOT NEW.normalizedName) OR (NEW.isHidden = 1 AND NEW.activeNameKey IS NOT NULL)")

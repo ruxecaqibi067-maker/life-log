@@ -40,6 +40,7 @@ fun satietyDisplayText(satiety: Satiety?, satietyText: String?): String? = when 
 
 @StringRes
 internal fun MealUiError.messageRes(): Int = when (this) {
+    MealUiError.PHOTO_LIMIT -> R.string.meal_photos_limit
     MealUiError.EMPTY_MEAL -> R.string.meal_error_empty
     MealUiError.TEXT_TOO_LONG -> R.string.meal_error_text_too_long
     MealUiError.INVALID_TIME -> R.string.meal_error_invalid_time

@@ -165,36 +165,9 @@ private fun MealDetailContent(
             .padding(horizontal = LogDimens.page, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        if (meal.photoId != null) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().height(260.dp),
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-            ) {
-                when {
-                    state.photoUri != null -> AsyncImage(
-                        model = state.photoUri,
-                        contentDescription = stringResource(R.string.meal_photo_alt),
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit,
-                    )
-
-                    state.photoMissing -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.meal_photo_missing),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-
-                    else -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) { CircularProgressIndicator() }
-                }
-            }
+        if (state.photoItems.isNotEmpty()) {
+            Text(stringResource(R.string.meal_photos_count, state.photoItems.size), Modifier.testTag("meal-photo-count"), style = MaterialTheme.typography.titleSmall)
+            Box(Modifier.testTag("meal-detail-photos")) { MealPhotoGallery(state.photoItems, enabled = !state.deleting) }
         }
 
         if (!meal.text.isNullOrBlank()) {

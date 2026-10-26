@@ -17,7 +17,7 @@ object BackupValidation {
     fun counts(d: DataSnapshot) = linkedMapOf("meals" to d.meals.size, "sleeps" to d.sleeps.size,
         "exercises" to d.exercises.size, "sessions" to d.sessions.size, "items" to d.items.size,
         "sets" to d.sets.size, "media" to d.media.size, "workRecords" to d.workRecords.size,
-        "todos" to d.todos.size, "habits" to d.habits.size)
+        "todos" to d.todos.size, "habits" to d.habits.size, "mealPhotos" to d.mealPhotos.size)
 
     fun validate(d: DataSnapshot, l: BackupLimits) {
         fun ids(values: List<String>) { values.forEach(Rules::id); requireBackup(values.distinct().size == values.size) }
@@ -54,7 +54,17 @@ object BackupValidation {
             }
         }
         val photos = d.media.associateBy { it.id }
-        requireBackup(d.meals.mapNotNull { it.photoId }.toSet() == photos.keys)
+        val meals = d.meals.associateBy { it.id }
+        requireBackup(d.mealPhotos.size.toLong() <= d.meals.size.toLong() * 9, BackupError.LIMIT)
+        requireBackup(d.mealPhotos.map { it.mealId to it.photoId }.distinct().size == d.mealPhotos.size)
+        requireBackup(d.mealPhotos.all { it.mealId in meals && it.photoId in photos && it.sortOrder in 0..8 })
+        val groupedPhotos = d.mealPhotos.groupBy { it.mealId }
+        d.meals.forEach { meal ->
+            val links = groupedPhotos[meal.id].orEmpty().sortedBy { it.sortOrder }
+            requireBackup(links.size <= 9 && links.map { it.sortOrder } == links.indices.toList())
+            requireBackup(meal.photoId == links.firstOrNull()?.photoId)
+        }
+        requireBackup(d.mealPhotos.map { it.photoId }.toSet() == photos.keys)
         d.media.forEach { MediaRules.validate(it); requireBackup(it.byteSize <= l.photoBytes, BackupError.LIMIT) }
         d.meals.forEach {
             times(it.createdAtUtcMs, it.updatedAtUtcMs)

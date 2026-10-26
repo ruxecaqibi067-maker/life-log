@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="meal_photos_count">照片 %1$d / 9</string>
+    <string name="meal_photos_limit">每餐最多9张照片，可先移除一张再添加。</string>
+    <string name="meal_photos_add_gallery">从相册添加</string>
+    <string name="meal_photos_number">照片%1$d</string>
+    <string name="meal_photos_cover">封面 · 照片%1$d</string>
+    <string name="meal_photos_close">关闭预览</string>
+    <string name="meal_photos_timeline">%1$d张照片</string>
+    <string name="meal_photos_cancel_capture">取消本次拍照</string>
+</resources>

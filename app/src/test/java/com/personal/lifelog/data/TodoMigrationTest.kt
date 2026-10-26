@@ -52,7 +52,7 @@ class TodoMigrationTest {
             val db = AppDatabase.create(context, clock, name)
             var generatedId: String? = null
             try {
-                assertEquals(6, db.openHelper.readableDatabase.version) // Production Room validates schema6 here.
+                assertEquals(7, db.openHelper.readableDatabase.version) // Production Room validates schema6 here.
                 assertEquals("虚构旧感受", db.records().meal(mealId)!!.satietyText)
                 assertEquals(2001L, db.work().work(workId)!!.endedAtUtcMs)
                 assertEquals(480, db.metadata().settingsNow().targetSleepMinutes)

@@ -173,6 +173,7 @@ fun MealEditorScreen(
                 onTakePhoto = viewModel::beginCapture,
                 onPickPhoto = { pickLauncher.launch(Unit) },
                 onRemovePhoto = viewModel::removePhoto,
+                onCancelCapture = viewModel::cancelPendingCapture,
                 onSave = viewModel::save,
             )
         }
@@ -219,7 +220,8 @@ private fun MealForm(
     onShowTimePicker: () -> Unit,
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
-    onRemovePhoto: () -> Unit,
+    onRemovePhoto: (String) -> Unit,
+    onCancelCapture: () -> Unit,
     onSave: () -> Unit,
 ) {
     Column(
@@ -236,6 +238,7 @@ private fun MealForm(
             onTakePhoto = onTakePhoto,
             onPickPhoto = onPickPhoto,
             onRemovePhoto = onRemovePhoto,
+            onCancelCapture = onCancelCapture,
         )
         state.photoError?.let { error ->
             ErrorState(message = stringResource(error.messageRes()))
@@ -319,98 +322,30 @@ private fun MealForm(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PhotoSection(
-    state: MealEditorUiState,
-    onTakePhoto: () -> Unit,
-    onPickPhoto: () -> Unit,
-    onRemovePhoto: () -> Unit,
-) {
+private fun PhotoSection(state: MealEditorUiState, onTakePhoto: () -> Unit, onPickPhoto: () -> Unit, onRemovePhoto: (String) -> Unit, onCancelCapture: () -> Unit) {
     val busy = state.saving || state.photoStatus == MealPhotoStatus.PROCESSING
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(232.dp),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-    ) {
-        Column(Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                when {
-                    state.photoPreview != null -> AsyncImage(
-                        model = state.photoPreview,
-                        contentDescription = stringResource(R.string.meal_photo_alt),
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-
-                    state.photoStatus == MealPhotoStatus.PROCESSING -> Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
-                    ) {
-                        CircularProgressIndicator()
-                        Text(
-                            text = stringResource(R.string.meal_photo_processing),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-
-                    state.photoStatus == MealPhotoStatus.CAPTURE_PENDING -> Text(
-                        text = stringResource(R.string.meal_photo_pending),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    else -> Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
-                    ) {
-                        Icon(Icons.Filled.Restaurant, contentDescription = null,
-                            modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text(stringResource(R.string.meal_photo_placeholder),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+    Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.meal_photos_count, state.photoItems.size), Modifier.testTag("meal-photo-count"), style = MaterialTheme.typography.titleSmall)
+            if (state.photoItems.isEmpty()) {
+                Box(Modifier.fillMaxWidth().height(96.dp), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.meal_photo_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            } else MealPhotoGallery(state.photoItems, onRemove = onRemovePhoto, enabled = !busy)
+            if (state.photoStatus == MealPhotoStatus.PROCESSING) {
+                CircularProgressIndicator(Modifier.size(24.dp)); Text(stringResource(R.string.meal_photo_processing))
             }
-            FlowRow(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
-            ) {
-                if (state.photoPreview != null) {
-                    ActionButton(onClick = onTakePhoto, enabled = !busy) {
-                        Text(stringResource(R.string.meal_photo_take))
-                    }
-                    ActionButton(onClick = onPickPhoto, enabled = !busy) {
-                        Text(stringResource(R.string.meal_photo_replace))
-                    }
-                    ActionButton(onClick = onRemovePhoto, enabled = !busy) {
-                        Text(stringResource(R.string.meal_photo_remove))
-                    }
-                } else {
-                    SecondaryButton(onClick = onTakePhoto, enabled = !busy) {
-                        Text(
-                            stringResource(
-                                if (state.captureTicket != null) {
-                                    R.string.meal_photo_retry_capture
-                                } else {
-                                    R.string.meal_photo_take
-                                },
-                            ),
-                        )
-                    }
-                    SecondaryButton(onClick = onPickPhoto, enabled = !busy) {
-                        Text(stringResource(R.string.meal_photo_pick))
-                    }
-                    if (state.captureTicket != null) {
-                        ActionButton(onClick = onRemovePhoto, enabled = !busy) {
-                            Text(stringResource(R.string.meal_photo_remove))
-                        }
-                    }
+            if (state.captureTicket != null) Text(stringResource(R.string.meal_photo_pending), style = MaterialTheme.typography.bodySmall)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SecondaryButton(onTakePhoto, modifier = Modifier.testTag("meal-photo-take"), enabled = !busy && state.photoItems.size < 9) {
+                    Text(stringResource(if (state.captureTicket != null) R.string.meal_photo_retry_capture else R.string.meal_photo_take))
                 }
+                SecondaryButton(onPickPhoto, modifier = Modifier.testTag("meal-photo-pick"), enabled = !busy && state.photoItems.size < 9) { Text(stringResource(R.string.meal_photos_add_gallery)) }
+                if (state.captureTicket != null) ActionButton(onCancelCapture, enabled = !busy) { Text(stringResource(R.string.meal_photos_cancel_capture)) }
             }
+            if (state.photoItems.size == 9) Text(stringResource(R.string.meal_photos_limit), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

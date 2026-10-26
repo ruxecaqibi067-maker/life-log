@@ -27,36 +27,45 @@ class RecordRepository(
     suspend fun meal(id: String) = db.records().meal(Rules.id(id))
     suspend fun sleep(id: String) = db.records().sleep(Rules.id(id))
 
-    /** preparedPhoto is supplied only after T04 commits its immutable file to filesDir. */
-    suspend fun saveMeal(draft: MealDraft, preparedPhoto: MediaAsset? = null): DataResult<MealRecord> = write(db, writes) {
+    fun observeAllMealPhotos() = db.mealPhotos().observeAll()
+    fun observeMealPhotos(id: String) = db.mealPhotos().observe(Rules.id(id))
+    suspend fun mealPhotoIds(id: String) = db.mealPhotos().forMeal(Rules.id(id)).map { it.photoId }
+
+    /** Existing single-photo callers retain all other photos when only changing text. */
+    suspend fun saveMeal(draft: MealDraft, preparedPhoto: MediaAsset? = null): DataResult<MealRecord> =
+        saveMealPhotos(draft, listOfNotNull(preparedPhoto))
+
+    suspend fun saveMealPhotos(draft: MealDraft, preparedPhotos: List<MediaAsset> = emptyList()): DataResult<MealRecord> = write(db, writes) {
         Rules.id(draft.id)
+        val old = db.records().meal(draft.id)
+        val previous = db.mealPhotos().forMeal(draft.id).map { it.photoId }
+        val ids = draft.photoIds ?: when {
+            draft.photoId == null -> emptyList()
+            old != null && old.photoId == draft.photoId -> previous
+            else -> listOf(draft.photoId) + previous.drop(1).filter { it != draft.photoId }
+        }
+        if (ids.size > 9 || ids.distinct().size != ids.size) reject(ErrorCode.INVALID_MEDIA)
+        ids.forEach(Rules::id)
         val text = Rules.text(draft.text, Rules.MEAL_TEXT_LIMIT)
-        if (text == null && draft.photoId == null) reject(ErrorCode.EMPTY_MEAL)
+        if (text == null && ids.isEmpty()) reject(ErrorCode.EMPTY_MEAL)
         val satietyText = Rules.satietyText(draft.satiety, draft.satietyText)
         val date = RecordTime.localDate(draft.occurredAtUtcMs, draft.zoneId)
-        draft.photoId?.let(Rules::id)
-        if (preparedPhoto != null) {
-            if (preparedPhoto.id != draft.photoId) reject(ErrorCode.INVALID_MEDIA)
-            MediaRules.validate(preparedPhoto)
-            val oldPhoto = db.metadata().media(preparedPhoto.id)
-            if (oldPhoto != null && oldPhoto != preparedPhoto) reject(ErrorCode.IMMUTABLE_MEDIA)
-            if (oldPhoto == null) db.metadata().insertMedia(preparedPhoto)
+        if (preparedPhotos.map { it.id }.distinct().size != preparedPhotos.size || preparedPhotos.any { it.id !in ids }) reject(ErrorCode.INVALID_MEDIA)
+        preparedPhotos.forEach { photo ->
+            MediaRules.validate(photo)
+            val previousAsset = db.metadata().media(photo.id)
+            if (previousAsset != null && previousAsset != photo) reject(ErrorCode.IMMUTABLE_MEDIA)
+            if (previousAsset == null) db.metadata().insertMedia(photo)
         }
-        if (draft.photoId != null && db.metadata().media(draft.photoId) == null) reject(ErrorCode.INVALID_MEDIA)
-        val old = db.records().meal(draft.id)
+        ids.forEach { if (db.metadata().media(it) == null) reject(ErrorCode.INVALID_MEDIA) }
         val now = clock.millis()
-        MealRecord(
-            id = draft.id,
-            occurredAtUtcMs = draft.occurredAtUtcMs,
-            zoneId = draft.zoneId,
-            localDate = date,
-            text = text,
-            satiety = draft.satiety,
-            photoId = draft.photoId,
-            createdAtUtcMs = old?.createdAtUtcMs ?: now,
-            updatedAtUtcMs = updatedAt(now, old?.createdAtUtcMs ?: now, old?.updatedAtUtcMs ?: now),
-            satietyText = satietyText,
-        ).also { db.records().putMeal(it) }
+        val row = MealRecord(draft.id, draft.occurredAtUtcMs, draft.zoneId, date, text, draft.satiety,
+            ids.firstOrNull(), old?.createdAtUtcMs ?: now,
+            updatedAt(now, old?.createdAtUtcMs ?: now, old?.updatedAtUtcMs ?: now), satietyText)
+        db.records().putMeal(row)
+        db.mealPhotos().clear(row.id)
+        db.mealPhotos().insert(ids.mapIndexed { index, photo -> com.personal.lifelog.data.local.entity.MealPhoto(row.id, photo, index) })
+        row
     }
 
     suspend fun deleteMeal(id: String): DataResult<Boolean> = write(db, writes) { db.records().deleteMeal(Rules.id(id)) > 0 }

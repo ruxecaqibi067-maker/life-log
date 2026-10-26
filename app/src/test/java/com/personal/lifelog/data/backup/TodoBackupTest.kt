@@ -57,7 +57,7 @@ class TodoBackupTest {
         val before = f.snapshots.read()
         val zip = f.zip()
         val checked = BackupArchive().verify(zip, BackupFiles(f.root).mkdir("check-six"))
-        assertEquals(6, BackupJson.VERSION)
+        assertEquals(7, BackupJson.VERSION)
         assertEquals(semantic(before), semantic(checked.data))
         val importer = BackupImporter(f.root, f.clock)
         val ready = (importer.preflight(BackupSource { zip.inputStream() }) as BackupResult.Success).value
