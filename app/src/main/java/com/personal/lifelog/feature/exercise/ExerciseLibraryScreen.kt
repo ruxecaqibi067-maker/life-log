@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -80,23 +81,33 @@ fun ExerciseLibraryScreen(
                 )
             }
             item {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                    FilterChip(modifier = Modifier.heightIn(min = LogDimens.touch), selected = !state.recentOnly, onClick = { viewModel.showRecent(false) },
-                        label = { Text(stringResource(R.string.exercise_all)) })
-                    FilterChip(modifier = Modifier.heightIn(min = LogDimens.touch), selected = state.recentOnly, onClick = { viewModel.showRecent(true) },
-                        label = { Text(stringResource(R.string.exercise_recent)) })
-                }
-                if (onSelected == null) {
-                    Row(
-                        Modifier.fillMaxWidth().clickable { viewModel.showHidden(!state.includeHidden) },
-                        verticalAlignment = Alignment.CenterVertically,
+                // A lazy item measures its emitted children independently; keep
+                // the controls in one layout instead of overlapping siblings.
+                Column(Modifier.fillMaxWidth().testTag("exercise-controls"),
+                    verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
+                        verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
+                        itemVerticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Checkbox(checked = state.includeHidden, onCheckedChange = viewModel::showHidden)
-                        Text(stringResource(R.string.exercise_show_hidden))
+                        FilterChip(modifier = Modifier.heightIn(min = LogDimens.touch), selected = !state.recentOnly, onClick = { viewModel.showRecent(false) },
+                            label = { Text(stringResource(R.string.exercise_all)) })
+                        FilterChip(modifier = Modifier.heightIn(min = LogDimens.touch), selected = state.recentOnly, onClick = { viewModel.showRecent(true) },
+                            label = { Text(stringResource(R.string.exercise_recent)) })
+                        PrimaryButton(onClick = viewModel::add, enabled = !busy) {
+                            Text(stringResource(R.string.exercise_add))
+                        }
                     }
-                }
-                PrimaryButton(onClick = viewModel::add, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.exercise_add))
+                    if (onSelected == null) {
+                        Row(
+                            Modifier.fillMaxWidth().clickable { viewModel.showHidden(!state.includeHidden) },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(checked = state.includeHidden, onCheckedChange = viewModel::showHidden)
+                            Text(stringResource(R.string.exercise_show_hidden))
+                        }
+                    }
                 }
             }
             if (busy && editor == null) item { SavingIndicator() }
@@ -188,24 +199,46 @@ private fun ExerciseRow(
     onEdit: () -> Unit,
     onToggleHidden: () -> Unit,
 ) {
-    RecordCard(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(row.name, style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(row.type.labelRes()), style = MaterialTheme.typography.labelLarge)
-            if (onSelected == null && row.isHidden) Text(stringResource(R.string.exercise_hidden), style = MaterialTheme.typography.labelSmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                if (onSelected == null) {
+    RecordCard(modifier = Modifier.fillMaxWidth().testTag("exercise-row-${row.id}")) {
+        if (onSelected != null) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ExerciseIdentity(row, Modifier.weight(1f))
+                PrimaryButton(onClick = { onSelected(row) }, enabled = !busy && !row.isHidden,
+                    modifier = Modifier.testTag("exercise-pick-${row.id}")) {
+                    Text(stringResource(R.string.exercise_pick))
+                }
+            }
+        } else {
+            Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ExerciseIdentity(row, Modifier.fillMaxWidth())
+                if (row.isHidden) Text(stringResource(R.string.exercise_hidden), style = MaterialTheme.typography.labelSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
                     ActionButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.exercise_rename)) }
                     ActionButton(onClick = onToggleHidden, enabled = !busy) {
                         Text(stringResource(if (row.isHidden) R.string.exercise_enable else R.string.exercise_hide))
                     }
-                } else {
-                    PrimaryButton(onClick = { onSelected(row) }, enabled = !busy && !row.isHidden) {
-                        Text(stringResource(R.string.exercise_pick))
-                    }
                 }
             }
         }
+    }
+}
+
+/** Keep short names and types together; long names and scaled text can wrap. */
+@Composable
+private fun ExerciseIdentity(row: ExerciseDefinition, modifier: Modifier = Modifier) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(row.name, style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(row.type.labelRes()), style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
