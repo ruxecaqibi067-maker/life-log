@@ -44,7 +44,7 @@ Kotlin + Compose + Room，单app模块，手动AppContainer，JDK17、项目Grad
 | --- | --- |
 | [文档导航与文件夹说明](docs/README.md) | 看懂工程、找到相关文件 |
 | [主管进度板](docs/STATUS.md)、[任务索引](docs/TASKS.md) | 接受状态与后续安排 |
-| [0.1.7发布报告](docs/releases/0.1.7.md) / [前次本地报告](docs/releases/0.1.7-local.md) | 当前本地验收与公开下载证据 |
+| [code11发布报告](docs/releases/0.1.7-code11.md) / [前次本地报告](docs/releases/0.1.7-local.md) | 当前本地验收与公开下载证据 |
 | [21天习惯规则](docs/HABIT_RULES.md) | 自动生成、频率、到期与历史 |
 | [产品范围](docs/V1_SPEC.md)、[技术路线](docs/TECHNICAL_ROADMAP.md) | 行为与实现契约 |
 | [协作方法](docs/WORKFLOW.md)、[发包步骤](docs/testing/RELEASE.md) | 实现、交接与发布 |

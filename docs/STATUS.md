@@ -1,8 +1,8 @@
 # 主管进度板
 
-更新于2026-11-11（Asia/Shanghai）。当前版本**0.1.7/code11，Room/备份v7**，发布tag为`v0.1.7-code11`。原长期签名已在旧Codex应用隔离目录找回，证书与code10一致，恢复至当前LOCALAPPDATA/LifeLogAndroid/signing。用户提出换新签名的前提已由此次发现解除，本次采用原签名覆盖更新。
+更新于2026-11-11（Asia/Shanghai）。当前版本**0.1.7/code11，Room/备份v7**，发布tag为`v0.1.7-code11`。原长期签名已在旧Codex应用隔离目录找回，证书与code10一致，恢复至当前LOCALAPPDATA/LifeLogAndroid/signing。本次采用原签名覆盖更新。
 
-code11包含工作按日/七日分析`b6b1777`、自动记录JSON`62dfabd`及Provider发布后核验`ce58e45`。此前54项定向主机、修复后20项相关检查和API34 QA通过；本次执行正式签名构建、Lint和同签名code10→11覆盖验证，精确结果见[code11报告](releases/0.1.7-code11.md)及本机`artifacts/publish-code11-20261111/`。
+code11包含工作按日/七日分析`b6b1777`、自动记录JSON`62dfabd`及Provider发布后核验`ce58e45`。此前54项定向主机、修复后20项相关检查和API34 QA通过；本次正式签名构建通过，Lint无错误/22警告，code10→11覆盖及完整ZIP/照片SHA比较通过，精确结果见[code11报告](releases/0.1.7-code11.md)及本机`artifacts/publish-code11-20261111/`。
 
 原code10发布tag与二进制保留，历史见[code10报告](releases/0.1.7.md)。固定本地入口为`artifacts/phone-test/随手记.apk`。今日未请求关机。
 
