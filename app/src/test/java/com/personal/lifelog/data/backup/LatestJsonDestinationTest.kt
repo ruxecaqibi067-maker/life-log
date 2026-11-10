@@ -79,12 +79,21 @@ class LatestJsonDestinationTest {
         assertFalse(provider.exists)
     }
 
+    @Test fun filenameCollisionAfterPublicationIsReportedAndNumberedFileIsRemoved() {
+        provider.publishedName = "latest (1).json"
+        assertThrows(IllegalStateException::class.java) { destination.write("{}") }
+        assertEquals("latest (1).json", provider.insertedName)
+        assertFalse(provider.exists)
+        assertEquals(1, provider.inserts)
+    }
+
     private class DownloadProvider(private val file: File) : ContentProvider() {
         var exists = false
         var pending = false
         var inserts = 0
         var failNextWriteOpen = false
         var insertedName = "latest.json"
+        var publishedName: String? = null
         var relativePath = ""
         val pendingWhileOpen = mutableListOf<Boolean>()
         private val uri = Uri.parse("content://media/external_primary/downloads/1")
@@ -100,6 +109,7 @@ class LatestJsonDestinationTest {
         }
         override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?) : Int {
             pending = values!!.getAsInteger(MediaStore.Downloads.IS_PENDING) == 1
+            if (!pending) publishedName?.let { insertedName = it }
             return 1
         }
         override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int {
@@ -115,6 +125,7 @@ class LatestJsonDestinationTest {
                         MediaStore.Downloads._ID -> 1L
                         MediaStore.Downloads.IS_PENDING -> if (pending) 1 else 0
                         MediaStore.Downloads.DISPLAY_NAME -> insertedName
+                        MediaStore.Downloads.RELATIVE_PATH -> relativePath
                         else -> error("Unexpected projection")
                     }
                 })
