@@ -3,7 +3,7 @@
 ## 产品与当前阶段
 
 - 产品名「随手记」，面向Android9及以上手机，本地离线；荣耀200 Pro优先真机验证。
-- 当前公开Android0.1.7/code10，实际构建与tag提交cf14590。2026-11-10用户选择发布现成原签名包；main为code11候选，含工作七日分析/自动JSON及Provider补丁，原签名缺失使code11发包待恢复。公开说明见`docs/releases/0.1.7.md`，候选见`docs/releases/0.1.7-code11-candidate.md`。后续APK发布继续需要明确要求。
+- 当前发布0.1.7/code11，Room/备份v7，含工作按日/七日分析、自动JSON及Provider补丁。2026-11-11在旧Codex的D盘虚拟LOCALAPPDATA找回原长期签名，已核对与code10一致并恢复到当前LOCALAPPDATA/LifeLogAndroid/signing，支持原包直接覆盖。报告见`docs/releases/0.1.7-code11.md`。后续发包沿用该密钥。
 - 前置0.1.5完整主线`ec005a5`，包含既有饮食/睡眠/工作/训练、黑屏起床修复、批量力量/感受、公共滚轮和首页并排双卡。开始工作留普通首页，不进入睡前黑屏。历史交付不重新实现。
 - 用户指定主管对话负责规划、整合、验收与发布，实现对话执行各包。新用户指令优先；不要额外制造审批步骤。
 

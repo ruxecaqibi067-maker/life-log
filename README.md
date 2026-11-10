@@ -6,25 +6,20 @@
 
 ## 下载与更新
 
-- [下载随手记0.1.7安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7/suishouji-0.1.7.apk)
-- [版本页与SHA校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7)
+- [下载随手记0.1.7/code11安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7-code11/suishouji-0.1.7.apk)
+- [版本页与SHA校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7-code11)
 - [安装与数据保留](docs/INSTALL.md)、[手机测试清单](docs/testing/ANDROID_PHONE_TEST.md)
 
-当前公开版本为 **0.1.7 / versionCode10**，发布标签指向实际构建提交`cf14590`。沿用原包名和长期签名，可从0.1.6/code9覆盖更新。先在旧App导出完整ZIP备份，再安装新版。电脑固定入口为`artifacts/phone-test/随手记.apk`。
+当前版本 **0.1.7 / versionCode11**，使用已找回的原长期签名，支持code10直接覆盖更新。先在旧App导出完整ZIP备份，再安装新版。电脑固定入口为`artifacts/phone-test/随手记.apk`。
 
-## 0.1.7公开更新
+## code11更新
 
-- 首页双卡中央点击进入记录，进行中显示时长和扇形预览，编辑/撤销集中在记录页。
-- 四个快捷入口默认展开，可收起。
-- 运动列表紧凑排列，筛选与新增按钮自适应布局。
-- 同餐最多9张照片，可追加、预览和删除单张。完整ZIP保留全部照片与顺序。
-- 原作息按日/七日分析、工作计时、饮食/训练、目标、待办和21天习惯继续可用。Room/备份v7读取兼容v1–v6。
+- 新增工作按日记录、历史补录、当天时间分布和近七日分析，日期使用公共滚轮。
+- 默认自动写入手机`Download/lifelog/latest.json`，记录修改后更新，设置可关闭。JSON包含记录和照片引用，完整图片通过ZIP备份保存。Android9需要存储权限，Android10起使用MediaStore。
+- 修复系统在写入结束时改名导致自动导出误报成功的问题，发现同名冲突后显示错误并清理本次创建的条目。
+- 保留双卡中央点击、进行中圆环、折叠入口、紧凑运动列表、每餐最多9张照片，以及作息/训练/待办/习惯。
 
-[发布报告](docs/releases/0.1.7.md)与[原本地验收](docs/releases/0.1.7-local.md)记录检查范围。App暂无自动更新提醒，后续GitHub安装包发布继续按用户明确要求执行。
-
-## 后续源码候选
-
-main包含code11候选，增加工作按日/七日分析和自动写入`Download/lifelog/latest.json`，其默认开关及权限规则见[候选报告](docs/releases/0.1.7-code11-candidate.md)。该候选待恢复原长期签名后发包。本次按用户选择发布现成的已签名code10。
+[code11发布报告](docs/releases/0.1.7-code11.md)记录原签名恢复、覆盖更新和自动JSON检查。App暂无自动更新提醒，后续GitHub安装包发布继续按用户明确要求执行。
 
 ## 既有功能
 
@@ -55,4 +50,4 @@ Kotlin + Compose + Room，单app模块，手动AppContainer，JDK17、项目Grad
 | [协作方法](docs/WORKFLOW.md)、[发包步骤](docs/testing/RELEASE.md) | 实现、交接与发布 |
 | [历史档案](docs/archive/README.md) | 原任务、交接与历史发布证据 |
 
-代码、文档、Wrapper和历次schema进入Git；APK只在授权时作为Release附件，签名密钥、照片、备份、日志和缓存不进入源码。2026-11-10更新。发布门槛包括定向主机检查、签名构建和统一隔离设备覆盖升级，实体设备继续收集使用反馈。
+代码、文档、Wrapper和历次schema进入Git；APK只在授权时作为Release附件，签名密钥、照片、备份、日志和缓存不进入源码。2026-11-11更新。发布门槛包括定向主机检查、签名构建和统一隔离设备覆盖升级，实体设备继续收集使用反馈。

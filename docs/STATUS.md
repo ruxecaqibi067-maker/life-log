@@ -1,12 +1,12 @@
 # 主管进度板
 
-更新于2026-11-10（Asia/Shanghai）。**当前公开0.1.7/code10，Room/备份v7，实际构建及tag提交cf14590**。用户在原长期签名缺失后明确选择先发布现成已签名code10。固定本地入口`artifacts/phone-test/随手记.apk`与公开包相同。
+更新于2026-11-11（Asia/Shanghai）。当前版本**0.1.7/code11，Room/备份v7**，发布tag为`v0.1.7-code11`。原长期签名已在旧Codex应用隔离目录找回，证书与code10一致，恢复至当前LOCALAPPDATA/LifeLogAndroid/signing。用户提出换新签名的前提已由此次发现解除，本次采用原签名覆盖更新。
 
-公开包包含T25–T27的全部7项反馈。原验收95项定向主机和API34综合场景已接受，本次正式签名code9→10覆盖检查通过，虚构待办和完成状态保留，公开下载SHA复核一致。附件、精确SHA和发布记录见[0.1.7报告](releases/0.1.7.md)及本机`artifacts/publish-0.1.7-code10/`。
+code11包含工作按日/七日分析`b6b1777`、自动记录JSON`62dfabd`及Provider发布后核验`ce58e45`。此前54项定向主机、修复后20项相关检查和API34 QA通过；本次执行正式签名构建、Lint和同签名code10→11覆盖验证，精确结果见[code11报告](releases/0.1.7-code11.md)及本机`artifacts/publish-code11-20261111/`。
 
-main继续保留code11候选的工作按日/七日分析`b6b1777`、自动记录JSON`62dfabd`及Provider发布后核验`ce58e45`。候选54项定向主机、修复后20项相关检查和API34 QA通过，恢复原签名后继续发包，详见[候选报告](releases/0.1.7-code11-candidate.md)。候选功能与公开code10分别记录。
+原code10发布tag与二进制保留，历史见[code10报告](releases/0.1.7.md)。固定本地入口为`artifacts/phone-test/随手记.apk`。今日未请求关机。
 
-本轮此前已清理约4.66GB旧缓存和工具压缩包，保全1,271份报告。临时AVD递归删除被自动审核拦截，镜像保留。本次按用户要求在发布、下载校验及报告完成后关机。
+此前4.66GB过程文件清理及自动审核阻止AVD删除的记录属于2026-11-10工作，本次集中完成code11发布。
 
 ## 本轮接受
 

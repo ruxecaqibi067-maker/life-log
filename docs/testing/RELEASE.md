@@ -1,8 +1,8 @@
 # 构建与发布
 
-2026-11-10用户明确选择发布现成原签名0.1.7/code10，实际构建提交cf14590，附件位于`artifacts/t16/v0.1.7-10/`。本次复用原二进制与release.json，tag精确指向构建提交，main保留后续code11候选。新构建code11仍需恢复原长期签名。APK、日志及测试数据留在artifacts。
+2026-11-11发布0.1.7/code11，原长期签名在旧Codex隔离目录找回并恢复到当前`LOCALAPPDATA/LifeLogAndroid/signing`，证书与code10一致。使用新tag`v0.1.7-code11`，保留原`v0.1.7`。原APK、签名配置及二进制均需按实际证书和源提交核对。
 
-本次已构建包按原签名验证→最小覆盖升级→精确tag→草稿上传→附件SHA核验→公开下载复核执行，记录见[发布报告](../releases/0.1.7.md)。以下保留后续新构建的一般流程。
+旧Codex将LOCALAPPDATA虚拟映射到D盘的`WpSystem/.../Packages/OpenAI.Codex_2p2nqsd0c76g0/LocalCache/Local`，原密钥在其LifeLogAndroid/signing内。若未来常规路径缺失，先检查该已有副本，禁止仅凭当前路径缺失重新生成签名。此次恢复证据在忽略目录`artifacts/publish-code11-20261111/signing-recovery.json`，不打印密码或上传私钥。
 
 1. 检查交付已正常合入main，查看[进度板](../STATUS.md)和[0.1.7本地报告](../releases/0.1.7.md)；只提交已检查修改。
 2. 设置JDK17/Android SDK，执行主机测试、debug构建、Lint及必要隔离设备回归。逐项记录结果，不将条件跳过写为通过。

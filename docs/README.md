@@ -1,6 +1,6 @@
 # 文档导航
 
-2026-11-10公开Android0.1.7/code10，Room/备份v7。用户选择发布已签名cf14590构建，包含此前7项反馈，见[发布报告](releases/0.1.7.md)。main的工作七日分析及自动JSON属于待签名code11候选，见[候选报告](releases/0.1.7-code11-candidate.md)。下方带日期的既有证据保留历史范围。
+2026-11-11发布0.1.7/code11，Room/备份v7，沿用找回的原签名，支持code10直接覆盖。包含工作七日分析和自动JSON，见[code11报告](releases/0.1.7-code11.md)。Android9新增限定maxSdk28存储权限，Android10起使用MediaStore。下方旧日期内容保留原证据范围。
 
 
 | 你想了解什么 | 从这里开始 |
