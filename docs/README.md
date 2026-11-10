@@ -1,6 +1,6 @@
 # 文档导航
 
-2026-11-10当前Android待发布候选0.1.7/code11，Room/备份v7。签名文件缺失，公开仍0.1.6/code9。整合工作按日/七日分析、自动记录JSON及此前7项反馈，见[0.1.7报告](releases/0.1.7.md)。自动导出默认写入Download/lifelog/latest.json，可在设置关闭，Android9新增仅maxSdk28存储权限。下方带日期的既有证据保留历史范围。
+2026-11-10公开Android0.1.7/code10，Room/备份v7。用户选择发布已签名cf14590构建，包含此前7项反馈，见[发布报告](releases/0.1.7.md)。main的工作七日分析及自动JSON属于待签名code11候选，见[候选报告](releases/0.1.7-code11-candidate.md)。下方带日期的既有证据保留历史范围。
 
 
 | 你想了解什么 | 从这里开始 |

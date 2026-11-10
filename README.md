@@ -6,21 +6,25 @@
 
 ## 下载与更新
 
-- [下载当前随手记0.1.6安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.6/suishouji-0.1.6.apk)
-- [版本页与SHA校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.6)
+- [下载随手记0.1.7安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7/suishouji-0.1.7.apk)
+- [版本页与SHA校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7)
 - [安装与数据保留](docs/INSTALL.md)、[手机测试清单](docs/testing/ANDROID_PHONE_TEST.md)
 
-当前可下载版本为 **0.1.6 / versionCode9**。最新源码候选 **0.1.7 / versionCode11** 已整合，原长期签名目录缺失，待恢复签名后完成正式构建与发布。电脑固定`artifacts/phone-test/随手记.apk`仍为此前本地0.1.7/code10。
+当前公开版本为 **0.1.7 / versionCode10**，发布标签指向实际构建提交`cf14590`。沿用原包名和长期签名，可从0.1.6/code9覆盖更新。先在旧App导出完整ZIP备份，再安装新版。电脑固定入口为`artifacts/phone-test/随手记.apk`。
 
-## 待发布0.1.7更新
+## 0.1.7公开更新
 
-- 首页双卡中央点击进入记录页，进行中显示时长与扇形预览，编辑/撤销集中在记录页。四个快捷入口默认展开，可收起。
-- 工作记录增加按日查看、滚轮切日、历史补录、当天时间分布和七日分析，与作息采用相同的自然日图表规则。
-- 运动选择列表更紧凑，筛选与新增按钮自适应排列。同餐最多9张照片，可追加、预览和删除单张。
-- 默认自动将生活记录JSON写入手机`Download/lifelog/latest.json`，可在设置关闭。文件包含记录及照片引用，照片内容由完整ZIP备份保存。Android9首次使用需要允许存储权限，Android10起通过系统MediaStore写入。
-- Room/备份v7保留旧单图数据，新备份可读旧v1–v6。更新后原记录继续保存在手机内，App暂无自动更新提醒。
+- 首页双卡中央点击进入记录，进行中显示时长和扇形预览，编辑/撤销集中在记录页。
+- 四个快捷入口默认展开，可收起。
+- 运动列表紧凑排列，筛选与新增按钮自适应布局。
+- 同餐最多9张照片，可追加、预览和删除单张。完整ZIP保留全部照片与顺序。
+- 原作息按日/七日分析、工作计时、饮食/训练、目标、待办和21天习惯继续可用。Room/备份v7读取兼容v1–v6。
 
-[本轮发布报告](docs/releases/0.1.7.md)与[前次本地验收](docs/releases/0.1.7-local.md)记录功能与检查范围。后续GitHub安装包发布仍按用户明确要求执行。
+[发布报告](docs/releases/0.1.7.md)与[原本地验收](docs/releases/0.1.7-local.md)记录检查范围。App暂无自动更新提醒，后续GitHub安装包发布继续按用户明确要求执行。
+
+## 后续源码候选
+
+main包含code11候选，增加工作按日/七日分析和自动写入`Download/lifelog/latest.json`，其默认开关及权限规则见[候选报告](docs/releases/0.1.7-code11-candidate.md)。该候选待恢复原长期签名后发包。本次按用户选择发布现成的已签名code10。
 
 ## 既有功能
 

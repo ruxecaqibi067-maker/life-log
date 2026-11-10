@@ -1,6 +1,6 @@
 # 备份格式（v1 基础与 v2–v7 增量）
 
-2026-11-10当前Android待发布候选0.1.7/code11，Room/备份v7。签名文件缺失，公开仍0.1.6/code9。整合工作按日/七日分析、自动记录JSON及此前7项反馈，见[0.1.7报告](releases/0.1.7.md)。自动导出默认写入Download/lifelog/latest.json，可在设置关闭，Android9新增仅maxSdk28存储权限。下方带日期的既有证据保留历史范围。
+2026-11-10公开Android0.1.7/code10，Room/备份v7。用户选择发布已签名cf14590构建，包含此前7项反馈，见[发布报告](releases/0.1.7.md)。main的工作七日分析及自动JSON属于待签名code11候选，见[候选报告](releases/0.1.7-code11-candidate.md)。下方带日期的既有证据保留历史范围。
 
 当前源码/本地0.1.7多照片实现导出`formatVersion/dataVersion=7`，读取兼容v1–v7；已公开0.1.6/code9仍为格式v6。Room/备份格式版本与App版本独立，实际安装包和接受状态以[主管进度板](STATUS.md)为准，本轮APK仅本地，详见[本地报告](releases/0.1.7-local.md)。以下v1字段为基础，后续增量见文末；manifest与data版本必须相同。
 
