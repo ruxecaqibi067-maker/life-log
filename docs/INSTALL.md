@@ -1,8 +1,10 @@
 # 安装、更新与备份
 
-当前公开版本为随手记 **0.1.7 / versionCode11**，包名`com.personal.lifelog`，支持Android9及以上。[下载APK](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7/suishouji-0.1.7.apk)，[版本页和校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7)。
+当前公开版本为随手记 **0.1.6 / versionCode9**，包名`com.personal.lifelog`，支持Android9及以上。[下载APK](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.6/suishouji-0.1.6.apk)，[版本页和校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.6)。
 
-## 覆盖更新
+最新源码0.1.7/code11已整合，待恢复原长期签名后发布。当前固定本地正式APK仍为之前0.1.7/code10。以下新版流程在正式包交付后执行。
+
+## 新版覆盖更新
 
 1. 在旧App设置中导出完整ZIP备份，确认成功并保留文件。
 2. 下载APK或复制电脑`artifacts/phone-test/随手记.apk`到手机，在文件管理器中打开并完成覆盖安装。

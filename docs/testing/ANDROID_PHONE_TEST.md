@@ -1,6 +1,6 @@
 # Android手机实机测试
 
-本轮随手记0.1.7，versionCode11，包名`com.personal.lifelog`，Android9及以上。先导出备份，再覆盖安装。[下载APK](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7/suishouji-0.1.7.apk)，电脑固定入口`artifacts/phone-test/随手记.apk`。交付范围见[本轮发布报告](../releases/0.1.7.md)。
+本轮待发布候选随手记0.1.7，versionCode11，包名`com.personal.lifelog`，Android9及以上。先导出备份，再覆盖安装。原长期签名缺失，待正式发布后获取新APK，电脑固定入口`artifacts/phone-test/随手记.apk`。交付范围见[本轮发布报告](../releases/0.1.7.md)。
 
 新备份v7兼容读取v1–v6，包含全部多照片。默认自动记录JSON位于`Download/lifelog/latest.json`，设置可关闭，完整图片仍通过ZIP备份保存。
 

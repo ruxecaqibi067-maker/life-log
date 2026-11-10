@@ -1,8 +1,8 @@
 # 主管进度板
 
-更新于2026-11-10（Asia/Shanghai）。当前Android版本为**0.1.7 / versionCode11，Room/备份v7**。用户已明确授权本次GitHub安装包发布，固定本地入口为`artifacts/phone-test/随手记.apk`。
+更新于2026-11-10（Asia/Shanghai）。当前Android候选为**0.1.7 / versionCode11，Room/备份v7**。原长期签名目录缺失，正式构建和发布受阻；候选设备发现的MediaStore晚期改名问题正在修复，公开仍为0.1.6/code9，固定本地正式包仍code10。用户已明确授权本次GitHub安装包发布，固定本地入口为`artifacts/phone-test/随手记.apk`。
 
-本轮将自动导出记录JSON `62dfabd`和工作按日/七日分析 `b6b1777`正常合入main，包含此前T25–T27全部7项反馈。主管合并后的9类54个定向主机方法全部通过。签名构建、统一API34覆盖升级、公开下载SHA与空间清理记录见[发布报告](releases/0.1.7.md)及本机`artifacts/publish-0.1.7/`。
+本轮将自动导出记录JSON `62dfabd`和工作按日/七日分析 `b6b1777`正常合入main，包含此前T25–T27全部7项反馈。主管合并后的9类54个定向主机方法全部通过。签名阻塞、候选QA验证与空间清理记录见[发布报告](releases/0.1.7.md)及本机`artifacts/publish-0.1.7/`。
 
 自动导出默认将生活记录写入`Download/lifelog/latest.json`，设置可关闭，照片内容仍由完整ZIP保存。新增Android9限定存储权限。工作图表按当前手机时区自然日展示，原列表仍沿用结束日归档。
 

@@ -6,13 +6,13 @@
 
 ## 下载与更新
 
-- [下载随手记0.1.7安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7/suishouji-0.1.7.apk)
-- [版本页与SHA校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7)
+- [下载当前随手记0.1.6安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.6/suishouji-0.1.6.apk)
+- [版本页与SHA校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.6)
 - [安装与数据保留](docs/INSTALL.md)、[手机测试清单](docs/testing/ANDROID_PHONE_TEST.md)
 
-当前版本 **0.1.7 / versionCode11**，支持此前公开0.1.6/code9及本地0.1.7/code10同签名覆盖更新。先在旧App导出完整ZIP备份，再安装新版。电脑固定安装包位于`artifacts/phone-test/随手记.apk`。
+当前可下载版本为 **0.1.6 / versionCode9**。最新源码候选 **0.1.7 / versionCode11** 已整合，原长期签名目录缺失，待恢复签名后完成正式构建与发布。电脑固定`artifacts/phone-test/随手记.apk`仍为此前本地0.1.7/code10。
 
-## 0.1.7更新
+## 待发布0.1.7更新
 
 - 首页双卡中央点击进入记录页，进行中显示时长与扇形预览，编辑/撤销集中在记录页。四个快捷入口默认展开，可收起。
 - 工作记录增加按日查看、滚轮切日、历史补录、当天时间分布和七日分析，与作息采用相同的自然日图表规则。
