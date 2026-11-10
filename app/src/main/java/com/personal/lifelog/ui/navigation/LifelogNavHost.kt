@@ -269,16 +269,20 @@ fun LifelogApp(
                 )
             }
             composable(LifelogRoutes.WORK_HISTORY) {
-                WorkHistoryScreen(workViewModel,
-                    onAdd = { navController.navigate(LifelogRoutes.workEditor()) },
+                val history: WorkHistoryViewModel = viewModel {
+                    WorkHistoryViewModel(workViewModel.repository::works, homeViewModel.today, zoneIdProvider, createSavedStateHandle())
+                }
+                WorkHistoryScreen(history,
+                    onAdd = { navController.navigate(LifelogRoutes.workEditor(date = history.state.value.date)) },
                     onEdit = { navController.navigate(LifelogRoutes.workEditor(it)) },
-                    onBack = { navController.navigateUp() })
+                    onBack = { navController.navigateUp() }, commands = workViewModel)
             }
-            composable(LifelogRoutes.WORK_EDIT_PATTERN, arguments = listOf(LifelogRoutes.workIdArgument)) { entry ->
+            composable(LifelogRoutes.WORK_EDIT_PATTERN, arguments = listOf(LifelogRoutes.workIdArgument, LifelogRoutes.workDateArgument)) { entry ->
                 val id = entry.arguments?.getString(LifelogRoutes.ARG_WORK_ID)
                 val editor: WorkEditorViewModel = viewModel {
                     WorkEditorViewModel(workViewModel.repository, clock, zoneIdProvider, id,
-                        createSavedStateHandle(), workViewModel::deleted)
+                        createSavedStateHandle(), workViewModel::deleted,
+                        entry.arguments?.getString(LifelogRoutes.ARG_WORK_DATE)?.let(java.time.LocalDate::parse))
                 }
                 WorkEditorScreen(editor, editing = id != null, onBack = { navController.navigateUp() })
             }

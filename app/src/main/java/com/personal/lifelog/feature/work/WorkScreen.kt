@@ -3,15 +3,10 @@ package com.personal.lifelog.feature.work
 import com.personal.lifelog.ui.components.RecordDateTimePicker
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.WorkOutline
-import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,7 +19,6 @@ import com.personal.lifelog.R
 import com.personal.lifelog.core.time.RecordTime
 import com.personal.lifelog.data.local.entity.WorkRecord
 import com.personal.lifelog.domain.ErrorCode
-import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.PrimaryButton
 import com.personal.lifelog.ui.components.RecordCard
 import com.personal.lifelog.ui.components.RecordTopBar
@@ -37,7 +31,7 @@ private fun recordedTime(instant: Long, zone: String): String =
     chineseWorkTime(Instant.ofEpochMilli(instant).atZone(RecordTime.zone(zone)))
 
 @Composable
-fun WorkRecordSummary(record: WorkRecord) {
+fun WorkRecordSummary(record: WorkRecord, showArchive: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.work_start_value, recordedTime(record.startedAtUtcMs, record.startZoneId)))
         val end = record.endedAtUtcMs
@@ -47,7 +41,7 @@ fun WorkRecordSummary(record: WorkRecord) {
             Text(stringResource(R.string.work_recorded_duration,
                 com.personal.lifelog.feature.home.recordedDurationText(Math.subtractExact(end, record.startedAtUtcMs))))
         }
-        Text(stringResource(R.string.work_archive, record.archiveLocalDate), style = MaterialTheme.typography.bodySmall)
+        if (showArchive) Text(stringResource(R.string.work_archive, record.archiveLocalDate), style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -114,45 +108,6 @@ internal fun WorkFinishConfirmation(viewModel: WorkViewModel) {
         onConfirm = viewModel::confirmLong,
         details = "${recordedTime(pending!!.record.startedAtUtcMs, pending!!.record.startZoneId)}\n${recordedTime(pending!!.instant, pending!!.zone)}",
     )
-}
-
-@Composable
-fun WorkHistoryScreen(viewModel: WorkViewModel, onAdd: () -> Unit, onEdit: (String) -> Unit, onBack: () -> Unit) {
-    val history by viewModel.history.collectAsStateWithLifecycle()
-    var confirmUndo by rememberSaveable { mutableStateOf(false) }
-    WorkHomeDialogs(viewModel, confirmUndo) { confirmUndo = false }
-    WorkScaffold(R.string.work_title, onBack) { modifier ->
-        LazyColumn(modifier.testTag("work-history"), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-            item {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                    PrimaryButton(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.work_add)) }
-                    Text(stringResource(R.string.work_note))
-                    WorkHomeFeedback(viewModel, onEdit, { confirmUndo = true })
-                }
-            }
-            val rows = history.records
-            when {
-                history.failed -> item {
-                    WorkError(ErrorCode.STORAGE_UNAVAILABLE)
-                    SecondaryButton(onClick = viewModel::retry) { Text(stringResource(R.string.retry)) }
-                }
-                rows == null -> item { Text(stringResource(R.string.work_loading)) }
-                rows.isEmpty() -> item { EmptyState(stringResource(R.string.work_none), hint = stringResource(R.string.work_empty_hint)) }
-                else -> items(rows, key = { it.id }) { record ->
-                    RecordCard(modifier = Modifier.fillMaxWidth().testTag("work-record-${record.id}")) {
-                        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                            WorkRecordSummary(record)
-                            SecondaryButton(onClick = { onEdit(record.id) }, modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.work_view_edit))
-                                Spacer(Modifier.width(8.dp))
-                                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowForward, null)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable

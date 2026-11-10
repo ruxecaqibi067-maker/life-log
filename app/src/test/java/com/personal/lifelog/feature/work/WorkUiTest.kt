@@ -63,7 +63,9 @@ class WorkUiTest {
                 { zone }, sleep, workouts, timeline, workVM, workHome)
         } }
         compose.waitForIdle()
-        compose.waitUntil(10_000) { workVM.status.value.loaded && !workHome.work.value.loading }
+        compose.waitUntil(10_000) {
+            compose.runOnIdle { workVM.status.value.loaded && !workHome.work.value.loading }
+        }
         waitText("今日睡眠")
     }
     @After fun close() { store.clear(); db.close() }
@@ -103,6 +105,68 @@ class WorkUiTest {
         assertTrue(runBlocking { db.work().allWorks().isEmpty() })
         click("撤销上次工作操作"); click("确认")
         compose.waitUntil(10_000) { runBlocking { db.work().allWorks().size == 1 } }
+        assertTrue(runBlocking { db.records().allSleeps().isEmpty() })
+    }
+
+
+    @Test fun dailyHistorySplitsCrossNightChartsChoosesDatesAndCancelsHistoricalDraft() {
+        fun add(start: String, end: String): String = runBlocking {
+            val id = RecordIds.newId()
+            val from = LocalDateTime.parse(start).atZone(zone).toInstant().toEpochMilli()
+            val to = LocalDateTime.parse(end).atZone(zone).toInstant().toEpochMilli()
+            assertTrue(work.saveWork(WorkDraft(id, from, zone.id, to, zone.id)) is DataResult.Success)
+            id
+        }
+        val old = add("2026-10-21T14:00", "2026-10-21T16:00")
+        val night = add("2026-10-21T23:00", "2026-10-22T01:00")
+        val morning = add("2026-10-22T09:00", "2026-10-22T12:00")
+        val afternoon = add("2026-10-22T13:00", "2026-10-22T15:00")
+        fun choose(value: String) {
+            val day = LocalDate.parse(value)
+            compose.onNodeWithTag("work-history").performScrollToIndex(0)
+            compose.onNodeWithTag("work-history-choose").performClick()
+            listOf("年" to day.year, "月" to day.monthValue, "日" to day.dayOfMonth).forEach { (unit, n) ->
+                compose.onNodeWithTag("record-wheel-$unit").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.SetProgress) { it(n.toFloat()) }
+            }
+            compose.onNodeWithText("确认").performClick()
+            waitText("当天工作记录")
+        }
+        compose.onNodeWithTag("home-timeline").performScrollToNode(hasTestTag("work-summary-history"))
+        compose.onNodeWithTag("work-summary-history").performClick()
+        waitText("当天工作记录")
+        compose.onNodeWithTag("work-record-$old").assertDoesNotExist()
+        listOf(afternoon, morning, night).forEach { id ->
+            compose.onNodeWithTag("work-history").performScrollToKey(id)
+            compose.onNodeWithTag("work-record-$id").assertExists()
+        }
+        compose.onNodeWithTag("work-history").performScrollToKey("day-analysis")
+        waitText("已记录6小时0分")
+        compose.onNodeWithText("00:00–01:00　09:00–12:00　13:00–15:00").assertExists()
+        compose.onNodeWithTag("work-history").performScrollToKey("week-analysis")
+        compose.onNodeWithText("近七天工作分析").assertExists()
+        choose("2026-10-21")
+        compose.onNodeWithTag("work-history").performScrollToKey(old)
+        compose.onNodeWithTag("work-record-$old").assertExists()
+        compose.onNodeWithTag("work-record-$morning").assertDoesNotExist()
+        compose.onNodeWithTag("work-history").performScrollToKey("day-analysis")
+        waitText("已记录3小时0分")
+        compose.onNodeWithText("14:00–16:00　23:00–24:00").assertExists()
+        compose.onNodeWithTag("work-history").performScrollToIndex(0)
+        compose.onNodeWithText("补录工作").performClick()
+        waitText("开始日期时间")
+        assertTrue(compose.onAllNodesWithText("2026年10月21日 17:00").fetchSemanticsNodes().isNotEmpty())
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithTag("work-history").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(4, runBlocking { db.work().allWorks().size })
+        choose("2026-10-20")
+        waitText("这一天没有工作记录")
+        compose.onNodeWithContentDescription("返回").performClick()
+        waitText("今日睡眠")
+        compose.onNodeWithTag("home-timeline").performScrollToNode(hasTestTag("work-summary-history"))
+        compose.onNodeWithTag("work-summary-history").performClick()
+        waitText("当天工作记录")
+        compose.onNodeWithTag("work-history-date").assertTextEquals("2026年10月22日 星期四")
+        assertEquals(4, runBlocking { db.work().allWorks().size })
         assertTrue(runBlocking { db.records().allSleeps().isEmpty() })
     }
 
