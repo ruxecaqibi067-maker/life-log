@@ -69,9 +69,7 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
         }) ?: throw IOException("Cannot create latest JSON")
         try {
             // Providers may disambiguate a foreign-owned file to latest (1).json. Never accept that path.
-            resolver.query(uri, arrayOf(MediaStore.Downloads.DISPLAY_NAME), null, null, null)?.use {
-                check(it.moveToFirst() && it.getString(0) == FILE_NAME) { "Latest JSON name is occupied" }
-            } ?: throw IOException("Cannot query latest JSON")
+            requireExpectedDownload(uri)
             check(resolver.update(uri, ContentValues().apply {
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }, null, null) == 1)
@@ -80,6 +78,8 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
             check(resolver.update(uri, ContentValues().apply {
                 put(MediaStore.Downloads.IS_PENDING, 0)
             }, null, null) == 1)
+            // Some providers resolve filename conflicts only when the completed row is published.
+            requireExpectedDownload(uri)
         } catch (e: Exception) {
             if (existing == null) {
                 runCatching { resolver.delete(uri, null, null) }
@@ -95,6 +95,15 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
             // If storage still refuses writes, leave the row pending for a later repair.
             throw e
         }
+    }
+
+    @RequiresApi(29)
+    private fun requireExpectedDownload(uri: android.net.Uri) {
+        resolver.query(uri, arrayOf(MediaStore.Downloads.DISPLAY_NAME, MediaStore.Downloads.RELATIVE_PATH),
+            null, null, null)?.use {
+            check(it.moveToFirst() && it.getString(0) == FILE_NAME &&
+                it.getString(1)?.trimEnd('/') == RELATIVE_PATH) { "Latest JSON destination has changed" }
+        } ?: throw IOException("Cannot query latest JSON")
     }
 
     private fun writeContent(uri: android.net.Uri, json: String) {
