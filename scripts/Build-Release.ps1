@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory=$true)][string]$SigningProperties,
-    [int]$VersionCode = 10,
+    [int]$VersionCode = 11,
     [string]$VersionName = '0.1.7',
     [string]$Sdk = "$env:LOCALAPPDATA/Android/Sdk"
 )

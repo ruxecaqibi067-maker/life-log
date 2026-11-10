@@ -1,13 +1,14 @@
 # 文档导航
 
-当前源码/本地随手记0.1.7 / code10，Room/备份v7；公开安装包仍0.1.6/code9。状态见[主管进度板](STATUS.md)，第二轮反馈和集中验收见[0.1.7本地报告](releases/0.1.7-local.md)，公开下载见[0.1.6报告](releases/0.1.6.md)。本轮不更新GitHub安装包，后续仍须明确要求。
+2026-11-10当前Android发布0.1.7/code11，Room/备份v7。整合工作按日/七日分析、自动记录JSON及此前7项反馈，见[0.1.7报告](releases/0.1.7.md)。自动导出默认写入Download/lifelog/latest.json，可在设置关闭，Android9新增仅maxSdk28存储权限。下方带日期的既有证据保留历史范围。
+
 
 | 你想了解什么 | 从这里开始 |
 | --- | --- |
 | 下载、安装、更新后保留数据 | [安装与更新](INSTALL.md) |
 | 手机上应该测哪些功能 | [手机测试清单](testing/ANDROID_PHONE_TEST.md)、[兼容性](COMPATIBILITY.md) |
 | 做完了哪些、接下来做什么 | [主管进度板](STATUS.md)、[任务索引](TASKS.md) |
-| 当前任务及已完成交付 | [任务入口](tasks/README.md)、[最新整合报告](releases/0.1.7-local.md) |
+| 当前任务及已完成交付 | [任务入口](tasks/README.md)、[最新整合报告](releases/0.1.7.md) |
 | 每日待办、21天自动结束与保留历史 | [习惯规则](HABIT_RULES.md) |
 | 产品与代码逻辑 | [产品范围](V1_SPEC.md)、[技术路线](TECHNICAL_ROADMAP.md) |
 | 配色、字体、按钮和首页卡片规则 | [视觉规范](UI_STYLE_GUIDE.md) |

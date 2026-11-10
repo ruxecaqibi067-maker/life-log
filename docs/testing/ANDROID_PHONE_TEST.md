@@ -1,13 +1,16 @@
 # Android手机实机测试
 
-本轮本地随手记0.1.7，versionCode10，包名`com.personal.lifelog`；公开下载仍0.1.6/code9。本轮新功能用电脑本地APK，Android9及以上，先备份再覆盖，不卸载。不同品牌实际交互/性能仍需实测。
+本轮随手记0.1.7，versionCode11，包名`com.personal.lifelog`，Android9及以上。先导出备份，再覆盖安装。[下载APK](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7/suishouji-0.1.7.apk)，电脑固定入口`artifacts/phone-test/随手记.apk`。交付范围见[本轮发布报告](../releases/0.1.7.md)。
 
-电脑固定入口`artifacts/phone-test/随手记.apk`；本轮未更新GitHub安装包，远端新APK仍需用户明确要求。7项反馈和统一测试见[本地报告](../releases/0.1.7-local.md)。新备份v7可读旧1–6，旧App不能读取7。
+新备份v7兼容读取v1–v6，包含全部多照片。默认自动记录JSON位于`Download/lifelog/latest.json`，设置可关闭，完整图片仍通过ZIP备份保存。
 
 ## 本轮新增功能先测这些
 
 | 操作 | 预期 |
 | --- | --- |
+| 打开工作卡中央、切日与七日图，历史日期补录后取消 | 默认今天，结束日列表与自然日图表各按规则展示，取消不写记录 |
+| 保存/修改记录后检查Download/lifelog/latest.json，再关闭设置开关 | JSON及时反映记录，关闭后停止写入，完整ZIP仍可导出 |
+| Android9首次运行自动导出 | 显示存储权限请求，允许后生成文件，拒绝时设置可见错误 |
 | 点击睡眠/工作卡片中央，再点目标铅笔 | 中央进入记录页，目标只编辑；卡内无底部查看/补录按钮 |
 | 工作/作息进行中、切后台再回来 | 扇形和本次已持续更新，标明预览，未结束不变成已完成记录 |
 | 首页检查编辑/撤销，进入对应记录页操作并取消 | 首页无冗余操作区；记录页可编辑/撤销，取消不改原记录 |
@@ -31,7 +34,7 @@
 
 ## 1. 下载与安装
 
-本轮从电脑复制`artifacts/phone-test/随手记.apk`，按同目录说明核对0.1.7/code10，再覆盖安装。GitHub[公开0.1.6](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.6)不含本轮7项改动，不用于验证这些新功能。
+下载本轮0.1.7/code11，或从电脑复制`artifacts/phone-test/随手记.apk`，按同目录说明核对后覆盖安装。
 
 1. 在手机文件管理器中打开 APK，按系统提示允许本次安装来源，完成后打开「随手记」。不需要账号或开发者模式。
 2. 若已安装旧版，先在旧 App 的设置中导出备份，再直接覆盖安装；不要先卸载或清除数据。
