@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,6 +37,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -89,6 +91,9 @@ fun SettingsScreen(
     onCancelBackupPreview: () -> Unit = {},
     onDismissBackupResult: () -> Unit = {},
     onRetryRecovery: () -> Unit = {},
+    autoJsonEnabled: Boolean = true,
+    autoJsonWriteFailed: Boolean = false,
+    onAutoJsonEnabledChanged: (Boolean) -> Unit = {},
 ) {
     val backupBlocked = backupState is BackupRestoreState.Working ||
         backupState is BackupRestoreState.Preview ||
@@ -131,6 +136,22 @@ fun SettingsScreen(
             }
 
             SectionLabel(stringResource(R.string.settings_backup))
+            Row(
+                modifier = Modifier.fillMaxWidth().toggleable(
+                    value = autoJsonEnabled, role = Role.Switch, onValueChange = onAutoJsonEnabledChanged,
+                ).padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_auto_json))
+                    Text(stringResource(R.string.settings_auto_json_path), style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = autoJsonEnabled, onCheckedChange = null)
+            }
+            if (autoJsonWriteFailed) {
+                ErrorState(message = stringResource(R.string.settings_auto_json_error))
+            }
             Text(
                 text = stringResource(R.string.settings_backup_note),
                 style = MaterialTheme.typography.bodySmall,

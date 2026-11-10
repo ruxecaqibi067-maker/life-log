@@ -3,6 +3,7 @@ package com.personal.lifelog.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personal.lifelog.data.backup.export.BackupDestination
+import com.personal.lifelog.data.backup.export.LatestJsonExporter
 import com.personal.lifelog.data.backup.importer.BackupSource
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.domain.DataResult
@@ -26,7 +27,17 @@ class SettingsViewModel(
     private val settings: SettingsRepository,
     private val backups: BackupRestoreController? = null,
     val zoneIdProvider: () -> ZoneId = ZoneId::systemDefault,
+    private val latestJson: LatestJsonExporter? = null,
 ) : ViewModel() {
+
+    val autoJsonEnabled: StateFlow<Boolean> = latestJson?.enabled ?: MutableStateFlow(true)
+    val autoJsonWriteFailed: StateFlow<Boolean> = latestJson?.writeFailed ?: MutableStateFlow(false)
+
+    fun setAutoJsonEnabled(enabled: Boolean) {
+        viewModelScope.launch { latestJson?.setEnabled(enabled) }
+    }
+
+    fun retryAutoJson() { latestJson?.requestWrite() }
 
     val themeMode: StateFlow<ThemeMode> = settings.settings()
         .map { it.themeMode }

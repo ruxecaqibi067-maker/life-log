@@ -2,6 +2,8 @@ package com.personal.lifelog
 
 import android.content.Context
 import com.personal.lifelog.data.backup.export.BackupExporter
+import com.personal.lifelog.data.backup.export.LatestJsonExporter
+import com.personal.lifelog.data.backup.export.SharedLatestJsonDestination
 import com.personal.lifelog.data.backup.importer.BackupImporter
 import com.personal.lifelog.data.backup.restore.RestoreEngine
 import com.personal.lifelog.data.local.AppDatabase
@@ -43,6 +45,11 @@ class AppContainer(
     }
     val sleepSummary: SleepSummaryRepository by lazy { SleepSummaryRepository(database) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
+    val latestJson: LatestJsonExporter by lazy {
+        LatestJsonExporter(database, snapshots, writes, SharedLatestJsonDestination(appContext),
+            appContext.getSharedPreferences("latest-json", Context.MODE_PRIVATE), clock,
+            appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName.orEmpty())
+    }
     val backupExporter: BackupExporter by lazy {
         val installedVersion = appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName.orEmpty()
         BackupExporter(snapshots, settings, writes, appContext.filesDir, clock, installedVersion)

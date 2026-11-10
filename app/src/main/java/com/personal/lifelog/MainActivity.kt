@@ -1,14 +1,19 @@
 package com.personal.lifelog
 
 import android.app.Activity
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,9 +26,18 @@ import com.personal.lifelog.ui.theme.LifeLogTheme
 import com.personal.lifelog.ui.theme.resolvedDarkTheme
 
 class MainActivity : ComponentActivity() {
+    private val storagePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        (application as App).container.latestJson.requestWrite()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val latestJson = (application as App).container.latestJson
+        if (savedInstanceState == null && Build.VERSION.SDK_INT == 28 && latestJson.enabled.value &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
         setContent {
             val container = (application as App).container
             val settingsViewModel: SettingsViewModel = viewModel {
@@ -31,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     settings = container.settings,
                     backups = container.backupRestore,
                     zoneIdProvider = container.zoneIdProvider,
+                    latestJson = container.latestJson,
                 )
             }
             val homeViewModel: HomeViewModel = viewModel {
@@ -87,5 +102,10 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        (application as App).container.latestJson.requestWrite()
     }
 }

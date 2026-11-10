@@ -1,5 +1,9 @@
 package com.personal.lifelog.feature.settings
 
+import android.Manifest
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -30,7 +34,13 @@ fun SettingsRoute(
     val themeError by viewModel.themeError.collectAsStateWithLifecycle()
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
     val lastExportAtUtcMs by viewModel.lastExportAtUtcMs.collectAsStateWithLifecycle()
+    val autoJsonEnabled by viewModel.autoJsonEnabled.collectAsStateWithLifecycle()
+    val autoJsonWriteFailed by viewModel.autoJsonWriteFailed.collectAsStateWithLifecycle()
     var pendingExport by rememberSaveable { mutableStateOf<PendingExport?>(null) }
+
+    val storagePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        viewModel.retryAutoJson()
+    }
 
     val createDocument = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip"),
@@ -90,6 +100,15 @@ fun SettingsRoute(
         onCancelBackupPreview = viewModel::dismissBackupPreview,
         onDismissBackupResult = viewModel::dismissBackupResult,
         onRetryRecovery = viewModel::retryRecovery,
+        autoJsonEnabled = autoJsonEnabled,
+        autoJsonWriteFailed = autoJsonWriteFailed,
+        onAutoJsonEnabledChanged = { enabled ->
+            viewModel.setAutoJsonEnabled(enabled)
+            if (enabled && Build.VERSION.SDK_INT == 28 &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        },
     )
 }
 

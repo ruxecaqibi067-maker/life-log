@@ -12,6 +12,9 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         // Reads always see one committed DB state. Every writer independently waits for reconciliation.
-        startupScope.launch { container.restoreEngine.recoverPending() }
+        startupScope.launch {
+            container.restoreEngine.recoverPending()
+            container.latestJson.start(startupScope)
+        }
     }
 }

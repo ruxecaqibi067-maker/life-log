@@ -23,13 +23,13 @@ data class DataSnapshot(
 
 class SnapshotRepository(private val db: AppDatabase) {
     /** DB-consistent read. T11 must also hold WriteCoordinator through associated photo copying. */
-    suspend fun read(): DataSnapshot = db.withTransaction {
+    suspend fun read(includeMedia: Boolean = true): DataSnapshot = db.withTransaction {
         val meals = db.records().allMeals()
         val links = db.mealPhotos().all()
         val photoIds = links.map { it.photoId }.toSet()
         DataSnapshot(meals, db.records().allSleeps(), db.workouts().allExercises(),
             db.workouts().allSessions(), db.workouts().allItems(), db.workouts().allSets(),
-            db.metadata().allMedia().filter { it.id in photoIds }, db.metadata().settingsNow(),
+            if (includeMedia) db.metadata().allMedia().filter { it.id in photoIds } else emptyList(), db.metadata().settingsNow(),
             workRecords = db.work().allWorks(), todos = db.todos().allTodos(), habits = db.todos().allHabits(), mealPhotos = links)
     }
 }
