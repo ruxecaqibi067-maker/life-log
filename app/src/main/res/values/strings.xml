@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="settings_auto_json">自动写入 latest.json</string>
+    <string name="settings_auto_json_path">Download/lifelog/latest.json</string>
+    <string name="settings_auto_json_error">自动写入失败，请检查存储空间和存储权限，可关闭后重新开启重试。</string>
     <string name="app_name">随手记</string>
 
     <!-- 主导航 -->
