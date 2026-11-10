@@ -2,7 +2,7 @@
 
 更新于2026-11-10（Asia/Shanghai）。**当前公开0.1.7/code10，Room/备份v7，实际构建及tag提交cf14590**。用户在原长期签名缺失后明确选择先发布现成已签名code10。固定本地入口`artifacts/phone-test/随手记.apk`与公开包相同。
 
-公开包包含T25–T27的全部7项反馈。原验收95项定向主机和API34综合场景已接受，本次补充正式签名code9→10覆盖检查。附件、精确SHA和发布记录见[0.1.7报告](releases/0.1.7.md)及本机`artifacts/publish-0.1.7-code10/`。
+公开包包含T25–T27的全部7项反馈。原验收95项定向主机和API34综合场景已接受，本次正式签名code9→10覆盖检查通过，虚构待办和完成状态保留，公开下载SHA复核一致。附件、精确SHA和发布记录见[0.1.7报告](releases/0.1.7.md)及本机`artifacts/publish-0.1.7-code10/`。
 
 main继续保留code11候选的工作按日/七日分析`b6b1777`、自动记录JSON`62dfabd`及Provider发布后核验`ce58e45`。候选54项定向主机、修复后20项相关检查和API34 QA通过，恢复原签名后继续发包，详见[候选报告](releases/0.1.7-code11-candidate.md)。候选功能与公开code10分别记录。
 
