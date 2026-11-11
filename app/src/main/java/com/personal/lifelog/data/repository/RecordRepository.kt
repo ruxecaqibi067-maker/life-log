@@ -1,5 +1,6 @@
 package com.personal.lifelog.data.repository
 
+import com.personal.lifelog.core.time.IntervalDurationPolicy
 import com.personal.lifelog.core.time.RecordTime
 import com.personal.lifelog.core.validation.MediaRules
 import com.personal.lifelog.core.validation.Rules
@@ -97,12 +98,36 @@ class RecordRepository(
         )
     }
 
-    suspend fun saveSleep(draft: SleepDraft): DataResult<SleepRecord> = write(db, writes) { saveSleepInTransaction(draft) }
+    /** Interactive finish: null means the short active row was discarded in this transaction. */
+    suspend fun completeSleep(
+        expected: SleepRecord, endedAtUtcMs: Long, zoneId: String, confirmed: Boolean = false,
+    ): DataResult<SleepRecord?> = write(db, writes) {
+        val old = db.records().sleep(Rules.id(expected.id)) ?: reject(ErrorCode.NOT_FOUND)
+        if (old != expected) reject(ErrorCode.NOT_FOUND)
+        if (old.endedAtUtcMs != null) old else {
+            RecordTime.localDate(endedAtUtcMs, zoneId)
+            val duration = IntervalDurationPolicy.elapsed(old.startedAtUtcMs, endedAtUtcMs)
+            if (duration < IntervalDurationPolicy.MIN_SLEEP_MS) {
+                db.records().deleteSleep(old.id)
+                null
+            } else {
+                IntervalDurationPolicy.validateCompleted(old.startedAtUtcMs, endedAtUtcMs, IntervalDurationPolicy.MIN_SLEEP_MS, confirmed)
+                saveSleepInTransaction(SleepDraft(old.id, old.startedAtUtcMs, old.startZoneId,
+                    endedAtUtcMs, zoneId, confirmLongInterval = confirmed))
+            }
+        }
+    }
+
+    suspend fun saveSleep(draft: SleepDraft, checkDuration: Boolean = false): DataResult<SleepRecord> = write(db, writes) {
+        if (checkDuration) IntervalDurationPolicy.validateCompleted(draft.startedAtUtcMs, draft.endedAtUtcMs, IntervalDurationPolicy.MIN_SLEEP_MS, draft.confirmLongInterval)
+        saveSleepInTransaction(draft)
+    }
     suspend fun deleteSleep(id: String): DataResult<Boolean> = write(db, writes) { db.records().deleteSleep(Rules.id(id)) > 0 }
 
     /** Compare the whole saved row inside the transaction; a stale screen cannot resurrect/overwrite it. */
-    suspend fun editSleep(draft: SleepDraft, expected: SleepRecord): DataResult<SleepRecord> = write(db, writes) {
+    suspend fun editSleep(draft: SleepDraft, expected: SleepRecord, checkDuration: Boolean = false): DataResult<SleepRecord> = write(db, writes) {
         if (draft.id != expected.id || db.records().sleep(Rules.id(expected.id)) != expected) reject(ErrorCode.NOT_FOUND)
+        if (checkDuration) IntervalDurationPolicy.validateCompleted(draft.startedAtUtcMs, draft.endedAtUtcMs, IntervalDurationPolicy.MIN_SLEEP_MS, draft.confirmLongInterval)
         saveSleepInTransaction(draft)
     }
 

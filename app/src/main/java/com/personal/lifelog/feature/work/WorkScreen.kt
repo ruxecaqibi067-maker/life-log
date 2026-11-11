@@ -48,6 +48,7 @@ fun WorkRecordSummary(record: WorkRecord, showArchive: Boolean = true) {
 @Composable
 fun WorkError(code: ErrorCode) {
     val message = when (code) {
+        ErrorCode.INTERVAL_TOO_SHORT -> R.string.work_too_short
         ErrorCode.INVALID_INTERVAL -> R.string.work_invalid_interval
         ErrorCode.OVERLAPPING_WORK -> R.string.work_overlap
         ErrorCode.INVALID_TIME_ZONE -> R.string.work_invalid_zone
@@ -103,11 +104,19 @@ fun WorkHomeDialogs(viewModel: WorkViewModel, confirmUndo: Boolean, onDismissUnd
 @Composable
 internal fun WorkFinishConfirmation(viewModel: WorkViewModel) {
     val pending by viewModel.longFinish.collectAsStateWithLifecycle()
-    if (pending != null) LongIntervalDialog(
-        onCancel = viewModel::dismissLong,
-        onConfirm = viewModel::confirmLong,
-        details = "${recordedTime(pending!!.record.startedAtUtcMs, pending!!.record.startZoneId)}\n${recordedTime(pending!!.instant, pending!!.zone)}",
-    )
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    pending?.let { request ->
+        com.personal.lifelog.ui.components.ConfirmIntervalEndDialog(
+            title = R.string.work_long_title,
+            start = request.record.startedAtUtcMs, startZone = request.record.startZoneId,
+            end = request.instant, endZone = request.zone, latestEnd = request.latestEnd,
+            minimumMs = com.personal.lifelog.core.time.IntervalDurationPolicy.MIN_WORK_MS,
+            busy = busy, onChangeEnd = viewModel::changeFinishEnd,
+            onCancel = viewModel::dismissLong, onConfirm = viewModel::confirmLong,
+            feedback = { error?.let { WorkError(it) } },
+        )
+    }
 }
 
 @Composable

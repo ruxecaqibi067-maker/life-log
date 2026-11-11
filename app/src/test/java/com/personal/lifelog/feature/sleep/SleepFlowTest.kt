@@ -189,14 +189,14 @@ class SleepFlowTest {
     }
 
     @Test fun editorRejectsNegativeDurationAndOverlapLeavingOriginalRowsIntact() = runBlocking {
-        val original = repository.saveSleep(SleepDraft(id(), 1000, "UTC", 2000, "UTC")).value()
-        val adjacent = repository.saveSleep(SleepDraft(id(), 2000, "UTC", 3000, "UTC")).value()
+        val original = repository.saveSleep(SleepDraft(id(), 1000, "UTC", 601000, "UTC")).value()
+        val adjacent = repository.saveSleep(SleepDraft(id(), 601000, "UTC", 1201000, "UTC")).value()
         val vm = editor(original.id); vm.ready()
-        vm.change(SleepForm("1970-01-01T00:00:02", "UTC", end = "1970-01-01T00:00:01", endZone = "UTC"))
+        vm.change(SleepForm("1970-01-01T00:10:01", "UTC", end = "1970-01-01T00:00:01", endZone = "UTC"))
         vm.save(); vm.ready()
         assertEquals(ErrorCode.INVALID_INTERVAL, vm.state.value.error)
         assertEquals(original, repository.sleep(original.id))
-        vm.change(SleepForm("1970-01-01T00:00:01", "UTC", end = "1970-01-01T00:00:02.500", endZone = "UTC"))
+        vm.change(SleepForm("1970-01-01T00:00:01", "UTC", end = "1970-01-01T00:10:01.500", endZone = "UTC"))
         vm.save(); vm.ready()
         assertEquals(ErrorCode.OVERLAPPING_SLEEP, vm.state.value.error)
         assertEquals(adjacent, repository.sleep(adjacent.id))

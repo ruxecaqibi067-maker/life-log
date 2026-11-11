@@ -1,5 +1,6 @@
 package com.personal.lifelog.data.repository
 
+import com.personal.lifelog.core.time.IntervalDurationPolicy
 import com.personal.lifelog.core.time.RecordTime
 import com.personal.lifelog.core.time.WorkTime
 import com.personal.lifelog.data.local.AppDatabase
@@ -50,12 +51,36 @@ class WorkRepository(
         )
     }
 
-    suspend fun saveWork(draft: WorkDraft): DataResult<WorkRecord> = write(db, writes) { saveWorkInTransaction(draft) }
+    /** Interactive finish: null means the short active row was discarded in this transaction. */
+    suspend fun completeWork(
+        expected: WorkRecord, endedAtUtcMs: Long, zoneId: String, confirmed: Boolean = false,
+    ): DataResult<WorkRecord?> = write(db, writes) {
+        val old = db.work().work(Rules.id(expected.id)) ?: reject(ErrorCode.NOT_FOUND)
+        if (old != expected) reject(ErrorCode.NOT_FOUND)
+        if (old.endedAtUtcMs != null) old else {
+            RecordTime.localDate(endedAtUtcMs, zoneId)
+            val duration = IntervalDurationPolicy.elapsed(old.startedAtUtcMs, endedAtUtcMs)
+            if (duration < IntervalDurationPolicy.MIN_WORK_MS) {
+                db.work().deleteWork(old.id)
+                null
+            } else {
+                IntervalDurationPolicy.validateCompleted(old.startedAtUtcMs, endedAtUtcMs, IntervalDurationPolicy.MIN_WORK_MS, confirmed)
+                saveWorkInTransaction(WorkDraft(old.id, old.startedAtUtcMs, old.startZoneId,
+                    endedAtUtcMs, zoneId, confirmLongInterval = confirmed))
+            }
+        }
+    }
+
+    suspend fun saveWork(draft: WorkDraft, checkDuration: Boolean = false): DataResult<WorkRecord> = write(db, writes) {
+        if (checkDuration) IntervalDurationPolicy.validateCompleted(draft.startedAtUtcMs, draft.endedAtUtcMs, IntervalDurationPolicy.MIN_WORK_MS, draft.confirmLongInterval)
+        saveWorkInTransaction(draft)
+    }
     suspend fun deleteWork(id: String): DataResult<Boolean> = write(db, writes) { db.work().deleteWork(Rules.id(id)) > 0 }
 
     /** Compare the whole saved row inside the transaction; a stale screen cannot resurrect/overwrite it. */
-    suspend fun editWork(draft: WorkDraft, expected: WorkRecord): DataResult<WorkRecord> = write(db, writes) {
+    suspend fun editWork(draft: WorkDraft, expected: WorkRecord, checkDuration: Boolean = false): DataResult<WorkRecord> = write(db, writes) {
         if (draft.id != expected.id || db.work().work(Rules.id(expected.id)) != expected) reject(ErrorCode.NOT_FOUND)
+        if (checkDuration) IntervalDurationPolicy.validateCompleted(draft.startedAtUtcMs, draft.endedAtUtcMs, IntervalDurationPolicy.MIN_WORK_MS, draft.confirmLongInterval)
         saveWorkInTransaction(draft)
     }
 

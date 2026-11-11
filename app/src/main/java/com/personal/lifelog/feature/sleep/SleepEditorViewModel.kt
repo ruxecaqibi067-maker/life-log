@@ -89,7 +89,7 @@ class SleepEditorViewModel(
 
     private fun persist(draft: SleepDraft) = command {
         val old = expected
-        val result = if (old == null) repository.saveSleep(draft) else repository.editSleep(draft, old)
+        val result = if (old == null) repository.saveSleep(draft, checkDuration = true) else repository.editSleep(draft, old, checkDuration = true)
         when (result) {
             is DataResult.Success -> state.value = state.value.copy(done = true, pendingLong = null)
             is DataResult.Failure -> state.value = state.value.copy(

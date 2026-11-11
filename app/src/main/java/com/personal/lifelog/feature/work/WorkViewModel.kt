@@ -9,10 +9,11 @@ import java.time.Clock
 import java.time.ZoneId
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 
 data class WorkStatus(val loaded: Boolean = false, val active: WorkRecord? = null, val failed: Boolean = false)
 data class WorkUndo(val saved: WorkRecord, val previous: WorkRecord?, val deleted: Boolean = false)
-data class WorkFinish(val record: WorkRecord, val instant: Long, val zone: String)
+data class WorkFinish(val record: WorkRecord, val instant: Long, val zone: String, val latestEnd: Long = instant)
 data class WorkHistory(val records: List<WorkRecord>? = null, val failed: Boolean = false)
 
 /** Activity-scoped commands. No timer: every active-state emission comes from Room. */
@@ -22,6 +23,8 @@ class WorkViewModel(
     val clock: Clock,
     val zoneIdProvider: () -> ZoneId,
 ) : ViewModel() {
+    private val discardedNotices = Channel<Unit>(Channel.BUFFERED)
+    val shortRecordNotices = discardedNotices.receiveAsFlow()
     private val refresh = MutableStateFlow(0)
     val status = refresh.flatMapLatest {
         repository.activeWork().map { WorkStatus(loaded = true, active = it) }
@@ -53,24 +56,35 @@ class WorkViewModel(
     }
 
     fun finish(record: WorkRecord) {
+        if (busy.value || longFinish.value != null) return
         if (!status.value.loaded || status.value.failed) return
         val request = WorkFinish(record, clock.millis(), zoneIdProvider().id)
         finish(request, false)
+    }
+
+    fun changeFinishEnd(instant: Long, zone: String) {
+        val request = longFinish.value ?: return
+        if (busy.value || instant <= request.record.startedAtUtcMs || instant > request.latestEnd) return
+        longFinish.value = request.copy(instant = instant, zone = zone)
+        error.value = null
     }
 
     fun confirmLong() { longFinish.value?.let { finish(it, true) } }
 
     private fun finish(request: WorkFinish, confirmed: Boolean) = command {
         // A stale button must not finish a record that was edited since it was displayed.
-        when (val result = repository.finishWork(request.record.id, request.instant, request.zone, confirmed, request.record)) {
+        when (val result = repository.completeWork(request.record, request.instant, request.zone, confirmed)) {
             is DataResult.Success -> {
-                undo.value = WorkUndo(result.value, request.record)
+                val completed = result.value
+                undo.value = completed?.let { WorkUndo(it, request.record) }
                 longFinish.value = null
+                if (completed == null) discardedNotices.trySend(Unit)
             }
             is DataResult.Failure -> if (result.error.code == ErrorCode.LONG_INTERVAL_CONFIRMATION) {
                 longFinish.value = request
             } else {
-                longFinish.value = null
+                // A failed write retains the checked end time for a safe retry.
+                longFinish.value = request.takeIf { confirmed && result.error.code != ErrorCode.NOT_FOUND }
                 error.value = result.error.code
             }
         }

@@ -170,4 +170,35 @@ class WorkUiTest {
         assertTrue(runBlocking { db.records().allSleeps().isEmpty() })
     }
 
+
+    @Test fun accidentalImmediateWorkFinishDiscardsAndShowsMinimumNotice() {
+        workButton()
+        compose.waitUntil(10_000) { runBlocking { db.work().activeWorkNow() != null } }
+        waitText("结束工作")
+        workButton()
+        waitText("开始工作")
+        waitText("工作不足5分钟，本次未计入，已取消记录。")
+        assertTrue(runBlocking { db.work().allWorks().isEmpty() })
+        assertTrue(runBlocking { db.records().allSleeps().isEmpty() })
+    }
+
+    @Test fun workOverTwelveHoursAsksActualDurationAndCancelKeepsActive() {
+        workButton()
+        compose.waitUntil(10_000) { runBlocking { db.work().activeWorkNow() != null } }
+        now = now.plusSeconds(13 * 3600)
+        waitText("结束工作")
+        workButton()
+        waitText("请检查工作时段")
+        compose.onNodeWithText("实际时长：13小时").assertExists()
+        compose.onNodeWithText("取消").performClick()
+        assertNull(runBlocking { db.work().allWorks().single().endedAtUtcMs })
+        workButton()
+        waitText("请检查工作时段")
+        val captured = now.toEpochMilli()
+        now = now.plusSeconds(3600)
+        compose.onNodeWithTag("actual-interval-confirm").performClick()
+        waitText("开始工作")
+        assertEquals(captured, runBlocking { db.work().allWorks().single().endedAtUtcMs })
+    }
+
 }
