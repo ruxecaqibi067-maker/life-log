@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.personal.lifelog.ui.voice.*
+import com.personal.lifelog.core.validation.TodoRules
 import com.personal.lifelog.R
 import com.personal.lifelog.data.local.entity.HabitRecord
 import com.personal.lifelog.data.local.entity.TodoRecord
@@ -195,6 +197,7 @@ private fun HabitRow(habit: HabitRecord, busy: Boolean, onEdit: () -> Unit, onPa
 /** Kept above navigation rather than inside a LazyColumn item, so scrolling cannot dismiss an unsaved editor. */
 @Composable
 fun TodoDialogs(viewModel: TodoViewModel) {
+    BindVoiceInput(viewModel.voiceInput, onText = viewModel::onVoiceText)
     val draft by viewModel.editor.collectAsStateWithLifecycle()
     val commands by viewModel.commands.collectAsStateWithLifecycle()
     draft?.takeIf { commands.deletion == null }?.let { EditorDialog(it, commands, viewModel) }
@@ -229,9 +232,14 @@ private fun EditorDialog(draft: TodoEditorDraft, commands: TodoCommandState, vie
         })) },
         text = {
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                RecordTextField(draft.title, { viewModel.update(draft.copy(title = it.take(120))) },
+                RecordTextField(draft.title, viewModel::onTitleChanged,
                     Modifier.fillMaxWidth().testTag("todo-title-input"), enabled = !commands.busy,
-                    label = { Text(stringResource(R.string.todo_name)) }, maxLines = 3)
+                    label = { Text(stringResource(R.string.todo_name)) }, maxLines = 3,
+                    voiceInput = voiceInputAction(viewModel.voiceInput, draft.id, !commands.busy),
+                    isError = exceedsVoiceTextLimit(draft.title, TodoRules.TITLE_LIMIT),
+                    supportingText = if (exceedsVoiceTextLimit(draft.title, TodoRules.TITLE_LIMIT)) {
+                        { Text(stringResource(R.string.voice_over_limit, TodoRules.TITLE_LIMIT)) }
+                    } else null)
                 RecordTimeChoice(if (draft.habit) R.string.todo_habit_start else R.string.todo_date,
                     draft.date.format(fullDayFormat), enabled = !commands.busy) { picker = "date" }
                 RecordTimeChoice(R.string.todo_time_optional, draft.scheduledMinute?.let(::minuteText) ?: stringResource(R.string.todo_time_none),

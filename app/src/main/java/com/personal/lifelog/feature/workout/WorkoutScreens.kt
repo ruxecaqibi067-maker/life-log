@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.personal.lifelog.ui.voice.*
+import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.R
 import com.personal.lifelog.data.local.entity.ExerciseDefinition
 import com.personal.lifelog.data.local.entity.WorkoutWithItems
@@ -53,8 +55,9 @@ fun WorkoutEditorScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val picking by viewModel.picking.collectAsStateWithLifecycle()
+    BindVoiceInput(viewModel.voiceInput, ready = !state.loading, onText = viewModel::onVoiceText)
     var discard by rememberSaveable { mutableStateOf(false) }
-    val back = { if (!state.busy) { if (state.dirty) discard = true else onFinished() } }
+    val back = { viewModel.voiceInput.cancel(); if (!state.busy) { if (state.dirty) discard = true else onFinished() } }
     LaunchedEffect(state.done) { if (state.done) onFinished() }
     if (picking) {
         BackHandler { viewModel.closePicker() }
@@ -94,7 +97,12 @@ fun WorkoutEditorScreen(
                         WorkoutTimeFields(form, !state.busy) { viewModel.change(it) }
                         RecordTextField(form.note, { viewModel.change(form.copy(note = it)) },
                             Modifier.fillMaxWidth(), enabled = !state.busy,
-                            label = { Text(stringResource(R.string.workout_note)) })
+                            label = { Text(stringResource(R.string.workout_note)) },
+                            voiceInput = voiceInputAction(viewModel.voiceInput, "session", !state.busy && !state.done),
+                            isError = exceedsVoiceTextLimit(form.note, Rules.NOTE_LIMIT),
+                            supportingText = if (exceedsVoiceTextLimit(form.note, Rules.NOTE_LIMIT)) {
+                                { Text(stringResource(R.string.voice_over_limit, Rules.NOTE_LIMIT)) }
+                            } else null)
                     }
                     form.items.forEachIndexed { index, row ->
                         item(key = row.id) {
@@ -131,7 +139,12 @@ fun WorkoutEditorScreen(
                                     }
                                     RecordTextField(row.note, { viewModel.changeItem(row.copy(note = it)) },
                                         Modifier.fillMaxWidth(), enabled = !state.busy,
-                                        label = { Text(stringResource(R.string.workout_item_note)) })
+                                        label = { Text(stringResource(R.string.workout_item_note)) },
+                                        voiceInput = voiceInputAction(viewModel.voiceInput, row.id, !state.busy && !state.done),
+                                        isError = exceedsVoiceTextLimit(row.note, Rules.NOTE_LIMIT),
+                                        supportingText = if (exceedsVoiceTextLimit(row.note, Rules.NOTE_LIMIT)) {
+                                            { Text(stringResource(R.string.voice_over_limit, Rules.NOTE_LIMIT)) }
+                                        } else null)
                                 }
                             }
                         }

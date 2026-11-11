@@ -46,6 +46,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.personal.lifelog.ui.voice.*
+import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PickMealPhoto
 import com.personal.lifelog.data.media.TakeMealPhoto
@@ -80,6 +82,8 @@ fun MealEditorScreen(
     onFinished: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    BindVoiceInput(viewModel.voiceInput, ready = !state.loading, onText = viewModel::onVoiceText)
+    val voiceAction = voiceInputAction(viewModel.voiceInput, "description", !state.saving && !state.savedSuccessfully && !state.discarded)
     var showDiscard by rememberSaveable { mutableStateOf(false) }
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
 
@@ -111,6 +115,7 @@ fun MealEditorScreen(
     }
 
     val requestBack: () -> Unit = {
+        viewModel.voiceInput.cancel()
         when {
             state.saving -> Unit
             state.dirty -> showDiscard = true
@@ -167,6 +172,7 @@ fun MealEditorScreen(
                 state = state,
                 innerPadding = innerPadding,
                 onTextChanged = viewModel::onTextChanged,
+                voiceAction = voiceAction,
                 onToggleSatiety = viewModel::toggleSatiety,
                 onSatietyTextChanged = viewModel::onSatietyTextChanged,
                 onShowTimePicker = { showTimePicker = true },
@@ -215,6 +221,7 @@ private fun MealForm(
     state: MealEditorUiState,
     innerPadding: androidx.compose.foundation.layout.PaddingValues,
     onTextChanged: (String) -> Unit,
+    voiceAction: VoiceInputAction,
     onToggleSatiety: (Satiety) -> Unit,
     onSatietyTextChanged: (String) -> Unit,
     onShowTimePicker: () -> Unit,
@@ -254,8 +261,10 @@ private fun MealForm(
             enabled = !state.saving,
             label = { Text(stringResource(R.string.meal_text_label)) },
             placeholder = { Text(stringResource(R.string.meal_text_placeholder)) },
-            supportingText = { Text(stringResource(R.string.meal_text_hint)) },
-            isError = state.error == MealUiError.TEXT_TOO_LONG,
+            supportingText = { Text(if (exceedsVoiceTextLimit(state.text, Rules.MEAL_TEXT_LIMIT))
+                stringResource(R.string.voice_over_limit, Rules.MEAL_TEXT_LIMIT) else stringResource(R.string.meal_text_hint)) },
+            isError = state.error == MealUiError.TEXT_TOO_LONG || exceedsVoiceTextLimit(state.text, Rules.MEAL_TEXT_LIMIT),
+            voiceInput = voiceAction,
             maxLines = 8,
         )
 

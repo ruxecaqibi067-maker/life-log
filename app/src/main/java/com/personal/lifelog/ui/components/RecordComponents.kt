@@ -8,6 +8,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.res.stringResource
+import com.personal.lifelog.ui.voice.VoiceInputAction
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -88,11 +93,19 @@ fun RecordTextField(
     singleLine: Boolean = false,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     minLines: Int = 1,
+    voiceInput: VoiceInputAction? = null,
 ) = OutlinedTextField(value, onValueChange, modifier, enabled = enabled,
     textStyle = MaterialTheme.typography.bodyLarge, label = label, placeholder = placeholder,
     supportingText = supportingText, isError = isError, keyboardOptions = keyboardOptions,
     singleLine = singleLine, maxLines = maxLines, minLines = minLines,
-    shape = MaterialTheme.shapes.large)
+    shape = MaterialTheme.shapes.large,
+    trailingIcon = voiceInput?.let { action -> {
+        IconButton(onClick = action.onClick, enabled = enabled && action.enabled) {
+            Icon(if (action.waiting) Icons.Default.Close else Icons.Default.Mic,
+                stringResource(if (action.waiting) R.string.voice_cancel else R.string.voice_append),
+                tint = if (enabled && action.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+        }
+    } })
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
