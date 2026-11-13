@@ -93,7 +93,7 @@ class WorkEditorViewModel(
 
     private fun persist(draft: WorkDraft) = command {
         val old = expected
-        val result = if (old == null) repository.saveWork(draft) else repository.editWork(draft, old)
+        val result = if (old == null) repository.saveWork(draft, checkDuration = true) else repository.editWork(draft, old, checkDuration = true)
         when (result) {
             is DataResult.Success -> state.value = state.value.copy(done = true, pendingLong = null)
             is DataResult.Failure -> state.value = state.value.copy(

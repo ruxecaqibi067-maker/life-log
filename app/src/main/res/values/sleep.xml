@@ -13,7 +13,7 @@
     <string name="sleep_archive">归档日期：%1$s</string>
     <string name="sleep_duration">卧床时长：%1$d小时%2$d分</string>
     <string name="sleep_duration_seconds">卧床时长：%1$d秒</string>
-    <string name="sleep_note">记录的是就寝时段，可修改实际起床时间。</string>
+    <string name="sleep_note">记录的是就寝时段，可修改实际起床时间；已结束时段至少10分钟。</string>
     <string name="sleep_undo">撤销上次作息操作</string>
     <string name="sleep_undo_start">撤销后将删除刚才保存的未结束时段。</string>
     <string name="sleep_undo_finish">撤销后将移除刚才的起床时间，恢复为未结束时段。</string>
@@ -25,7 +25,7 @@
     <string name="sleep_discard">放弃修改？</string>
     <string name="sleep_discard_hint">未保存的输入将被丢弃。</string>
     <string name="sleep_long_title">请检查就寝时段</string>
-    <string name="sleep_long_hint">时段超过24小时，请核对完整日期和时间。确认后按原值保存，不会自动调整。</string>
+    <string name="sleep_long_hint">时段超过12小时，请核对实际开始和结束时间。若忘记结束，请先取消并修改时间，再保存。</string>
     <string name="sleep_start_input">就寝日期时间</string>
     <string name="sleep_end_input">起床日期时间</string>
     <string name="sleep_picker_hint">点击选择日期和时间</string>

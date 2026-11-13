@@ -52,6 +52,7 @@ fun SleepRecordSummary(record: SleepRecord, showArchive: Boolean = true) {
 @Composable
 fun SleepError(code: ErrorCode) {
     val message = when (code) {
+        ErrorCode.INTERVAL_TOO_SHORT -> R.string.sleep_too_short
         ErrorCode.INVALID_INTERVAL -> R.string.sleep_invalid_interval
         ErrorCode.OVERLAPPING_SLEEP -> R.string.sleep_overlap
         ErrorCode.INVALID_TIME_ZONE -> R.string.sleep_invalid_zone
@@ -108,11 +109,19 @@ fun SleepHomeDialogs(viewModel: SleepViewModel, confirmUndo: Boolean, onDismissU
 @Composable
 internal fun SleepFinishConfirmation(viewModel: SleepViewModel) {
     val pending by viewModel.longFinish.collectAsStateWithLifecycle()
-    if (pending != null) LongIntervalDialog(
-        onCancel = viewModel::dismissLong,
-        onConfirm = viewModel::confirmLong,
-        details = "${recordedTime(pending!!.record.startedAtUtcMs, pending!!.record.startZoneId)}\n${recordedTime(pending!!.instant, pending!!.zone)}",
-    )
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    pending?.let { request ->
+        com.personal.lifelog.ui.components.ConfirmIntervalEndDialog(
+            title = R.string.sleep_long_title,
+            start = request.record.startedAtUtcMs, startZone = request.record.startZoneId,
+            end = request.instant, endZone = request.zone, latestEnd = request.latestEnd,
+            minimumMs = com.personal.lifelog.core.time.IntervalDurationPolicy.MIN_SLEEP_MS,
+            busy = busy, onChangeEnd = viewModel::changeFinishEnd,
+            onCancel = viewModel::dismissLong, onConfirm = viewModel::confirmLong,
+            feedback = { error?.let { SleepError(it) } },
+        )
+    }
 }
 
 @Composable

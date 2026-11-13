@@ -19,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -98,6 +101,15 @@ fun LifelogApp(
     workHomeViewModel: WorkHomeViewModel,
     todoViewModel: TodoViewModel? = null,
 ) {
+    val snackbar = remember { SnackbarHostState() }
+    val sleepDiscarded = stringResource(R.string.sleep_short_discarded)
+    val workDiscarded = stringResource(R.string.work_short_discarded)
+    LaunchedEffect(sleepViewModel, snackbar) {
+        sleepViewModel.shortRecordNotices.collect { snackbar.showSnackbar(sleepDiscarded) }
+    }
+    LaunchedEffect(workViewModel, snackbar) {
+        workViewModel.shortRecordNotices.collect { snackbar.showSnackbar(workDiscarded) }
+    }
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -139,6 +151,7 @@ fun LifelogApp(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         containerColor = if (isBedtime) Color.Black else MaterialTheme.colorScheme.background,
         contentWindowInsets = if (isBedtime) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
         bottomBar = {

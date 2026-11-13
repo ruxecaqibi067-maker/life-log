@@ -9,10 +9,11 @@ import java.time.Clock
 import java.time.ZoneId
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 
 data class SleepStatus(val loaded: Boolean = false, val active: SleepRecord? = null, val failed: Boolean = false)
 data class SleepUndo(val saved: SleepRecord, val previous: SleepRecord?)
-data class SleepFinish(val record: SleepRecord, val instant: Long, val zone: String)
+data class SleepFinish(val record: SleepRecord, val instant: Long, val zone: String, val latestEnd: Long = instant)
 data class SleepHistory(val records: List<SleepRecord>? = null, val failed: Boolean = false)
 
 /** Activity-scoped commands. No timer: every active-state emission comes from Room. */
@@ -22,6 +23,8 @@ class SleepViewModel(
     val clock: Clock,
     val zoneIdProvider: () -> ZoneId,
 ) : ViewModel() {
+    private val discardedNotices = Channel<Unit>(Channel.BUFFERED)
+    val shortRecordNotices = discardedNotices.receiveAsFlow()
     private val refresh = MutableStateFlow(0)
     val status = refresh.flatMapLatest {
         repository.activeSleep().map { SleepStatus(loaded = true, active = it) }
@@ -55,23 +58,37 @@ class SleepViewModel(
     }
 
     fun finish(record: SleepRecord) {
+        if (busy.value || longFinish.value != null) return
         val request = SleepFinish(record, clock.millis(), zoneIdProvider().id)
         finish(request, false)
+    }
+
+    fun changeFinishEnd(instant: Long, zone: String) {
+        val request = longFinish.value ?: return
+        if (busy.value || instant <= request.record.startedAtUtcMs || instant > request.latestEnd) return
+        longFinish.value = request.copy(instant = instant, zone = zone)
+        error.value = null
     }
 
     fun confirmLong() { longFinish.value?.let { finish(it, true) } }
 
     private fun finish(request: SleepFinish, confirmed: Boolean) = command {
         // A stale button must not finish a record that was edited since it was displayed.
-        when (val result = repository.finishSleep(request.record.id, request.instant, request.zone, confirmed, request.record)) {
+        when (val result = repository.completeSleep(request.record, request.instant, request.zone, confirmed)) {
             is DataResult.Success -> {
-                undo.value = SleepUndo(result.value, request.record)
+                val completed = result.value
+                undo.value = completed?.let { SleepUndo(it, request.record) }
                 longFinish.value = null
+                if (completed == null) {
+                    pendingBedtime.value = null
+                    discardedNotices.trySend(Unit)
+                }
             }
             is DataResult.Failure -> if (result.error.code == ErrorCode.LONG_INTERVAL_CONFIRMATION) {
                 longFinish.value = request
             } else {
-                longFinish.value = null
+                // A failed write retains the checked end time for a safe retry.
+                longFinish.value = request.takeIf { confirmed && result.error.code != ErrorCode.NOT_FOUND }
                 error.value = result.error.code
             }
         }

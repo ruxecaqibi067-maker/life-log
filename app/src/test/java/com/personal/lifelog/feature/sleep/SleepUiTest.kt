@@ -6,6 +6,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.espresso.Espresso.pressBack
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -300,4 +301,36 @@ class SleepUiTest {
         awaitText("这一天没有作息记录")
         assertTrue(rows().isEmpty())
     }
+
+    @Test fun accidentalImmediateWakeDiscardsRecordClosesBedtimeAndExplainsMinimum() {
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        compose.onNodeWithTag("bedtime-wake").performClick()
+        awaitText("准备睡了")
+        awaitText("睡眠不足10分钟，本次未计入，已取消记录。")
+        compose.onNodeWithTag("bedtime-screen").assertDoesNotExist()
+        assertTrue(rows().isEmpty())
+    }
+
+    @Test fun wakeAfterThirteenHoursLetsUserCorrectActualEndBeforeSaving() {
+        compose.onNodeWithText("准备睡了").performClick()
+        awaitText("23:50")
+        val started = rows().single()
+        now = now.plusSeconds(13 * 3600)
+        compose.onNodeWithTag("bedtime-wake").performClick()
+        awaitText("请检查就寝时段")
+        assertNull(rows().single().endedAtUtcMs)
+        compose.onNodeWithTag("actual-interval-edit-end").performScrollTo().performClick()
+        listOf("年" to 2026, "月" to 10, "日" to 23, "时" to 7, "分" to 50).forEach { (unit, n) ->
+            compose.onNodeWithTag("record-wheel-$unit").performScrollTo()
+                .performSemanticsAction(SemanticsActions.SetProgress) { it(n.toFloat()) }
+        }
+        compose.onNode(hasText("确认") and hasAnyAncestor(hasTestTag("record-time-picker"))).performClick()
+        awaitText("实际时长：8小时")
+        assertNull(rows().single().endedAtUtcMs)
+        compose.onNodeWithTag("actual-interval-confirm").performClick()
+        awaitText("准备睡了")
+        assertEquals(started.startedAtUtcMs + 8 * 3_600_000, rows().single().endedAtUtcMs)
+    }
+
 }

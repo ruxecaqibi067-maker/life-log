@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sleep_too_short">睡眠时长不足10分钟，请核对实际时间；本次未保存。</string>
+    <string name="work_too_short">工作时长不足5分钟，请核对实际时间；本次未保存。</string>
+    <string name="sleep_short_discarded">睡眠不足10分钟，本次未计入，已取消记录。</string>
+    <string name="work_short_discarded">工作不足5分钟，本次未计入，已取消记录。</string>
+    <string name="interval_check_actual">本次持续已超过12小时，是否忘记结束？请确认实际时长，或修改实际结束时间。</string>
+    <string name="interval_start">开始：%1$s</string>
+    <string name="interval_end">实际结束：%1$s</string>
+    <string name="interval_duration">实际时长：%1$s</string>
+    <string name="interval_edit_end">修改实际结束时间</string>
+    <string name="interval_pick_end">选择实际结束日期时间</string>
+    <string name="interval_end_range">结束时间须晚于开始，且不能晚于本次点击结束的时间。</string>
+    <string name="interval_short_notice">修改后不足%1$d分钟，确认后将取消这次记录，不计入统计。</string>
+</resources>

@@ -72,7 +72,7 @@ class WorkFlowTest {
     @Test fun failedFinishKeepsActiveAndRetryUndoUsesOnlyWorkState() = runBlocking<Unit> {
         val model = commands(); model.ready(); model.start(id()); model.ready()
         val active = work.activeWork().first()!!
-        now = now.plusSeconds(60)
+        now = now.plusSeconds(5 * 60)
         db.openHelper.writableDatabase.execSQL("CREATE TEMP TRIGGER fail_work BEFORE UPDATE ON WorkRecord BEGIN SELECT RAISE(ABORT, 'synthetic'); END")
         model.finish(active); model.ready()
         assertEquals(active, work.work(active.id))
