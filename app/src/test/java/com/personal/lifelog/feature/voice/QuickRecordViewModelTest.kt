@@ -143,4 +143,86 @@ class QuickRecordViewModelTest {
         restored.change(QuickField.CONTENT, "不应覆盖"); restored.save()
         assertEquals("面", db.records().allMeals().single().text)
     }
+    @Test fun voiceSupplementsApplyMinimumWithoutWritingShortRows() = runBlocking<Unit> {
+        for (text in listOf("睡了五分钟", "工作了四分钟")) {
+            val vm = model(); parse(vm, text)
+            vm.change(QuickField.END, clock.millis().toString()); save(vm)
+            assertFalse(vm.state.value.done)
+            assertTrue(vm.state.value.error!!.contains("至少"))
+        }
+        assertTrue(db.records().allSleeps().isEmpty()); assertTrue(db.work().allWorks().isEmpty())
+    }
+    @Test fun voiceFinishUsesPreciseMinimumAndAllowsZeroDurationDiscard() = runBlocking<Unit> {
+        for (sleeping in listOf(true, false)) {
+            val minimum = if (sleeping) 600000L else 300000L
+            for (elapsed in listOf(0L, minimum - 1, minimum)) {
+                val id = RecordIds.newId()
+                if (sleeping) records.startSleep(id, clock.millis() - elapsed, zone.id)
+                else work.startWork(id, clock.millis() - elapsed, zone.id)
+                val vm = model(); parse(vm, if (sleeping) "我醒了" else "结束工作"); save(vm)
+                assertTrue(vm.state.value.toString(), vm.state.value.done)
+                if (sleeping) {
+                    assertEquals(elapsed == minimum, records.sleep(id) != null)
+                    records.deleteSleep(id)
+                } else {
+                    assertEquals(elapsed == minimum, work.work(id) != null)
+                    work.deleteWork(id)
+                }
+            }
+        }
+    }
+    @Test fun voiceLongFinishCanCancelAndCorrectToDiscardWithFrozenLimit() = runBlocking<Unit> {
+        val id = RecordIds.newId(); val start = clock.millis() - 13 * 3600000L
+        work.startWork(id, start, zone.id)
+        val vm = model(); parse(vm, "结束工作"); save(vm)
+        assertTrue(vm.state.value.longConfirmation); assertNull(work.work(id)!!.endedAtUtcMs)
+        vm.cancelLong(); assertNull(work.work(id)!!.endedAtUtcMs)
+        save(vm); vm.changeFinishEnd(clock.millis() + 1)
+        assertEquals(clock.millis(), vm.state.value.draft.end)
+        vm.changeFinishEnd(start + 120000)
+        assertTrue(vm.state.value.longConfirmation)
+        assertEquals("", vm.state.value.draft[QuickField.DURATION])
+        vm.save(true); ready(vm); assertTrue(vm.state.value.done); assertNull(work.work(id))
+    }
+    @Test fun voiceFinishRejectsSameMillisecondEditsAndRecoversDiscardWithoutRebinding() = runBlocking<Unit> {
+        val id = RecordIds.newId(); work.startWork(id, clock.millis() - 3600000, zone.id)
+        val vm = model(); parse(vm, "结束工作")
+        val before = work.work(id)!!
+        work.editWork(WorkDraft(id, before.startedAtUtcMs + 60000, zone.id), before)
+        assertEquals(before.updatedAtUtcMs, work.work(id)!!.updatedAtUtcMs)
+        save(vm); assertFalse(vm.state.value.done); assertTrue(vm.state.value.error!!.contains("变化"))
+        work.deleteWork(id)
+        val shortId = RecordIds.newId(); work.startWork(shortId, clock.millis(), zone.id)
+        val handle = SavedStateHandle(); val short = model(handle); parse(short, "结束工作"); save(short)
+        val state = handle.keys().associateWith { handle.get<Any?>(it) }.toMutableMap(); state["quick.done"] = false
+        val newId = RecordIds.newId(); work.startWork(newId, clock.millis(), zone.id)
+        val restored = model(SavedStateHandle(state)); ready(restored)
+        assertTrue(restored.state.value.done); assertNull(work.work(newId)!!.endedAtUtcMs)
+    }
+    @Test fun voiceFinishRegistersSafeGlobalUndoAndClearsDiscardedStart() = runBlocking<Unit> {
+        val parent = com.personal.lifelog.feature.work.WorkViewModel(work, clock) { zone }
+        try {
+            withTimeout(10000) { parent.status.first { it.loaded && !it.failed } }
+            val id = RecordIds.newId(); parent.start(id)
+            withTimeout(10000) { parent.busy.first { !it } }
+            assertNotNull(parent.undo.value)
+            val quick = QuickRecordViewModel(records, work, workouts, SavedStateHandle(), clock,
+                onWorkSaved = parent::acceptExternalChange, zoneProvider = { zone }).also { models += it }
+            parse(quick, "结束工作"); save(quick)
+            assertTrue(quick.state.value.done); assertNull(parent.undo.value); assertNull(work.work(id))
+            val normalId = RecordIds.newId(); work.startWork(normalId, clock.millis() - 3600000, zone.id)
+            val normal = QuickRecordViewModel(records, work, workouts, SavedStateHandle(), clock,
+                onWorkSaved = parent::acceptExternalChange, zoneProvider = { zone }).also { models += it }
+            parse(normal, "结束工作"); save(normal)
+            assertEquals(normalId, parent.undo.value!!.saved.id); assertNotNull(parent.undo.value!!.previous)
+            val undoBeforeSupplement = parent.undo.value
+            val supplement = QuickRecordViewModel(records, work, workouts, SavedStateHandle(), clock,
+                onWorkSaved = parent::acceptExternalChange, zoneProvider = { zone }).also { models += it }
+            parse(supplement, "昨天下午一点到两点工作"); save(supplement)
+            assertTrue(supplement.state.value.done)
+            assertEquals(undoBeforeSupplement, parent.undo.value)
+            parent.undoLast(); withTimeout(10000) { parent.busy.first { !it } }
+            assertNull(work.work(normalId)!!.endedAtUtcMs)
+        } finally { parent.viewModelScope.cancel() }
+    }
 }

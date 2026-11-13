@@ -4,6 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personal.lifelog.core.validation.Units
+import com.personal.lifelog.core.time.IntervalDurationPolicy
+import com.personal.lifelog.data.local.entity.SleepRecord
+import com.personal.lifelog.data.local.entity.WorkRecord
 import com.personal.lifelog.data.local.entity.ExerciseDefinition
 import com.personal.lifelog.data.repository.*
 import com.personal.lifelog.domain.*
@@ -26,7 +29,10 @@ internal data class QuickRecordState(
 internal class QuickRecordViewModel(
     private val records: RecordRepository, private val work: WorkRepository,
     private val workouts: WorkoutRepository, private val saved: SavedStateHandle,
-    private val clock: Clock, zoneProvider: () -> ZoneId,
+    private val clock: Clock,
+    private val onSleepSaved: (SleepRecord?, SleepRecord?) -> Unit = { _, _ -> },
+    private val onWorkSaved: (WorkRecord?, WorkRecord?) -> Unit = { _, _ -> },
+    zoneProvider: () -> ZoneId,
 ) : ViewModel() {
     val zone: ZoneId = ZoneId.of(saved.get<String>("quick.zone") ?: zoneProvider().id.also { saved["quick.zone"] = it })
     val reference: Instant = Instant.ofEpochMilli(saved.get<Long>("quick.reference") ?: clock.millis().also { saved["quick.reference"] = it })
@@ -63,11 +69,33 @@ internal class QuickRecordViewModel(
         val exists = when (d.kind) {
             QuickKind.MEAL -> records.meal(id) != null
             QuickKind.WORKOUT -> workouts.workout(id) != null
-            QuickKind.SLEEP -> if (d.action == QuickAction.FINISH) finishId?.let { records.sleep(it) }?.let { it.endedAtUtcMs == d.end } == true else records.sleep(id) != null
-            QuickKind.WORK -> if (d.action == QuickAction.FINISH) finishId?.let { work.work(it) }?.let { it.endedAtUtcMs == d.end } == true else work.work(id) != null
+            QuickKind.SLEEP -> if (d.action == QuickAction.FINISH) finishId?.let { records.sleep(it) }?.let { it.endedAtUtcMs == d.end } ?: submittedShortFinish(d, finishId) else records.sleep(id) != null
+            QuickKind.WORK -> if (d.action == QuickAction.FINISH) finishId?.let { work.work(it) }?.let { it.endedAtUtcMs == d.end } ?: submittedShortFinish(d, finishId) else work.work(id) != null
             null -> false
         }
         if (exists) set(state.value.copy(done = true, bedtime = d.kind == QuickKind.SLEEP && d.action == QuickAction.START && records.sleep(id)?.endedAtUtcMs == null))
+    }
+    private fun submittedShortFinish(draft: QuickDraft, target: String?): Boolean =
+        target != null && saved.get<String>("quick.submittedTarget") == target &&
+            saved.get<Boolean>("quick.submittedShort") == true && draft.action == QuickAction.FINISH
+
+    private fun snapshot(row: SleepRecord) = arrayListOf(row.id, row.startedAtUtcMs.toString(), row.startZoneId,
+        row.endedAtUtcMs?.toString().orEmpty(), row.endZoneId.orEmpty(), row.archiveLocalDate,
+        row.activeSlot?.toString().orEmpty(), row.createdAtUtcMs.toString(), row.updatedAtUtcMs.toString())
+
+    private fun snapshot(row: WorkRecord) = arrayListOf(row.id, row.startedAtUtcMs.toString(), row.startZoneId,
+        row.endedAtUtcMs?.toString().orEmpty(), row.endZoneId.orEmpty(), row.archiveLocalDate,
+        row.activeSlot?.toString().orEmpty(), row.createdAtUtcMs.toString(), row.updatedAtUtcMs.toString())
+
+    fun changeFinishEnd(value: Long) {
+        val start = state.value.draft.start ?: return
+        if (value <= start || value > reference.toEpochMilli()) return
+        if (!editable()) return
+        voice.cancel()
+        set(state.value.copy(
+            draft = state.value.draft.with(QuickField.END, value.toString()).with(QuickField.DURATION, ""),
+            manual = state.value.manual + setOf(QuickField.END, QuickField.DURATION), error = null,
+        ))
     }
     private fun editable() = !state.value.busy && !state.value.done && !state.value.loading && !state.value.loadFailed
     fun captureOnce() {
@@ -130,6 +158,7 @@ internal class QuickRecordViewModel(
                 val version = sleep?.updatedAtUtcMs ?: working?.updatedAtUtcMs
                 saved["quick.activeId"] = activeId
                 saved["quick.activeVersion"] = version
+                saved["quick.activeSnapshot"] = sleep?.let(::snapshot) ?: working?.let(::snapshot)
                 val start = sleep?.startedAtUtcMs ?: working?.startedAtUtcMs
                 set(state.value.copy(busy = false, draft = state.value.draft.with(QuickField.START, start?.toString().orEmpty())
                     .with(QuickField.END, state.value.draft.end?.toString() ?: reference.toEpochMilli().toString()),
@@ -148,37 +177,52 @@ internal class QuickRecordViewModel(
         if (problem != null) { mutable.value = s.copy(error = problem); return }
         val d = s.draft
         saved["quick.submitted"] = true
+        saved["quick.submittedTarget"] = saved.get<String>("quick.activeId")
+        val minimum = if (d.kind == QuickKind.SLEEP) IntervalDurationPolicy.MIN_SLEEP_MS else IntervalDurationPolicy.MIN_WORK_MS
+        saved["quick.submittedShort"] = d.action == QuickAction.FINISH &&
+            runCatching { IntervalDurationPolicy.elapsed(d.start!!, d.end!!) < minimum }.getOrDefault(false)
         mutable.value = s.copy(busy = true, error = null, longConfirmation = false)
         viewModelScope.launch {
             try {
+                var previousSleep: SleepRecord? = null
+                var previousWork: WorkRecord? = null
                 val result: DataResult<*> = when (d.kind!!) {
                     QuickKind.MEAL -> records.saveMeal(MealDraft(id, d.start!!, zone.id, d[QuickField.CONTENT]))
                     QuickKind.WORKOUT -> workouts.saveWorkout(workout(d))
                     QuickKind.SLEEP -> when (d.action) {
-                        QuickAction.RECORD -> records.saveSleep(SleepDraft(id, d.start!!, zone.id, d.end!!, zone.id, confirmLong))
+                        QuickAction.RECORD -> records.saveSleep(SleepDraft(id, d.start!!, zone.id, d.end!!, zone.id, confirmLong), checkDuration = true)
                         QuickAction.START -> records.startSleep(id, d.start!!, zone.id).let { r ->
                             if (r is DataResult.Success && r.value.id != id) DataResult.Failure(DataError(ErrorCode.OVERLAPPING_SLEEP)) else r
                         }
                         QuickAction.FINISH -> {
                             val old = saved.get<String>("quick.activeId")?.let { records.sleep(it) }
                             if (old == null || old.endedAtUtcMs != null || old.updatedAtUtcMs != saved.get<Long>("quick.activeVersion")) DataResult.Failure(DataError(ErrorCode.NOT_FOUND))
-                            else records.finishSleep(old.id, d.end!!, zone.id, confirmLong, old)
+                            else if (snapshot(old) != saved.get<ArrayList<String>>("quick.activeSnapshot")) DataResult.Failure(DataError(ErrorCode.NOT_FOUND))
+                            else { previousSleep = old; records.completeSleep(old, d.end!!, zone.id, confirmLong) }
                         }
                     }
                     QuickKind.WORK -> when (d.action) {
-                        QuickAction.RECORD -> work.saveWork(WorkDraft(id, d.start!!, zone.id, d.end!!, zone.id, confirmLong))
+                        QuickAction.RECORD -> work.saveWork(WorkDraft(id, d.start!!, zone.id, d.end!!, zone.id, confirmLong), checkDuration = true)
                         QuickAction.START -> work.startWork(id, d.start!!, zone.id).let { r ->
                             if (r is DataResult.Success && r.value.id != id) DataResult.Failure(DataError(ErrorCode.OVERLAPPING_WORK)) else r
                         }
                         QuickAction.FINISH -> {
                             val old = saved.get<String>("quick.activeId")?.let { work.work(it) }
                             if (old == null || old.endedAtUtcMs != null || old.updatedAtUtcMs != saved.get<Long>("quick.activeVersion")) DataResult.Failure(DataError(ErrorCode.NOT_FOUND))
-                            else work.finishWork(old.id, d.end!!, zone.id, confirmLong, old)
+                            else if (snapshot(old) != saved.get<ArrayList<String>>("quick.activeSnapshot")) DataResult.Failure(DataError(ErrorCode.NOT_FOUND))
+                            else { previousWork = old; work.completeWork(old, d.end!!, zone.id, confirmLong) }
                         }
                     }
                 }
                 when (result) {
-                    is DataResult.Success -> set(state.value.copy(busy = false, done = true, bedtime = d.kind == QuickKind.SLEEP && d.action == QuickAction.START))
+                    is DataResult.Success -> {
+                        if (d.action != QuickAction.RECORD) when (d.kind) {
+                            QuickKind.SLEEP -> onSleepSaved(result.value as SleepRecord?, previousSleep)
+                            QuickKind.WORK -> onWorkSaved(result.value as WorkRecord?, previousWork)
+                            else -> Unit
+                        }
+                        set(state.value.copy(busy = false, done = true, bedtime = d.kind == QuickKind.SLEEP && d.action == QuickAction.START))
+                    }
                     is DataResult.Failure -> {
                         saved["quick.submitted"] = false
                         mutable.value = state.value.copy(busy = false,
@@ -201,7 +245,7 @@ internal class QuickRecordViewModel(
         if (kind in setOf(QuickKind.SLEEP, QuickKind.WORK)) {
             if (d.start!! > clock.millis()) return "开始时间在未来，请核对日期"
             if (d.action != QuickAction.START && d.end == null) return "请补全结束时间"
-            if (d.action != QuickAction.START && d.end!! <= d.start!!) return "结束时间必须晚于开始时间，请核对跨日日期"
+            if (d.action != QuickAction.START && (d.end!! < d.start!! || (d.action == QuickAction.RECORD && d.end == d.start))) return "结束时间必须晚于开始时间，请核对跨日日期"
             if (d.action != QuickAction.START && d.end!! > clock.millis()) return "结束时间在未来，请核对日期"
             val seconds = try { Units.minutesToSeconds(d[QuickField.DURATION]) } catch (_: DataViolation) { return "请填写有效的正数时长（分钟）" }
             if (d.action != QuickAction.START && seconds != null && abs(d.end!! - d.start!! - seconds * 1000) > 1000) return "起止时间与口述时长不一致，请修改时间或时长"
@@ -236,6 +280,7 @@ internal class QuickRecordViewModel(
         ErrorCode.TEXT_TOO_LONG -> "文字超过原字段上限，请缩短后保存"
         ErrorCode.EMPTY_MEAL -> "请填写饮食内容"
         ErrorCode.INVALID_INTERVAL -> "起止时间无效，请核对"
+        ErrorCode.INTERVAL_TOO_SHORT -> "睡眠至少10分钟、工作至少5分钟，请调整补录时段"
         ErrorCode.INVALID_FIELDS_FOR_TYPE -> "数量与运动类型不符，请清空不适用的字段"
         ErrorCode.HIDDEN_EXERCISE -> "运动项目已隐藏，请重新选择"
         else -> "保存失败，请检查字段或稍后重试"

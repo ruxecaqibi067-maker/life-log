@@ -100,4 +100,18 @@ class QuickRecordParserTest {
         val p = QuickRecordParser.parse("睡了五小时，又工作了两小时", reference, zone, exercises, QuickKind.WORK)
         assertTrue(p.multiple); assertEquals(QuickKind.WORK, p.draft.kind)
     }
+    @Test fun chineseClockMinutesAreNotDecimalDurations() {
+        for (minute in listOf("五分", "零五分", "十分")) {
+            val expected = if (minute == "十分") "08:10" else "08:05"
+            assertEquals(time("2026-11-12T$expected"), parse("今天上午八点${minute}吃了面").draft.start)
+        }
+        assertEquals("8.5", parse("跑步八点五分钟").draft[QuickField.DURATION])
+    }
+    @Test fun mealDescriptionKeepsOriginalChineseAndMultipleTimesRequireSplitting() {
+        assertEquals("三分熟的牛排", parse("今天中午十二点吃了三分熟的牛排").draft[QuickField.CONTENT])
+        assertTrue(parse("今天上午九点吃了面，下午六点喝了牛奶").multiple)
+    }
+    @Test fun inheritedMorningTwelveMeansNoonInsteadOfMidnight() {
+        assertEquals(time("2026-11-12T12:00"), parse("今天上午十点到十二点工作").draft.end)
+    }
 }

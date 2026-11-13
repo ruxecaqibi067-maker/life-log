@@ -1,5 +1,7 @@
 package com.personal.lifelog.ui
 
+import androidx.compose.ui.test.assertIsEnabled
+
 import android.app.Application
 import android.content.Context
 import androidx.compose.material3.Button
@@ -177,6 +179,7 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithTag("home-voice-module").assertDoesNotExist()
         compose.onNodeWithTag("home-quick-toggle").performClick()
         compose.onNodeWithTag("home-voice-type").performClick()
+        compose.waitUntil(10_000) { runCatching { compose.onNodeWithTag("quick-raw").assertIsEnabled() }.isSuccess }
         compose.onNodeWithTag("quick-raw").performTextReplacement("睡了五小时")
         compose.onNodeWithTag("quick-parse").performClick()
         compose.onNodeWithTag("quick-save").performClick()

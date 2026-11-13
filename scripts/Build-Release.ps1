@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory=$true)][string]$SigningProperties,
-    [int]$VersionCode = 11,
-    [string]$VersionName = '0.1.7',
+    [int]$VersionCode = 12,
+    [string]$VersionName = '0.1.8',
     [string]$Sdk = "$env:LOCALAPPDATA/Android/Sdk"
 )
 $ErrorActionPreference = 'Stop'

@@ -131,7 +131,17 @@ internal fun QuickRecordScreen(vm: QuickRecordViewModel, capture: Boolean, onBac
     }
     if (discard) AlertDialog(onDismissRequest = { discard = false }, title = { Text("放弃这次记录？") },
         confirmButton = { ActionButton(onBack) { Text("放弃") } }, dismissButton = { ActionButton({ discard = false }) { Text("继续编辑") } })
-    if (state.longConfirmation) AlertDialog(onDismissRequest = vm::cancelLong, title = { Text("确认较长的时间区间？") },
+    if (state.longConfirmation && draft.action == QuickAction.FINISH && draft.start != null && draft.end != null) {
+        ConfirmIntervalEndDialog(
+            title = if (draft.kind == QuickKind.SLEEP) R.string.sleep_long_title else R.string.work_long_title,
+            start = draft.start!!, startZone = vm.zone.id, end = draft.end!!, endZone = vm.zone.id,
+            latestEnd = vm.reference.toEpochMilli(),
+            minimumMs = if (draft.kind == QuickKind.SLEEP) com.personal.lifelog.core.time.IntervalDurationPolicy.MIN_SLEEP_MS
+                else com.personal.lifelog.core.time.IntervalDurationPolicy.MIN_WORK_MS,
+            busy = state.busy, onChangeEnd = { value, _ -> vm.changeFinishEnd(value) },
+            onCancel = vm::cancelLong, onConfirm = { vm.save(true) },
+        )
+    } else if (state.longConfirmation) AlertDialog(onDismissRequest = vm::cancelLong, title = { Text("确认较长的时间区间？") },
         text = { Text("请再次核对预览中的起止时间，确认后继续保存。") },
         confirmButton = { ActionButton({ vm.save(true) }) { Text("确认保存") } }, dismissButton = { ActionButton(vm::cancelLong) { Text("返回检查") } })
 }

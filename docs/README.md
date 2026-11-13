@@ -1,5 +1,7 @@
 # 文档导航
 
+2026-11-13本地测试版0.1.8/code12，见[本地报告](releases/0.1.8-local.md)。用户本轮要求暂不推送，下面的code11链接为已公开版本。
+
 2026-11-11发布0.1.7/code11，Room/备份v7，沿用找回的原签名，支持code10直接覆盖。包含工作七日分析和自动JSON，见[code11报告](releases/0.1.7-code11.md)。Android9新增限定maxSdk28存储权限，Android10起使用MediaStore。下方旧日期内容保留原证据范围。
 
 

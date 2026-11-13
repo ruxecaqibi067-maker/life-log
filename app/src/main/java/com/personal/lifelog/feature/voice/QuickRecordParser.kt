@@ -79,7 +79,7 @@ internal object QuickRecordParser {
             val hour = when {
                 period in listOf("下午", "傍晚", "晚上", "晚间") && hourRaw in 1..11 -> hourRaw + 12
                 period == "中午" && hourRaw in 1..10 -> hourRaw + 12
-                period in listOf("凌晨", "早上", "早晨", "上午") && hourRaw == 12 -> 0
+                period == "凌晨" && hourRaw == 12 -> 0
                 else -> hourRaw
             }
             val explicitDate = relative != null || foundDate != null
@@ -128,8 +128,8 @@ internal object QuickRecordParser {
             } else points.first().instant?.let { values[QuickField.START] = it.toString() }
         }
         if (kind == QuickKind.MEAL) {
-            val marker = Regex("吃了|喝了|吃的是|吃的|吃饭|早餐|午餐|晚餐|早饭|午饭|晚饭").find(text)
-            values[QuickField.CONTENT] = if (marker == null) raw.trim() else text.substring(marker.range.last + 1).trim('，', '。', ',', '：', ':').removePrefix("吃了")
+            val marker = Regex("吃了|喝了|吃的是|吃的|吃饭|早餐|午餐|晚餐|早饭|午饭|晚饭").find(raw)
+            values[QuickField.CONTENT] = if (marker == null) raw.trim() else raw.substring(marker.range.last + 1).trim('，', '。', ',', '：', ':').removePrefix("吃了")
         }
         if (kind == QuickKind.WORKOUT) {
             val matching = matches.singleOrNull()
@@ -144,7 +144,9 @@ internal object QuickRecordParser {
             Regex("(\\d+(?:\\.\\d+)?)(?:公斤|千克)").find(text)?.let { values[QuickField.WEIGHT] = it.groupValues[1] }
             values[QuickField.CONTENT] = raw.trim()
         }
-        return QuickParseResult(QuickDraft(values), notices.distinct(), multiple || clocks.size > 2)
+        val multipleTimes = if (interval) clocks.size > 2 else clocks.size > 1
+        if (multipleTimes) notices += "识别到多个记录时点，请拆开录入"
+        return QuickParseResult(QuickDraft(values), notices.distinct(), multiple || multipleTimes)
     }
     private fun duration(text: String): BigDecimal? {
         var total = BigDecimal.ZERO
@@ -159,12 +161,21 @@ internal object QuickRecordParser {
         return total.takeIf { found }
     }
     private fun decimal(n: BigDecimal) = n.stripTrailingZeros().toPlainString()
-    internal fun numbers(raw: String): String = Regex("[零〇一二两三四五六七八九十百千万]+(?:点[零〇一二两三四五六七八九]+)?(?=(?:个)?(?:半)?(?:小时|钟头|分钟|分|点|年|月|日|号|公里|千米|米|公斤|千克|组|次))")
-        .replace(raw) { match ->
+    internal fun numbers(raw: String): String {
+        // A clock's 点 separates hours and minutes; preserve it before decimal normalization.
+        val clockText = Regex("([零〇一二两三四五六七八九十百千万0-9]+)点([零〇一二两三四五六七八九十百千万0-9]+)分(?!钟)")
+            .replace(raw) { match ->
+                val hour = match.groupValues[1].toIntOrNull() ?: chineseInteger(match.groupValues[1])
+                val minute = match.groupValues[2].toIntOrNull() ?: chineseInteger(match.groupValues[2])
+                "$hour:$minute"
+            }
+        return Regex("[零〇一二两三四五六七八九十百千万]+(?:点[零〇一二两三四五六七八九]+)?(?=(?:个)?(?:半)?(?:小时|钟头|分钟|分|点|年|月|日|号|公里|千米|米|公斤|千克|组|次))")
+        .replace(clockText) { match ->
             val parts = match.value.split('点')
             val integer = chineseInteger(parts[0]).toString()
             if (parts.size == 1) integer else integer + "." + parts[1].map { digit(it) }.joinToString("")
         }
+    }
     private fun digit(c: Char) = when(c) { '零', '〇' -> 0; '一' -> 1; '二', '两' -> 2; '三' -> 3; '四' -> 4; '五' -> 5; '六' -> 6; '七' -> 7; '八' -> 8; '九' -> 9; else -> 0 }
     private fun chineseInteger(s: String): Int {
         if (s.none { it in "十百千万" }) return s.map { digit(it) }.joinToString("").toIntOrNull() ?: 0

@@ -238,7 +238,9 @@ fun LifelogApp(
             }
             composable(LifelogRoutes.VOICE_PATTERN, arguments = listOf(navArgument("capture") { type = NavType.BoolType; defaultValue = false })) { entry ->
                 val quick: QuickRecordViewModel = viewModel {
-                    QuickRecordViewModel(records, workViewModel.repository, workoutRepository, createSavedStateHandle(), clock, zoneIdProvider)
+                    QuickRecordViewModel(records, workViewModel.repository, workoutRepository, createSavedStateHandle(), clock,
+                        onSleepSaved = sleepViewModel::acceptExternalChange, onWorkSaved = workViewModel::acceptExternalChange,
+                        zoneProvider = zoneIdProvider)
                 }
                 QuickRecordScreen(quick, entry.arguments?.getBoolean("capture") == true,
                     onBack = { navController.popBackStack() }, onSaved = { bedtime ->

@@ -1,12 +1,12 @@
 # 主管进度板
 
-更新于2026-11-11（Asia/Shanghai）。当前版本**0.1.7/code11，Room/备份v7**，发布tag为`v0.1.7-code11`。原长期签名已在旧Codex应用隔离目录找回，证书与code10一致，恢复至当前LOCALAPPDATA/LifeLogAndroid/signing。本次采用原签名覆盖更新。
+更新于2026-11-13（Asia/Shanghai）。**当前本地0.1.8/code12，公开版0.1.7/code11**。用户要求整合现有更新、生成本地安装包，暂不推送。源码、文档和产物均在本机完成，固定入口`artifacts/phone-test/随手记.apk`。
 
-code11包含工作按日/七日分析`b6b1777`、自动记录JSON`62dfabd`及Provider发布后核验`ce58e45`。此前54项定向主机、修复后20项相关检查和API34 QA通过；本次正式签名构建通过，Lint无错误/22警告，code10→11覆盖及完整ZIP/照片SHA比较通过，公开下载已核验versionCode11和SHA一致，精确结果见[code11报告](releases/0.1.7-code11.md)及本机`artifacts/publish-code11-20261111/`。
+本轮正常合入描述字段语音`0f03d2c`和时长防护`c03ac3e`。首页语音预览按作者交接中明确的12个文件逐SHA快照复制并提交`636943f`，原工作树未改。主管补齐语音与新时长规则的联动、全行快照/撤销状态、长结束滚轮及中文钟点/多时点/饮食原文解析问题。
 
-原code10发布tag与二进制保留，历史见[code10报告](releases/0.1.7.md)。固定本地入口为`artifacts/phone-test/随手记.apk`。
+实现agent仅只读复核，设备由主管集中处理。检查范围、准确结果与本地签名产物见[本地报告](releases/0.1.8-local.md)，原交接保留在docs/handoffs和源提交中。荣耀200 Pro的实际语音服务与识别效果仍需手机测试。
 
-此前4.66GB过程文件清理及自动审核阻止AVD删除的记录属于2026-11-10工作，本次集中完成code11发布。
+原密钥已恢复并沿用，支持code11覆盖升级。公开code11证据见[历史发布报告](releases/0.1.7-code11.md)。
 
 ## 本轮接受
 

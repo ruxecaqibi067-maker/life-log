@@ -94,6 +94,15 @@ class SleepViewModel(
         }
     }
 
+    fun acceptExternalChange(record: SleepRecord?, previous: SleepRecord?) {
+        if (record != null) undo.value = SleepUndo(record, previous)
+        else if (previous != null) {
+            if (undo.value?.saved?.id == previous.id) undo.value = null
+            if (pendingBedtime.value == previous.id) pendingBedtime.value = null
+            discardedNotices.trySend(Unit)
+        }
+    }
+
     fun undoLast() {
         val change = undo.value ?: return
         command {

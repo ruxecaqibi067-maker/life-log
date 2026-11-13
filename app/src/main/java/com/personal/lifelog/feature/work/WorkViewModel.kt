@@ -90,6 +90,14 @@ class WorkViewModel(
         }
     }
 
+    fun acceptExternalChange(record: WorkRecord?, previous: WorkRecord?) {
+        if (record != null) undo.value = WorkUndo(record, previous)
+        else if (previous != null) {
+            if (undo.value?.saved?.id == previous.id) undo.value = null
+            discardedNotices.trySend(Unit)
+        }
+    }
+
     fun undoLast() {
         val change = undo.value ?: return
         command {

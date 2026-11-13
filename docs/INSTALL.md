@@ -1,5 +1,7 @@
 # 安装、更新与备份
 
+本地0.1.8/code12位于`artifacts/phone-test/随手记.apk`，先备份再从手机文件管理器覆盖安装。沿用原签名和包名，包含本轮语音与时长防护，见[本地报告](releases/0.1.8-local.md)。本轮全部留在本机。下方code11链接为之前公开包。
+
 当前版本为随手记 **0.1.7 / versionCode11**，包名`com.personal.lifelog`，支持Android9及以上。[下载code11](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7-code11/suishouji-0.1.7.apk)，[版本页和校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7-code11)。
 
 ## 覆盖更新
