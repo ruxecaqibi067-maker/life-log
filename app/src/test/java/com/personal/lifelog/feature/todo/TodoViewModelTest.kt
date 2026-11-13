@@ -60,6 +60,56 @@ class TodoViewModelTest {
         vm.home.first { !it.loading && predicate(it) }
     }
 
+    @Test fun voiceTodoAndHabitCreateEditKeepFullOverlongDraftAndOriginalSaveValidation() = runBlocking<Unit> {
+        day { !it.failed }
+        for (habit in listOf(false, true)) {
+            if (habit) vm.addHabit() else vm.addTodo()
+            vm.onTitleChanged("原内容")
+            val id = vm.editor.value!!.id
+            vm.voiceInput.begin(id); val token = vm.voiceInput.request.value!!.token
+            vm.voiceInput.consume(token)?.let { vm.onVoiceText(it, "追加") }
+            vm.voiceInput.consume(token)?.let { vm.onVoiceText(it, "重复") }
+            assertEquals("原内容追加", vm.editor.value!!.title)
+            vm.saveEditor(); idle()
+            if (habit) vm.editHabit(db.todos().allHabits().single())
+            else vm.editTodo(db.todos().allTodos().single { it.id == id })
+            vm.onVoiceText(id, "长".repeat(130))
+            val full = "原内容追加" + "长".repeat(130)
+            assertEquals(full, vm.editor.value!!.title)
+            vm.saveEditor(); idle()
+            assertEquals(ErrorCode.TEXT_TOO_LONG, vm.commands.value.error)
+            assertEquals(full, TodoEditorDraft.restore(saved.get<ArrayList<String>>("todo.editor")!!)!!.title)
+            vm.onTitleChanged("改" + full.drop(1))
+            assertEquals("改" + full.drop(1), vm.editor.value!!.title)
+            vm.onTitleChanged(full.dropLast(1))
+            assertEquals(full.dropLast(1), vm.editor.value!!.title)
+            vm.onTitleChanged("修改后的内容")
+            vm.saveEditor(); idle()
+            assertNull(vm.editor.value)
+            assertEquals("修改后的内容", if (habit) db.todos().allHabits().single().title
+                else db.todos().allTodos().single { it.id == id }.title)
+        }
+    }
+
+    @Test fun voiceCannotWriteAcrossCloseReopenDifferentDraftOrSave() = runBlocking<Unit> {
+        day { !it.failed }
+        vm.addTodo(); vm.onTitleChanged("原内容")
+        val id = vm.editor.value!!.id
+        vm.voiceInput.begin(id); val old = vm.voiceInput.request.value!!.token
+        vm.saveEditor(); idle()
+        assertNull(vm.voiceInput.consume(old))
+        val row = db.todos().allTodos().single { it.id == id }
+        vm.editTodo(row); vm.voiceInput.begin(id); val cancelled = vm.voiceInput.request.value!!.token
+        vm.cancelEditor(); vm.editTodo(row)
+        assertNull(vm.voiceInput.consume(cancelled))
+        vm.onVoiceText("other-id", "串写")
+        assertEquals("原内容", vm.editor.value!!.title)
+        vm.voiceInput.begin(id); val switched = vm.voiceInput.request.value!!.token
+        vm.addHabit()
+        assertNull(vm.voiceInput.consume(switched))
+        assertEquals("", vm.editor.value!!.title)
+    }
+
     @Test fun draftCancellationRecreationValidationCompletionAndDeleteArePersisted() = runBlocking<Unit> {
         day { !it.failed }
         vm.addTodo()

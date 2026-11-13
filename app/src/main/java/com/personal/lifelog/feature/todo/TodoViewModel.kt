@@ -1,6 +1,7 @@
 package com.personal.lifelog.feature.todo
 
 import androidx.lifecycle.SavedStateHandle
+import com.personal.lifelog.ui.voice.VoiceInputSession
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personal.lifelog.data.local.entity.HabitRecord
@@ -60,6 +61,7 @@ class TodoViewModel(
     private val clock: Clock = Clock.systemUTC(),
     private val zoneIdProvider: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
+    val voiceInput = VoiceInputSession(saved, "todo.voice")
     private val retry = MutableStateFlow(0)
     private val selected = MutableStateFlow(saved.get<String>("todo.date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() })
     private val historyDate = combine(today, selected) { date, selection -> selection ?: date }
@@ -103,6 +105,7 @@ class TodoViewModel(
 
     private fun open(draft: TodoEditorDraft) {
         if (commands.value.busy) return
+        voiceInput.cancel()
         mutableCommands.value = TodoCommandState()
         update(draft)
     }
@@ -114,17 +117,33 @@ class TodoViewModel(
         mutableCommands.value = commands.value.copy(error = null)
     }
 
+    fun onVoiceText(target: String, text: String) {
+        val draft = editor.value ?: return
+        if (target != draft.id || commands.value.busy || commands.value.deletion != null) return
+        update(draft.copy(title = draft.title + text))
+    }
+
+    fun onTitleChanged(value: String) {
+        val draft = editor.value ?: return
+        // Preserve ordinary typing's existing guard; allow an overlong voice draft to be shortened.
+        val title = if (draft.title.length > 120) {
+            if (value.length > draft.title.length) return else value
+        } else value.take(120)
+        update(draft.copy(title = title))
+    }
+
     fun cancelEditor() {
         if (commands.value.busy) return
         closeEditor()
         clearError()
     }
 
-    private fun closeEditor() { saved.remove<ArrayList<String>>("todo.editor"); mutableEditor.value = null }
+    private fun closeEditor() { voiceInput.cancel(); saved.remove<ArrayList<String>>("todo.editor"); mutableEditor.value = null }
     fun clearError() { mutableCommands.value = commands.value.copy(error = null) }
     fun pickerMinute(): Int = editor.value?.scheduledMinute ?: LocalTime.now(clock.withZone(zoneIdProvider())).let { it.hour * 60 + it.minute }
 
     fun saveEditor() {
+        voiceInput.cancel()
         val draft = editor.value ?: return
         val interval = if (draft.frequency == HabitFrequency.INTERVAL) draft.interval.toIntOrNull() else 1
         if (draft.habit && interval == null) {
@@ -161,6 +180,7 @@ class TodoViewModel(
     }
 
     fun requestDelete(id: String, title: String, habit: Boolean) {
+        voiceInput.cancel()
         if (!commands.value.busy) mutableCommands.value = TodoCommandState(deletion = TodoDeleteRequest(id, title, habit))
     }
 

@@ -2,6 +2,7 @@ package com.personal.lifelog.feature.meal
 
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import com.personal.lifelog.ui.voice.VoiceInputSession
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personal.lifelog.core.time.RecordTime
@@ -38,6 +39,7 @@ class MealEditorViewModel(
     }
     private val draftId = mealId ?: savedStateHandle.get<String>(KEY_ID) ?: RecordIds.newId().also { savedStateHandle[KEY_ID] = it }
     val isEditing = mealId != null
+    val voiceInput = VoiceInputSession(savedStateHandle, "meal.voice")
     private var original: MealRecord? = null
     private var originalIds: List<String> = emptyList()
     private var originalDate: LocalDate? = null
@@ -57,8 +59,16 @@ class MealEditorViewModel(
     val state: StateFlow<MealEditorUiState> = _state.asStateFlow()
     init { viewModelScope.launch { load() } }
     fun onTextChanged(value: String) {
-        if (value.length > MAX_RAW_TEXT_LENGTH) return
+        if (value.length > MAX_RAW_TEXT_LENGTH && value.length > state.value.text.length) return
         update { it.copy(text = value, error = null) }
+    }
+
+    fun onVoiceText(target: String, text: String) {
+        val current = state.value
+        if (target != "description" || current.loading || current.saving || current.savedSuccessfully ||
+            current.discarded || current.missing || current.loadFailed || closing) return
+        // Keep the entire result, including beyond the typing guard, for the user to shorten.
+        update { it.copy(text = it.text + text, error = null) }
     }
 
     fun toggleSatiety(value: Satiety) {
@@ -184,6 +194,7 @@ class MealEditorViewModel(
             photoStatus = MealPhotoStatus.READY, photoError = (preview as? PhotoResult.Failure)?.error?.toMealUiError()) }
     }
     fun save() {
+        voiceInput.cancel()
         val current = state.value
         if (current.saving || current.loading || current.missing || closing || current.photoStatus == MealPhotoStatus.PROCESSING) return
         mealValidationError(current.text, current.photoItems.isNotEmpty())?.let { error -> update { it.copy(error = error) }; return }
@@ -212,6 +223,7 @@ class MealEditorViewModel(
         }
     }
     fun discard() {
+        voiceInput.cancel()
         if (state.value.saving) return
         closing = true
         viewModelScope.launch {

@@ -64,6 +64,62 @@ class WorkoutFlowTest {
         db.close(); Dispatchers.resetMain()
     }
 
+    @Test fun voiceRoutesByStableItemAndKeepsLatestDraftAcrossReorderAndEditSave() = runTest {
+        val vm = model(); ready(vm)
+        vm.add(definition(0)); vm.add(definition(1))
+        val first = vm.state.value.form!!.items[0]
+        val second = vm.state.value.form!!.items[1]
+        vm.change(vm.state.value.form!!.copy(note = "原备注"))
+        vm.changeItem(first.copy(note = "项目备注", minutes = "12"))
+        vm.voiceInput.begin(first.id); val token = vm.voiceInput.request.value!!.token
+        vm.move(first.id, 1)
+        vm.voiceInput.consume(token)?.let { vm.onVoiceText(it, "追加") }
+        vm.voiceInput.consume(token)?.let { vm.onVoiceText(it, "重复") }
+        vm.onVoiceText("session", "整次追加")
+        assertEquals("项目备注追加", vm.state.value.form!!.items.single { it.id == first.id }.note)
+        assertEquals("12", vm.state.value.form!!.items.single { it.id == first.id }.minutes)
+        assertEquals("", vm.state.value.form!!.items.single { it.id == second.id }.note)
+        save(vm)
+        val edit = model(recordId = vm.state.value.form!!.id); ready(edit)
+        edit.onVoiceText(second.id, "第二项")
+        edit.onVoiceText("session", "编辑追加")
+        save(edit)
+        val stored = repository.workout(edit.state.value.form!!.id)!!
+        assertEquals("原备注整次追加编辑追加", stored.session.note)
+        assertEquals("第二项", stored.items.single { it.item.id == second.id }.item.note)
+        assertEquals("项目备注追加", stored.items.single { it.item.id == first.id }.item.note)
+    }
+
+    @Test fun voiceOverlongNotesRestoreAndRejectSaveUntilShortened() = runTest {
+        val handle = SavedStateHandle(); val vm = model(handle); ready(vm); vm.add(definition(0))
+        val rowId = vm.state.value.form!!.items.single().id
+        vm.onVoiceText("session", "长".repeat(1001))
+        vm.save(); assertEquals(ErrorCode.TEXT_TOO_LONG, vm.state.value.error)
+        vm.change(vm.state.value.form!!.copy(note = "可保存"))
+        vm.onVoiceText(rowId, "长".repeat(1001))
+        vm.save(); assertEquals(ErrorCode.TEXT_TOO_LONG, vm.state.value.error)
+        assertEquals(rowId, vm.state.value.errorItemId)
+        val restored = model(SavedStateHandle(handle.keys().associateWith { handle.get<Any?>(it) })); ready(restored)
+        assertEquals(1001, restored.state.value.form!!.items.single().note.length)
+        restored.changeItem(restored.state.value.form!!.items.single().copy(note = "缩短"))
+        save(restored)
+        assertEquals("缩短", repository.workout(restored.state.value.form!!.id)!!.items.single().item.note)
+    }
+
+    @Test fun removedItemsPickerAndSaveInvalidatePendingVoice() = runTest {
+        val vm = model(); ready(vm); vm.add(definition(0))
+        val target = vm.state.value.form!!.items.single().id
+        vm.voiceInput.begin(target); val deleted = vm.voiceInput.request.value!!.token
+        vm.remove(target)
+        assertNull(vm.voiceInput.consume(deleted))
+        vm.onVoiceText(target, "已删除项目")
+        assertTrue(vm.state.value.form!!.items.isEmpty())
+        vm.voiceInput.begin("session"); val picker = vm.voiceInput.request.value!!.token
+        vm.openPicker(); assertNull(vm.voiceInput.consume(picker)); vm.closePicker()
+        vm.voiceInput.begin("session"); val saving = vm.voiceInput.request.value!!.token
+        vm.save(); assertNull(vm.voiceInput.consume(saving))
+    }
+
     @Test fun runOrBenchAloneSavesWithoutInventingQuantityAndDoubleSaveIsGuarded() = runTest {
         for (index in listOf(0, 1)) {
             val vm = model(); ready(vm)

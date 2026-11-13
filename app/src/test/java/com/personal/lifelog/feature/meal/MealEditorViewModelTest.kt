@@ -170,6 +170,54 @@ class MealEditorViewModelTest {
         return saved
     }
 
+    @Test fun voiceAppendUsesExistingCreateAndEditSaveAndRetainsOverlongDraft() = runBlocking<Unit> {
+        val handle = SavedStateHandle()
+        val vm = editor(handle = handle); awaitLoaded(vm)
+        vm.onTextChanged("原文字，")
+        vm.voiceInput.begin("description")
+        val token = vm.voiceInput.request.value!!.token
+        vm.voiceInput.consume(token)?.let { vm.onVoiceText(it, "米饭") }
+        vm.voiceInput.consume(token)?.let { vm.onVoiceText(it, "重复") }
+        assertEquals("原文字，米饭", vm.state.value.text)
+        vm.save(); awaitSaved(vm)
+        val stored = singleMeal()
+        assertEquals("原文字，米饭", stored.text)
+
+        val editHandle = SavedStateHandle()
+        val edit = editor(stored.id, editHandle); awaitLoaded(edit)
+        edit.onVoiceText("description", "菜".repeat(4100))
+        val fullText = "原文字，米饭" + "菜".repeat(4100)
+        assertEquals(fullText, edit.state.value.text)
+        edit.save()
+        assertEquals(MealUiError.TEXT_TOO_LONG, edit.state.value.error)
+        assertEquals(stored.text, singleMeal().text)
+        val rebuilt = editor(stored.id, SavedStateHandle(editHandle.keys().associateWith { editHandle.get<Any?>(it) }))
+        awaitLoaded(rebuilt)
+        assertEquals(fullText, rebuilt.state.value.text)
+        rebuilt.onTextChanged("改" + fullText.drop(1))
+        assertEquals("改" + fullText.drop(1), rebuilt.state.value.text)
+        rebuilt.onTextChanged(fullText.dropLast(1))
+        assertEquals(fullText.dropLast(1), rebuilt.state.value.text)
+        rebuilt.onTextChanged("缩短后的饮食")
+        rebuilt.save(); awaitSaved(rebuilt)
+        assertEquals("缩短后的饮食", singleMeal().text)
+    }
+
+    @Test fun voiceSaveAndDiscardInvalidateOutstandingRequests() = runBlocking<Unit> {
+        val vm = editor(); awaitLoaded(vm); vm.onTextChanged("草稿")
+        vm.voiceInput.begin("description"); val token = vm.voiceInput.request.value!!.token
+        vm.save(); awaitSaved(vm)
+        assertNull(vm.voiceInput.consume(token))
+        vm.onVoiceText("description", "迟到")
+        assertEquals("草稿", vm.state.value.text)
+        val cancelled = editor(); awaitLoaded(cancelled)
+        cancelled.voiceInput.begin("description"); val old = cancelled.voiceInput.request.value!!.token
+        cancelled.discard()
+        assertNull(cancelled.voiceInput.consume(old))
+        cancelled.onVoiceText("description", "迟到")
+        assertEquals("", cancelled.state.value.text)
+    }
+
     @Test
     fun pureTextMealSavesWithTrimmedTextAndInjectedClockZone() = runBlocking<Unit> {
         val vm = editor()

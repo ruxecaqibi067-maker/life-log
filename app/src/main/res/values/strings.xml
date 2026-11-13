@@ -191,4 +191,11 @@
     <string name="meal_error_save_failed">保存失败，请重试</string>
     <string name="meal_error_delete_failed">删除失败，记录未删除，请重试</string>
     <string name="meal_error_load_failed">记录读取失败，请重试</string>
+    <string name="voice_append">语音追加</string>
+    <string name="voice_cancel">取消等待语音结果</string>
+    <string name="voice_prompt">请说出要追加的内容</string>
+    <string name="voice_unavailable">系统语音识别不可用，请继续键盘输入</string>
+    <string name="voice_failed">语音识别失败，请重试或键盘输入</string>
+    <string name="voice_empty">未识别到文字，请重试</string>
+    <string name="voice_over_limit">超过%1$d字，请缩短后保存；语音文字已完整保留</string>
 </resources>
