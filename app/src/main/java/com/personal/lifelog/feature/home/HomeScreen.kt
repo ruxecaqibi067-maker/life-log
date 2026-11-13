@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -52,6 +55,8 @@ import com.personal.lifelog.feature.sleep.SleepFinishConfirmation
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.timeline.TimelineUiState
 import com.personal.lifelog.feature.timeline.timelineSection
+import com.personal.lifelog.ui.components.RecordCard
+import com.personal.lifelog.ui.components.SecondaryButton
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.theme.LogDimens
@@ -89,6 +94,7 @@ fun HomeScreen(
     onOpenWorkHistory: () -> Unit,
     onEditWork: (String) -> Unit,
     todoContent: @Composable () -> Unit = {},
+    onQuickRecord: (Boolean) -> Unit = {},
 ) {
     val sleepStatus by sleepViewModel.status.collectAsStateWithLifecycle()
     val sleepBusy by sleepViewModel.busy.collectAsStateWithLifecycle()
@@ -213,6 +219,17 @@ fun HomeScreen(
                         enabled = workStatus.loaded && !workStatus.failed && !workBusy && !workCard.loading && !workCard.failed,
                         modifier = Modifier.weight(1f).fillMaxHeight().testTag("work-start-finish"),
                     )
+                }
+                RecordCard(Modifier.fillMaxWidth().testTag("home-voice-module")) {
+                    Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SecondaryButton({ onQuickRecord(true) }, modifier = Modifier.weight(1f).testTag("home-voice-start")) {
+                            Icon(Icons.Filled.Mic, stringResource(R.string.quick_voice_entry))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.quick_voice_entry))
+                        }
+                        ActionButton({ onQuickRecord(false) }, modifier = Modifier.testTag("home-voice-type")) { Text(stringResource(R.string.quick_type_short)) }
+                    }
                 }
                 Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     QuickActionCard(stringResource(R.string.home_quick_meal), Icons.Filled.Restaurant, onRecordMeal,

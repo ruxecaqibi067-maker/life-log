@@ -36,6 +36,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.personal.lifelog.feature.voice.QuickRecordViewModel
+import com.personal.lifelog.feature.voice.QuickRecordScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.personal.lifelog.R
 import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
@@ -195,6 +199,7 @@ fun LifelogApp(
                     photos = photos,
                     onOpenSettings = { navController.navigateSingle(LifelogRoutes.SETTINGS) },
                     onRecordMeal = { navController.navigate(LifelogRoutes.mealEditor()) },
+                    onQuickRecord = { capture -> navController.navigateSingle(LifelogRoutes.voiceRecord(capture)) },
                     onOpenSleepHistory = { navController.navigateSingle(LifelogRoutes.SLEEP_HISTORY) },
                     onRecordWorkout = { navController.navigate(LifelogRoutes.workoutEditor()) },
                     onOpenWorkoutHistory = { navController.navigate(LifelogRoutes.WORKOUT_HISTORY) },
@@ -217,6 +222,18 @@ fun LifelogApp(
                         }
                     },
                 )
+            }
+            composable(LifelogRoutes.VOICE_PATTERN, arguments = listOf(navArgument("capture") { type = NavType.BoolType; defaultValue = false })) { entry ->
+                val quick: QuickRecordViewModel = viewModel {
+                    QuickRecordViewModel(records, workViewModel.repository, workoutRepository, createSavedStateHandle(), clock, zoneIdProvider)
+                }
+                QuickRecordScreen(quick, entry.arguments?.getBoolean("capture") == true,
+                    onBack = { navController.popBackStack() }, onSaved = { bedtime ->
+                        if (navController.currentDestination?.route == LifelogRoutes.VOICE_PATTERN) {
+                            navController.popBackStack()
+                            if (bedtime) navController.navigateSingle(LifelogRoutes.BEDTIME)
+                        }
+                    })
             }
             composable(LifelogRoutes.TODOS) {
                 todoViewModel?.let { TodoScreen(it, onBack = { navController.navigateUp() }) }

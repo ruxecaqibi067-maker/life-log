@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -164,6 +165,26 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithTag("home-workout-history").performClick()
         compose.onNodeWithText("前一天").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
+    }
+
+    @Test
+    fun centralTypedEntryPreviewsAndCancelsWithoutSavingAndRespectsCollapse() {
+        setAppContent()
+        compose.onNodeWithTag("home-voice-module").assertExists()
+        compose.onNodeWithText("记饮食").assertExists()
+        compose.onNodeWithText("记运动").assertExists()
+        compose.onNodeWithTag("home-quick-toggle").performClick()
+        compose.onNodeWithTag("home-voice-module").assertDoesNotExist()
+        compose.onNodeWithTag("home-quick-toggle").performClick()
+        compose.onNodeWithTag("home-voice-type").performClick()
+        compose.onNodeWithTag("quick-raw").performTextReplacement("睡了五小时")
+        compose.onNodeWithTag("quick-parse").performClick()
+        compose.onNodeWithTag("quick-save").performClick()
+        compose.onNodeWithText("请补一个明确时间点；仅有时长不能确定记录区间").assertExists()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithText("放弃").performClick()
+        compose.onNodeWithTag("home-voice-module").assertExists()
+        kotlinx.coroutines.runBlocking { org.junit.Assert.assertTrue(db.records().allSleeps().isEmpty()) }
     }
 
     @Test

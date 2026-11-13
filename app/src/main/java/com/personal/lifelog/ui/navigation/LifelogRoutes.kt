@@ -20,6 +20,8 @@ import androidx.navigation.navArgument
  *   New parameters must be added with `defaultValue` so older saved entries stay valid.
  */
 object LifelogRoutes {
+    const val VOICE_PATTERN = "voice/record?capture={capture}"
+    fun voiceRecord(capture: Boolean) = "voice/record?capture=$capture"
     const val TODAY = "today"
     const val REVIEW = "review"
     const val SETTINGS = "settings"
