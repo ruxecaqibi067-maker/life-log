@@ -1,11 +1,11 @@
 package com.personal.lifelog.ui
 
-import androidx.compose.ui.test.assertIsEnabled
-
 import android.app.Application
 import android.content.Context
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -170,16 +170,22 @@ class LifelogNavigationSmokeTest {
     }
 
     @Test
-    fun centralTypedEntryPreviewsAndCancelsWithoutSavingAndRespectsCollapse() {
+    fun centralMicrophoneOpensEditablePreviewAndCancelsWithoutSavingAndRespectsCollapse() {
         setAppContent()
         compose.onNodeWithTag("home-voice-module").assertExists()
         compose.onNodeWithText("记饮食").assertExists()
         compose.onNodeWithText("记运动").assertExists()
         compose.onNodeWithTag("home-quick-toggle").performClick()
         compose.onNodeWithTag("home-voice-module").assertDoesNotExist()
+        compose.onNodeWithTag("home-voice-start").assertDoesNotExist()
         compose.onNodeWithTag("home-quick-toggle").performClick()
-        compose.onNodeWithTag("home-voice-type").performClick()
-        compose.waitUntil(10_000) { runCatching { compose.onNodeWithTag("quick-raw").assertIsEnabled() }.isSuccess }
+        compose.onNodeWithTag("home-voice-type").assertDoesNotExist()
+        compose.onNodeWithTag("home-voice-start").performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasTestTag("quick-raw") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+        // The host records the bridge launch; editing here cancels the pending synthetic request.
+        // No microphone, real recognition service or device is exercised by this navigation check.
         compose.onNodeWithTag("quick-raw").performTextReplacement("睡了五小时")
         compose.onNodeWithTag("quick-parse").performClick()
         compose.onNodeWithTag("quick-save").performClick()

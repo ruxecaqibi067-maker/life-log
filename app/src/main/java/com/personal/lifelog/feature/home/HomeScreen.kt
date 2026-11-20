@@ -1,20 +1,21 @@
 package com.personal.lifelog.feature.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
@@ -42,6 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
@@ -55,8 +57,6 @@ import com.personal.lifelog.feature.sleep.SleepFinishConfirmation
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.feature.timeline.TimelineUiState
 import com.personal.lifelog.feature.timeline.timelineSection
-import com.personal.lifelog.ui.components.RecordCard
-import com.personal.lifelog.ui.components.SecondaryButton
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.theme.LogDimens
@@ -192,51 +192,85 @@ fun HomeScreen(
                 Icon(if (quickExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, Modifier.size(20.dp))
                 Text(stringResource(if (quickExpanded) R.string.home_quick_collapse else R.string.home_quick_expand))
             }
-            if (quickExpanded) Column(Modifier.padding(horizontal = LogDimens.page, vertical = 4.dp).testTag("home-quick-actions"),
-                verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    QuickActionCard(
-                        label = stringResource(when {
-                            sleepBusy -> R.string.saving
-                            !sleepStatus.loaded -> R.string.sleep_loading
-                            activeSleep == null -> R.string.sleep_start
-                            else -> R.string.sleep_finish
-                        }),
-                        icon = Icons.Filled.Bedtime,
-                        onClick = { if (activeSleep == null) sleepViewModel.start(startId) else sleepViewModel.finish(activeSleep) },
-                        enabled = sleepStatus.loaded && !sleepBusy,
-                        modifier = Modifier.weight(1f).fillMaxHeight().testTag("sleep-start-finish"),
-                    )
-                    QuickActionCard(
-                        label = stringResource(when {
-                            workBusy -> R.string.saving
-                            !workStatus.loaded -> R.string.work_loading
-                            activeWork == null -> R.string.work_start
-                            else -> R.string.work_finish
-                        }),
-                        icon = if (activeWork == null) Icons.Filled.WorkOutline else Icons.Filled.StopCircle,
-                        onClick = { if (activeWork == null) workViewModel.start(workStartId) else workViewModel.finish(activeWork) },
-                        enabled = workStatus.loaded && !workStatus.failed && !workBusy && !workCard.loading && !workCard.failed,
-                        modifier = Modifier.weight(1f).fillMaxHeight().testTag("work-start-finish"),
-                    )
+            if (quickExpanded) HomeQuickActions(
+                sleepLabel = stringResource(when {
+                    sleepBusy -> R.string.saving
+                    !sleepStatus.loaded -> R.string.sleep_loading
+                    activeSleep == null -> R.string.sleep_start
+                    else -> R.string.sleep_finish
+                }),
+                workLabel = stringResource(when {
+                    workBusy -> R.string.saving
+                    !workStatus.loaded -> R.string.work_loading
+                    activeWork == null -> R.string.work_start
+                    else -> R.string.work_finish
+                }),
+                workActive = activeWork != null,
+                sleepEnabled = sleepStatus.loaded && !sleepBusy,
+                workEnabled = workStatus.loaded && !workStatus.failed && !workBusy && !workCard.loading && !workCard.failed,
+                onSleep = { if (activeSleep == null) sleepViewModel.start(startId) else sleepViewModel.finish(activeSleep) },
+                onWork = { if (activeWork == null) workViewModel.start(workStartId) else workViewModel.finish(activeWork) },
+                onMeal = onRecordMeal,
+                onWorkout = onRecordWorkout,
+                onVoice = { onQuickRecord(true) },
+                modifier = Modifier.padding(horizontal = LogDimens.page, vertical = 4.dp).testTag("home-quick-actions"),
+            )
+        }
+    }
+}
+
+/** Four existing entries share an icon-only voice entry at their intersection. */
+@Composable
+internal fun HomeQuickActions(
+    sleepLabel: String,
+    workLabel: String,
+    workActive: Boolean,
+    sleepEnabled: Boolean,
+    workEnabled: Boolean,
+    onSleep: () -> Unit,
+    onWork: () -> Unit,
+    onMeal: () -> Unit,
+    onWorkout: () -> Unit,
+    onVoice: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Reserve the inner edge of every card for the round button. Text can wrap at
+    // large font sizes without entering the microphone's visual or touch bounds.
+    val startCardPadding = PaddingValues(start = 12.dp, end = 32.dp, top = 8.dp, bottom = 8.dp)
+    val endCardPadding = PaddingValues(start = 32.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
+    Box(modifier.fillMaxWidth()) {
+        Layout(modifier = Modifier.fillMaxWidth().testTag("home-voice-module"), content = {
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickActionCard(sleepLabel, Icons.Filled.Bedtime, onSleep,
+                    Modifier.weight(1f).fillMaxHeight().testTag("sleep-start-finish"), sleepEnabled, startCardPadding)
+                QuickActionCard(workLabel, if (workActive) Icons.Filled.StopCircle else Icons.Filled.WorkOutline, onWork,
+                    Modifier.weight(1f).fillMaxHeight().testTag("work-start-finish"), workEnabled, endCardPadding)
+            }
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickActionCard(stringResource(R.string.home_quick_meal), Icons.Filled.Restaurant, onMeal,
+                    Modifier.weight(1f).fillMaxHeight().testTag("home-quick-meal"), contentPadding = startCardPadding)
+                QuickActionCard(stringResource(R.string.home_quick_workout), Icons.Filled.FitnessCenter, onWorkout,
+                    Modifier.weight(1f).fillMaxHeight().testTag("home-quick-workout"), contentPadding = endCardPadding)
+            }
+            Surface(onClick = onVoice, modifier = Modifier.size(56.dp).testTag("home-voice-start"),
+                shape = CircleShape, color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                border = BorderStroke(4.dp, MaterialTheme.colorScheme.background)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.Mic, stringResource(R.string.quick_voice_entry), Modifier.size(24.dp))
                 }
-                RecordCard(Modifier.fillMaxWidth().testTag("home-voice-module")) {
-                    Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SecondaryButton({ onQuickRecord(true) }, modifier = Modifier.weight(1f).testTag("home-voice-start")) {
-                            Icon(Icons.Filled.Mic, stringResource(R.string.quick_voice_entry))
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.quick_voice_entry))
-                        }
-                        ActionButton({ onQuickRecord(false) }, modifier = Modifier.testTag("home-voice-type")) { Text(stringResource(R.string.quick_type_short)) }
-                    }
-                }
-                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    QuickActionCard(stringResource(R.string.home_quick_meal), Icons.Filled.Restaurant, onRecordMeal,
-                        Modifier.weight(1f).fillMaxHeight())
-                    QuickActionCard(stringResource(R.string.home_quick_workout), Icons.Filled.FitnessCenter, onRecordWorkout,
-                        Modifier.weight(1f).fillMaxHeight())
-                }
+            }
+        }) { measurables, constraints ->
+            val loose = constraints.copy(minHeight = 0)
+            val top = measurables[0].measure(loose)
+            val bottom = measurables[1].measure(loose)
+            val microphone = measurables[2].measure(loose.copy(minWidth = 0))
+            val gap = 8.dp.roundToPx()
+            layout(top.width, top.height + gap + bottom.height) {
+                top.placeRelative(0, 0)
+                bottom.placeRelative(0, top.height + gap)
+                // Anchor to the row boundary, including when large text makes the rows unequal.
+                microphone.placeRelative((top.width - microphone.width) / 2, top.height + (gap - microphone.height) / 2)
             }
         }
     }
@@ -250,6 +284,7 @@ private fun QuickActionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
 ) {
     Surface(
         onClick = onClick,
@@ -259,12 +294,12 @@ private fun QuickActionCard(
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Row(
-            Modifier.minimumInteractiveComponentSize().padding(horizontal = 12.dp, vertical = 8.dp),
+            Modifier.minimumInteractiveComponentSize().padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
             Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
-            Text(label, style = MaterialTheme.typography.labelLarge,
+            Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSecondaryContainer, textAlign = TextAlign.Center)
         }
     }

@@ -202,4 +202,19 @@
     <string name="quick_start_time">记录时间 / 开始时间</string>
     <string name="quick_end_time">结束时间</string>
     <string name="quick_type_short">键入文字</string>
+    <string name="voice_title">语音输入</string>
+    <string name="voice_provider">使用手机已安装的语音服务：%1$s</string>
+    <string name="voice_no_domestic_provider">当前没有可直接使用的非 Google 语音服务。可使用手机输入法的语音输入，原文字会保留。</string>
+    <string name="voice_use_keyboard">使用输入法语音</string>
+    <string name="voice_keyboard_hint">请点击手机输入法上的麦克风说话，文字会填入当前输入框</string>
+    <string name="voice_switch_keyboard">请先选择非 Google 输入法，再点击文字框使用输入法麦克风</string>
+    <string name="voice_permission_denied">未获得麦克风权限。可以重试授权，或使用输入法语音。</string>
+    <string name="voice_interrupted">本次识别已中断，原文字未改变。可重新识别或使用输入法语音。</string>
+    <string name="voice_timeout">语音服务未及时返回，可重试或使用输入法语音。</string>
+    <string name="voice_listening">正在听，请说话…</string>
+    <string name="voice_waiting">正在等待手机语音服务…</string>
+    <string name="voice_processing">正在识别，请稍候…</string>
+    <string name="voice_finish_speaking">说完了</string>
+    <string name="voice_retry">重新识别</string>
+    <string name="voice_network_note">不调用 Google 识别。所选手机语音服务或输入法可能联网，按其自身设置处理音频。</string>
 </resources>

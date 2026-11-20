@@ -18,6 +18,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
@@ -94,18 +103,39 @@ fun RecordTextField(
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     minLines: Int = 1,
     voiceInput: VoiceInputAction? = null,
-) = OutlinedTextField(value, onValueChange, modifier, enabled = enabled,
-    textStyle = MaterialTheme.typography.bodyLarge, label = label, placeholder = placeholder,
-    supportingText = supportingText, isError = isError, keyboardOptions = keyboardOptions,
-    singleLine = singleLine, maxLines = maxLines, minLines = minLines,
-    shape = MaterialTheme.shapes.large,
-    trailingIcon = voiceInput?.let { action -> {
+) {
+    val focus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    var editing by remember { mutableStateOf(TextFieldValue(value)) }
+    LaunchedEffect(value, voiceInput != null) {
+        if (voiceInput != null && editing.text != value) editing = TextFieldValue(value, TextRange(value.length))
+    }
+    LaunchedEffect(voiceInput?.keyboardRequested, enabled) {
+        if (enabled && voiceInput?.keyboardRequested == true) {
+            editing = TextFieldValue(value, TextRange(value.length))
+            focus.requestFocus()
+            keyboard?.show()
+            voiceInput.keyboardHandled()
+        }
+    }
+    val trailing: @Composable (() -> Unit)? = voiceInput?.let { action -> {
         IconButton(onClick = action.onClick, enabled = enabled && action.enabled) {
             Icon(if (action.waiting) Icons.Default.Close else Icons.Default.Mic,
                 stringResource(if (action.waiting) R.string.voice_cancel else R.string.voice_append),
                 tint = if (enabled && action.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
         }
-    } })
+    } }
+    if (voiceInput != null) OutlinedTextField(editing.copy(text = value), { next -> editing = next; if (next.text != value) onValueChange(next.text) }, modifier.focusRequester(focus), enabled = enabled,
+        textStyle = MaterialTheme.typography.bodyLarge, label = label, placeholder = placeholder,
+        supportingText = supportingText, isError = isError, keyboardOptions = keyboardOptions,
+        singleLine = singleLine, maxLines = maxLines, minLines = minLines,
+        shape = MaterialTheme.shapes.large, trailingIcon = trailing)
+    else OutlinedTextField(value, onValueChange, modifier.focusRequester(focus), enabled = enabled,
+    textStyle = MaterialTheme.typography.bodyLarge, label = label, placeholder = placeholder,
+    supportingText = supportingText, isError = isError, keyboardOptions = keyboardOptions,
+    singleLine = singleLine, maxLines = maxLines, minLines = minLines,
+    shape = MaterialTheme.shapes.large, trailingIcon = trailing)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

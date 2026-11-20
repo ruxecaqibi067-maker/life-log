@@ -13,9 +13,13 @@ class VoiceInputSession(private val saved: SavedStateHandle, private val key: St
         if (it.size == 3) VoiceRequest(it[0], it[1], it[2].toBoolean()) else null
     })
     val request = mutableRequest.asStateFlow()
+    private val mutableKeyboard = MutableStateFlow<String?>(null)
+    val keyboardTarget = mutableKeyboard.asStateFlow()
+    fun requestKeyboard(target: String) { mutableKeyboard.value = target }
+    fun keyboardHandled(target: String) { if (mutableKeyboard.value == target) mutableKeyboard.value = null }
 
     fun begin(target: String) {
-        if (request.value == null) store(VoiceRequest(UUID.randomUUID().toString(), target))
+        if (request.value == null) { mutableKeyboard.value = null; store(VoiceRequest(UUID.randomUUID().toString(), target)) }
     }
 
     /** Persist consumption before launching: restoration must never reopen the recognizer. */
@@ -32,7 +36,7 @@ class VoiceInputSession(private val saved: SavedStateHandle, private val key: St
         return target
     }
 
-    fun cancel() = store(null)
+    fun cancel() { mutableKeyboard.value = null; store(null) }
 
     private fun store(value: VoiceRequest?) {
         saved[key] = value?.let { arrayListOf(it.token, it.target, it.launched.toString()) }

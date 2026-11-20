@@ -4,9 +4,6 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.content.pm.ApplicationInfo
-import android.content.pm.ResolveInfo
 import android.speech.RecognizerIntent
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.result.ActivityResultRegistry
@@ -15,6 +12,12 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import com.personal.lifelog.ui.components.RecordTextField
 import androidx.core.app.ActivityOptionsCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
@@ -25,7 +28,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowToast
 
@@ -139,12 +141,11 @@ class VoiceInputSessionTest {
         assertNull(intent.component)
         val permissions = context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.GET_PERMISSIONS)
             .requestedPermissions.orEmpty()
-        assertFalse(permissions.contains(android.Manifest.permission.RECORD_AUDIO))
+        assertTrue(permissions.contains(android.Manifest.permission.RECORD_AUDIO))
         assertFalse(permissions.contains(android.Manifest.permission.INTERNET))
     }
 
-    @Test fun missingRecognizerClearsWaitingAndKeepsKeyboardDraft() {
-        assertNull(voiceRecognitionIntent().resolveActivity(context.packageManager))
+    @Test fun missingRecognizerStillUsesPrivateBridgeAndKeyboardKeepsDraft() {
         val session = session()
         val registry = SyntheticRegistry()
         var draft = "原有键盘文字"
@@ -156,15 +157,17 @@ class VoiceInputSessionTest {
         compose.runOnIdle { session.begin("description") }
         compose.waitForIdle()
         compose.runOnIdle {
+            assertEquals(VoiceInputActivity::class.java.name, registry.launches.single().second.component!!.className)
+            assertNull(registry.launches.single().second.action)
+            registry.dispatchResult(registry.launches.single().first, Activity.RESULT_OK, Intent().putExtra(VoiceInputActivity.KEYBOARD, true))
             assertNull(session.request.value)
-            assertTrue(registry.launches.isEmpty())
+            assertEquals("description", session.keyboardTarget.value)
             assertEquals("原有键盘文字", draft)
-            assertEquals(context.getString(R.string.voice_unavailable), ShadowToast.getTextOfLatestToast())
+            assertEquals(context.getString(R.string.voice_keyboard_hint), ShadowToast.getTextOfLatestToast())
         }
     }
 
     @Test fun registrySuccessAppendsOnceAndOldCallbackCannotConsumeTheNextField() {
-        installSyntheticRecognizer()
         val session = session()
         val registry = SyntheticRegistry()
         val fields = mutableMapOf("session" to "原备注", "item-a" to "项目备注")
@@ -198,7 +201,6 @@ class VoiceInputSessionTest {
     }
 
     @Test fun cancelEmptyAndFailureCallbacksKeepDraftAndAllowRetry() {
-        installSyntheticRecognizer()
         val session = session()
         val registry = SyntheticRegistry()
         var draft = "保留原输入"
@@ -220,7 +222,6 @@ class VoiceInputSessionTest {
     }
 
     @Test fun resultWaitingDuringLoadingIsDeliveredOnceWhenEditorIsReady() {
-        installSyntheticRecognizer()
         val session = session()
         val registry = SyntheticRegistry()
         val ready = mutableStateOf(true)
@@ -250,7 +251,6 @@ class VoiceInputSessionTest {
     }
 
     @Test fun leavingEditorInvalidatesInFlightResult() {
-        installSyntheticRecognizer()
         val session = session()
         val registry = SyntheticRegistry()
         val visible = mutableStateOf(true)
@@ -271,24 +271,27 @@ class VoiceInputSessionTest {
             assertTrue(received.isEmpty())
         }
     }
+    @Test fun keyboardFallbackAppendsAtTheEndWithoutEmittingASpuriousTextEdit() {
+        val session = session()
+        val text = mutableStateOf("原文字")
+        var edits = 0
+        compose.setContent {
+            RecordTextField(text.value, { edits++; text.value = it }, Modifier.testTag("keyboard-target"),
+                voiceInput = voiceInputAction(session, "description", true))
+        }
+        compose.runOnIdle { session.requestKeyboard("description") }
+        compose.waitForIdle()
+        compose.onNodeWithTag("keyboard-target").assertIsFocused()
+        compose.runOnIdle { assertEquals(0, edits); assertNull(session.keyboardTarget.value) }
+        compose.onNodeWithTag("keyboard-target").performTextInput("追加")
+        compose.runOnIdle { assertEquals("原文字追加", text.value); assertEquals(1, edits) }
+    }
 
     private fun owner(registry: ActivityResultRegistry) = object : ActivityResultRegistryOwner {
         override val activityResultRegistry = registry
     }
 
     private fun result(vararg text: String) = Intent().putStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS, arrayListOf(*text))
-
-    private fun installSyntheticRecognizer() {
-        shadowOf(context.packageManager).addResolveInfoForIntent(voiceRecognitionIntent(), ResolveInfo().apply {
-            activityInfo = ActivityInfo().apply {
-                packageName = "example.synthetic"
-                name = "example.synthetic.RecognizerActivity"
-                exported = true
-                enabled = true
-                applicationInfo = ApplicationInfo().apply { packageName = "example.synthetic" }
-            }
-        })
-    }
 
     private class SyntheticRegistry : ActivityResultRegistry() {
         val launches = mutableListOf<Pair<Int, Intent>>()

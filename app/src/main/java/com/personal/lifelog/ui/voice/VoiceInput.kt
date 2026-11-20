@@ -7,13 +7,17 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.speech.RecognizerIntent
 import android.widget.Toast
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 import com.personal.lifelog.R
 
-data class VoiceInputAction(val waiting: Boolean, val enabled: Boolean, val onClick: () -> Unit)
+data class VoiceInputAction(val waiting: Boolean, val enabled: Boolean, val onClick: () -> Unit,
+    val keyboardRequested: Boolean = false, val keyboardHandled: () -> Unit = {})
 
 internal fun voiceRecognitionIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -31,6 +35,7 @@ fun BindVoiceInput(session: VoiceInputSession, ready: Boolean = true, onText: (t
     val registry = checkNotNull(LocalActivityResultRegistryOwner.current).activityResultRegistry
     val request by session.request.collectAsState()
     val currentOnText by rememberUpdatedState(onText)
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     DisposableEffect(session, registry, request?.token, ready) {
         val pending = request.takeIf { ready }
         val launcher = pending?.let {
@@ -39,6 +44,16 @@ fun BindVoiceInput(session: VoiceInputSession, ready: Boolean = true, onText: (t
                 when (result.resultCode) {
                     Activity.RESULT_CANCELED -> Unit
                     Activity.RESULT_OK -> {
+                        if (result.data?.getBooleanExtra(VoiceInputActivity.KEYBOARD, false) == true) {
+                            if (SpeechProviders.googleKeyboardSelected(context)) {
+                                context.getSystemService(InputMethodManager::class.java).showInputMethodPicker()
+                                context.voiceMessage(R.string.voice_switch_keyboard)
+                            } else {
+                                session.requestKeyboard(target)
+                                context.voiceMessage(R.string.voice_keyboard_hint)
+                            }
+                            return@register
+                        }
                         val text = bestVoiceCandidate(result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS))
                         if (text == null) context.voiceMessage(R.string.voice_empty)
                         else currentOnText(target, text)
@@ -48,12 +63,8 @@ fun BindVoiceInput(session: VoiceInputSession, ready: Boolean = true, onText: (t
             }
         }
         if (pending != null && launcher != null && session.markLaunched(pending.token)) {
-            val intent = voiceRecognitionIntent().putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.voice_prompt))
             try {
-                if (intent.resolveActivity(context.packageManager) == null) {
-                    session.consume(pending.token)
-                    context.voiceMessage(R.string.voice_unavailable)
-                } else launcher.launch(intent)
+                launcher.launch(VoiceInputActivity.intent(context, dark))
             } catch (_: ActivityNotFoundException) {
                 session.consume(pending.token)
                 context.voiceMessage(R.string.voice_unavailable)
@@ -77,9 +88,10 @@ fun BindVoiceInput(session: VoiceInputSession, ready: Boolean = true, onText: (t
 fun voiceInputAction(session: VoiceInputSession, target: String, enabled: Boolean): VoiceInputAction {
     val pending by session.request.collectAsState()
     val waiting = pending?.target == target
-    return VoiceInputAction(waiting, enabled && (pending == null || waiting)) {
-        if (waiting) session.cancel() else session.begin(target)
-    }
+    val keyboard by session.keyboardTarget.collectAsState()
+    return VoiceInputAction(waiting, enabled && (pending == null || waiting),
+        onClick = { if (waiting) session.cancel() else session.begin(target) },
+        keyboardRequested = keyboard == target, keyboardHandled = { session.keyboardHandled(target) })
 }
 
 private fun Context.voiceMessage(message: Int) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
