@@ -1,8 +1,8 @@
 # 文档导航
 
-2026-11-13本地测试版0.1.8/code12，见[本地报告](releases/0.1.8-local.md)。用户本轮要求暂不推送，下面的code11链接为已公开版本。
+2026-11-20 公开版本 **0.1.8 / code13**（tag `v0.1.8`），Room/备份 v7，沿用原长期签名，支持 `0.1.7 / code11` 与本地 `0.1.8 / code12` 直接覆盖。整合荣耀大陆非 Google 语音路径、首页中央圆形麦克风、描述字段语音追加、一句话预览及睡眠/工作时长防护，详见 [0.1.8 发布报告](releases/0.1.8.md)（前置本地版见 [0.1.8 本地报告](releases/0.1.8-local.md)）。
 
-2026-11-11发布0.1.7/code11，Room/备份v7，沿用找回的原签名，支持code10直接覆盖。包含工作七日分析和自动JSON，见[code11报告](releases/0.1.7-code11.md)。Android9新增限定maxSdk28存储权限，Android10起使用MediaStore。下方旧日期内容保留原证据范围。
+此前 2026-11-11 公开 0.1.7/code11 报告见 [code11 报告](releases/0.1.7-code11.md)。下方链接指向各专题说明。
 
 
 | 你想了解什么 | 从这里开始 |
@@ -10,7 +10,7 @@
 | 下载、安装、更新后保留数据 | [安装与更新](INSTALL.md) |
 | 手机上应该测哪些功能 | [手机测试清单](testing/ANDROID_PHONE_TEST.md)、[兼容性](COMPATIBILITY.md) |
 | 做完了哪些、接下来做什么 | [主管进度板](STATUS.md)、[任务索引](TASKS.md) |
-| 当前任务及已完成交付 | [任务入口](tasks/README.md)、[最新整合报告](releases/0.1.7.md) |
+| 当前任务及已完成交付 | [任务入口](tasks/README.md)、[最新整合报告](releases/0.1.8.md) |
 | 每日待办、21天自动结束与保留历史 | [习惯规则](HABIT_RULES.md) |
 | 产品与代码逻辑 | [产品范围](V1_SPEC.md)、[技术路线](TECHNICAL_ROADMAP.md) |
 | 配色、字体、按钮和首页卡片规则 | [视觉规范](UI_STYLE_GUIDE.md) |

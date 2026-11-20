@@ -1,15 +1,17 @@
 # 安装、更新与备份
 
-本地0.1.8/code12位于`artifacts/phone-test/随手记.apk`，先备份再从手机文件管理器覆盖安装。沿用原签名和包名，包含本轮语音与时长防护，见[本地报告](releases/0.1.8-local.md)。本轮全部留在本机。下方code11链接为之前公开包。
+当前 GitHub 公开版本为随手记 **0.1.8 / versionCode 13**（包名 `com.personal.lifelog`，最低 Android 9，Room/备份 v7），沿用原长期签名。包含荣耀非 Google 语音路径、首页中央圆形麦克风、描述字段语音追加、一句话预览以及睡眠/工作时长防护，详见 [0.1.8 发布报告](releases/0.1.8.md)。
 
-GitHub公开版本为随手记 **0.1.7 / versionCode11**，包名`com.personal.lifelog`，支持Android9及以上。[下载code11](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7-code11/suishouji-0.1.7.apk)，[版本页和校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7-code11)。
+- [下载 0.1.8 / code13 安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.8/suishouji-0.1.8.apk)
+- [版本页、SHA256SUMS 与 release.json](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.8)
+- 电脑固定本地入口：`artifacts/phone-test/随手记.apk`
 
 ## 覆盖更新
 
-1. 在旧App设置中导出完整ZIP备份，确认成功并保留文件。
-2. 下载code11或复制电脑`artifacts/phone-test/随手记.apk`到手机，打开并覆盖安装。
-3. 检查旧记录、照片、目标和待办完成状态。原签名已经找回并沿用，code10可更新到11，本地code12可覆盖code11。
-4. 打开工作卡查看按日/七日分析，检查设置中的自动JSON开关和`Download/lifelog/latest.json`。
+1. 在旧 App 设置中导出完整 ZIP 备份，确认成功并保留文件。
+2. 从 GitHub 下载 `suishouji-0.1.8.apk`（或复制电脑 `artifacts/phone-test/随手记.apk` 到手机），直接覆盖安装，不要先卸载或清除存储。
+3. 检查旧记录、照片、目标和待办完成状态。沿用原长期签名，公开 `0.1.7 / code11` 与此前本地 `0.1.8 / code12` 均可直接覆盖升级到 `0.1.8 / code13`。
+4. 首次点击语音且手机存在可直接绑定的非 Google 语音服务时，会按需请求麦克风权限；若无可用服务，可点击「使用输入法语音」或直接键入文字。应用不申请联网权限，也不保存录音文件。
 
 覆盖安装保留原存储。如果系统提示签名冲突，请保留旧安装和备份，反馈旧包来源。App暂无自动更新提醒。
 
@@ -31,4 +33,4 @@ GitHub公开版本为随手记 **0.1.7 / versionCode11**，包名`com.personal.l
 .\scripts\Build-Release.ps1 -SigningProperties "$env:LOCALAPPDATA\LifeLogAndroid\signing\signing.properties"
 ```
 
-默认0.1.8/code12，标准产物位于`artifacts/t16/v0.1.8-12/`。固定入口`artifacts/phone-test/随手记.apk`及安装说明记录精确源提交和SHA。[本轮报告](releases/0.1.8-local.md)记录交付范围；本轮不推送，后续远端发包继续按明确授权执行。
+默认0.1.8/code13，标准产物位于`artifacts/t16/v0.1.8-13/`。固定入口`artifacts/phone-test/随手记.apk`及安装说明记录精确源提交和SHA。[0.1.8发布报告](releases/0.1.8.md)记录交付范围；后续远端发包继续按用户明确授权执行。

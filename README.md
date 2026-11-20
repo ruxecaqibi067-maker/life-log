@@ -6,17 +6,20 @@
 
 ## 下载与更新
 
-- [下载随手记0.1.7/code11安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.7-code11/suishouji-0.1.7.apk)
-- [版本页与SHA校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.7-code11)
+- [下载随手记 0.1.8 / code13 安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.8/suishouji-0.1.8.apk)
+- [版本页与 SHA 校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.8)
 - [安装与数据保留](docs/INSTALL.md)、[手机测试清单](docs/testing/ANDROID_PHONE_TEST.md)
 
-当前版本 **0.1.7 / versionCode11**，使用已找回的原长期签名，支持code10直接覆盖更新。先在旧App导出完整ZIP备份，再安装新版。电脑固定入口为`artifacts/phone-test/随手记.apk`。
+当前公开版本 **0.1.8 / versionCode 13**，沿用原长期签名，支持公开 `0.1.7 / code11` 与此前本地 `0.1.8 / code12` 直接覆盖更新。先在旧 App 导出完整 ZIP 备份，再安装新版。电脑固定入口为 `artifacts/phone-test/随手记.apk`。
 
-## 本地0.1.8测试版
+## 0.1.8 / code13 更新
 
-电脑固定入口`artifacts/phone-test/随手记.apk`为0.1.8/code12。包含描述字段语音追加、首页“说一句/键入文字”后的四类记录预览，以及睡眠10分钟/工作5分钟下限和超过12小时的结束时间确认。本轮按用户要求仅在本机整理和打包，详见[本地报告](docs/releases/0.1.8-local.md)。真实语音识别取决手机系统服务，原字段键盘与首页键入路径均可继续使用。
+- **大陆非 Google 语音路径与首页中央圆形麦克风**：所有语音入口经应用内私有 `VoiceInputActivity` 显式路由至非 Google 语音服务或识别 Activity，仅直接绑定服务时按需申请 `RECORD_AUDIO`（无联网权限、不保存音频）；无可用服务或失败时可一键回退「使用输入法语音」并保留原草稿。首页四快捷卡交汇中心嵌入圆形麦克风按钮，随快捷区折叠/展开，进入预览页仍可直接键入文字。
+- **描述字段语音追加与首页一句话预览**：覆盖饮食、待办/习惯标题、整次训练与单项备注；首页支持睡眠、工作、饮食和单个运动项目的本地规则解析与可编辑预览，确认后才落库。
+- **睡眠/工作时长防护**：交互结束睡眠不足 10 分钟、工作不足 5 分钟时取消本次活动并提示；超过 12 小时先确认实际结束时间并可用公共滚轮修改；补录过短拒绝保存，原有短历史和合法旧备份保留。
+- 详细整合与验收证据见 [0.1.8 发布报告](docs/releases/0.1.8.md)（前置本地 code12 见 [0.1.8 本地报告](docs/releases/0.1.8-local.md)）。App 暂无自动更新提醒，后续 GitHub 安装包发布继续按用户明确要求执行。
 
-## code11更新
+## 前序 code11 更新
 
 - 新增工作按日记录、历史补录、当天时间分布和近七日分析，日期使用公共滚轮。
 - 默认自动写入手机`Download/lifelog/latest.json`，记录修改后更新，设置可关闭。JSON包含记录和照片引用，完整图片通过ZIP备份保存。Android9需要存储权限，Android10起使用MediaStore。
@@ -48,10 +51,10 @@ Kotlin + Compose + Room，单app模块，手动AppContainer，JDK17、项目Grad
 | --- | --- |
 | [文档导航与文件夹说明](docs/README.md) | 看懂工程、找到相关文件 |
 | [主管进度板](docs/STATUS.md)、[任务索引](docs/TASKS.md) | 接受状态与后续安排 |
-| [code11发布报告](docs/releases/0.1.7-code11.md) / [前次本地报告](docs/releases/0.1.7-local.md) | 当前本地验收与公开下载证据 |
+| [0.1.8 发布报告](docs/releases/0.1.8.md) / [code11 报告](docs/releases/0.1.7-code11.md) | 当前公开验收与历史下载证据 |
 | [21天习惯规则](docs/HABIT_RULES.md) | 自动生成、频率、到期与历史 |
 | [产品范围](docs/V1_SPEC.md)、[技术路线](docs/TECHNICAL_ROADMAP.md) | 行为与实现契约 |
 | [协作方法](docs/WORKFLOW.md)、[发包步骤](docs/testing/RELEASE.md) | 实现、交接与发布 |
 | [历史档案](docs/archive/README.md) | 原任务、交接与历史发布证据 |
 
-代码、文档、Wrapper和历次schema进入Git；APK只在授权时作为Release附件，签名密钥、照片、备份、日志和缓存不进入源码。2026-11-11更新。发布门槛包括定向主机检查、签名构建和统一隔离设备覆盖升级，实体设备继续收集使用反馈。
+代码、文档、Wrapper和历次schema进入Git；APK只在授权时作为Release附件，签名密钥、照片、备份、日志和缓存不进入源码。2026-11-20更新。发布门槛包括定向主机检查、签名构建和统一隔离设备覆盖升级，实体设备继续收集使用反馈。
