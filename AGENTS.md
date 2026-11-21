@@ -10,6 +10,8 @@
 
 2026-11-21最新追加授权为**发布两包**：界面美化离线正式版0.1.9/code14及独立AI测试版0.1.9-ai-review/code14，同一新Release v0.1.9；允许正常推送源码、tag和两APK。此前本地阶段“不推送、固定正式APK不换”的约定在本轮由此更新。正式包仍无INTERNET、沿用原长期签名；AI包继续独立ID和内存Key，不在主管环境发送真实请求。详见STATUS首节。
 
+正式0.1.9/code14在API28完成code13→14覆盖，UID/首次安装时间及已完成待办保留；升级前后完整ZIP除导出时钟外一致，含原照片SHA。正式Release Lint0错误/25警告，AI Lint0错误/26警告；Key/真实请求仍由用户验证。当前build脚本默认0.1.9/code14。
+
 ## 先读取
 
 1. `docs/STATUS.md`及本任务`docs/tasks/Txx.md`。

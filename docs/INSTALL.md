@@ -39,4 +39,4 @@ AI测试的自动JSON为`Download/lifelog-ai-test/latest.json`，不会替换正
 .\scripts\Build-Release.ps1 -SigningProperties "$env:LOCALAPPDATA\LifeLogAndroid\signing\signing.properties"
 ```
 
-默认0.1.8/code13，标准产物位于`artifacts/t16/v0.1.9-14/`。固定入口`artifacts/phone-test/随手记.apk`及安装说明记录精确源提交和SHA。[0.1.8发布报告](releases/0.1.8.md)记录交付范围；后续远端发包继续按用户明确授权执行。
+默认0.1.9/code14，标准产物位于`artifacts/t16/v0.1.9-14/`。固定入口`artifacts/phone-test/随手记.apk`及安装说明记录精确源提交和SHA。[主管进度板](STATUS.md)记录本轮双包范围与验收结果；后续远端发包继续按用户明确授权执行。

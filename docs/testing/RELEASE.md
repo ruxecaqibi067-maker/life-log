@@ -4,15 +4,15 @@
 
 旧Codex将LOCALAPPDATA虚拟映射到D盘的`WpSystem/.../Packages/OpenAI.Codex_2p2nqsd0c76g0/LocalCache/Local`，原密钥在其LifeLogAndroid/signing内。若未来常规路径缺失，先检查该已有副本，禁止仅凭当前路径缺失重新生成签名。此次恢复证据在忽略目录`artifacts/publish-code11-20261111/signing-recovery.json`，不打印密码或上传私钥。
 
-1. 检查交付已正常合入 main，查看 [进度板](../STATUS.md) 和 [当前发布报告](../releases/0.1.8.md)；只提交已检查修改。
+1. 检查交付已正常合入 main，查看 [进度板](../STATUS.md) 和 [当前双包进度与验收](../STATUS.md)；只提交已检查修改。
 2. 设置 JDK17 / Android SDK，执行主机测试、debug 构建、Lint 及必要隔离设备回归。逐项记录结果，不将条件跳过写为通过。
-3. 保持包名 `com.personal.lifelog`，沿用长期签名；当前公开 0.1.8 由本地 code12 递增至 code13（tag `v0.1.8`），提交后从干净工作区运行：
+3. 保持包名 `com.personal.lifelog`，沿用长期签名；当前0.1.9由公开code13递增至code14（tag `v0.1.9`），另构建独立aiReviewTest包，提交后从干净工作区运行：
 
 ```powershell
 .\scripts\Build-Release.ps1 -SigningProperties "$env:LOCALAPPDATA\LifeLogAndroid\signing\signing.properties"
 ```
 
-4. 验证签名、版本、权限、SHA-256、native 架构和 16KB 静态对齐，检查 release Lint。默认产物位于 `artifacts/t16/v0.1.8-13/`；release.json 记录准确源提交。不要重新生成已有密钥。
+4. 验证签名、版本、权限、SHA-256、native 架构和 16KB 静态对齐，检查 release Lint。默认产物位于 `artifacts/t16/v0.1.9-14/`；release.json 记录准确源提交。不要重新生成已有密钥。
 5. 在独立模拟器安装上一已发布同签名包，恢复虚构夹具、导出备份，再用`adb install -r`覆盖新包；不卸载。比较记录、设置、照片SHA及UID/首次安装时间；按实际版本方向运行`verify_backup.py`，仅显式允许定义的新增字段差异。
 6. 更新报告、安装说明、手机清单和任务入口，检查文档链接。最终APK必须从报告提交后的干净源构建，release.json中的源提交与交付main一致。仅补充文档后复打包时，AGP的`META-INF/version-control-info.textproto`会随Git提交变化，不能要求整体APK哈希相同：须确认产品源无变化、逐ZIP条目只此来源元数据不同、签名证书不变，并对最终包补做覆盖启动。固定本地入口必须与最终产物SHA相同。本地交付在此完成；用户要求暂不推送时，源码/文档/tag/安装包全部保留本地。其余轮次按用户明确范围推送源码/文档。
 7. **仅用户明确要求上传安装包时**：正常推送GitHub，在准确构建提交创建新tag（不移动旧tag）；先建立草稿、上传APK/SHA256SUMS/release.json和手机清单、核对附件后公开。附件使用`suishouji-版本.apk`，名称标签为「随手记」。私钥、备份和测试记录不上传。
