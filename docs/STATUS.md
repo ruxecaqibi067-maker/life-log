@@ -1,5 +1,16 @@
 # 主管进度板
 
+## 2026-11-21 · 0.1.9/code14 双包发布
+
+用户在本地AI版验收后追加明确指令：推送界面美化版及AI测试版安装包。本轮发布范围因此更新为源码/main、新tag`v0.1.9`和同一Release的两份APK；下方早先本地阶段的“不推送、正式APK不替换”约定由此更新。
+
+- 离线正式版：0.1.9/code14，`com.personal.lifelog`，沿用原长期证书，包含当前工作区共享界面美化、离线单日数据预览及已接受功能；无INTERNET、Key输入和AI发送入口。正式固定路径仍为`artifacts/phone-test/随手记.apk`。
+- 独立AI测试版：0.1.9-ai-review/code14，`com.personal.lifelog.aireview`，显示名「随手记 AI测试」。仅此包可确认发送至DeepSeek，Key及结果只保存在内存；使用本机测试签名，与正式包并存，数据和自动导出目录隔离。本地固定入口`artifacts/ai-review-test/随手记-AI测试.apk`。
+
+核心整合的49项定向主机检查、单台API28共存/文件隔离/回顾页清理/Key进程清理验证见下节。本次递增版本后补验正式code13→14覆盖和最终两包，未重新跑全套矩阵。真实DeepSeek请求仍为用户在测试机输入Key后自主验证，发布不代表真实连接已通过。准确源码、包哈希、签名、Lint与覆盖备份结果见发布`release.json`及本地`artifacts/publish-0.1.9-code14/`证据。
+
+GitHub附件分别为`suishouji-0.1.9.apk`和`suishouji-ai-test-0.1.9.apk`，下载前按“离线正式版/AI测试版”选择；旧tag和旧安装包保留，不覆盖已有Release附件。
+
 ## 2026-11-21 · 当前工作区整合与「随手记 AI测试」本地验收通过
 
 以主仓库当前工作区为输入，包含原58个修改/新增文件，保留共享界面调整、离线单日取数/预览及第三项AI测试实现。整合前的源码快照及逐文件SHA保留在忽略目录`artifacts/ai-review-integration-20261121/`，未退回旧提交或遗漏新增资源。统一整合为本地主线提交，准确源提交和APK SHA见交付目录`release.json`。

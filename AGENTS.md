@@ -8,6 +8,8 @@
 - 用户指定主管对话负责规划、整合、验收与发布，实现对话执行各包。新用户指令优先；不要额外制造审批步骤。
 - 2026-11-21按当前本地工作区（含未提交与新增文件）整合独立「随手记 AI测试」：`aiReviewTest`、应用ID`com.personal.lifelog.aireview`、0.1.8-ai-review/code13。仅该构建允许INTERNET和DeepSeek发送，Key/结果仅内存；正式构建仍离线，固定正式APK不替换。本轮只交付本地`artifacts/ai-review-test/随手记-AI测试.apk`，不推送。验收与范围见docs/STATUS.md。
 
+2026-11-21最新追加授权为**发布两包**：界面美化离线正式版0.1.9/code14及独立AI测试版0.1.9-ai-review/code14，同一新Release v0.1.9；允许正常推送源码、tag和两APK。此前本地阶段“不推送、固定正式APK不换”的约定在本轮由此更新。正式包仍无INTERNET、沿用原长期签名；AI包继续独立ID和内存Key，不在主管环境发送真实请求。详见STATUS首节。
+
 ## 先读取
 
 1. `docs/STATUS.md`及本任务`docs/tasks/Txx.md`。

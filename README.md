@@ -6,11 +6,17 @@
 
 ## 下载与更新
 
-- [下载随手记 0.1.8 / code13 安装包](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.8/suishouji-0.1.8.apk)
-- [版本页与 SHA 校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.8)
+- [下载随手记 0.1.9 / code14（界面美化离线版）](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.9/suishouji-0.1.9.apk)
+- [版本页与 SHA 校验](https://github.com/ruxecaqibi067-maker/life-log/releases/tag/v0.1.9)
 - [安装与数据保留](docs/INSTALL.md)、[手机测试清单](docs/testing/ANDROID_PHONE_TEST.md)
 
-当前公开版本 **0.1.8 / versionCode 13**，沿用原长期签名，支持公开 `0.1.7 / code11` 与此前本地 `0.1.8 / code12` 直接覆盖更新。先在旧 App 导出完整 ZIP 备份，再安装新版。电脑固定入口为 `artifacts/phone-test/随手记.apk`。
+当前发布版本 **0.1.9 / versionCode 14**，沿用原长期签名，支持公开 `0.1.7 / code11` 与此前本地 `0.1.8 / code12` 直接覆盖更新。先在旧 App 导出完整 ZIP 备份，再安装新版。电脑固定入口为 `artifacts/phone-test/随手记.apk`。
+
+## 0.1.9 / code14 双包
+
+- **离线正式版**：包含当前界面美化、布局统一和离线单日回顾数据预览，继续无联网权限，可沿用原签名覆盖code13。
+- **[随手记 AI测试](https://github.com/ruxecaqibi067-maker/life-log/releases/download/v0.1.9/suishouji-ai-test-0.1.9.apk)**：独立安装，不覆盖正式版；用户输入进程内临时Key，先预览并确认发送内置虚构样例，再自行测试单日回顾。只有确认后联网，消耗用户的DeepSeek API额度。
+- 正式导出仍为`Download/lifelog/latest.json`，AI测试独立为`Download/lifelog-ai-test/latest.json`；切日、离页及收起预览清理临时数据和请求。真实连接效果待用户测试，完整验收见[主管进度板](docs/STATUS.md)。
 
 ## 0.1.8 / code13 更新
 
