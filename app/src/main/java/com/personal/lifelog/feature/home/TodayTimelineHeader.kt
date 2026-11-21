@@ -20,17 +20,18 @@ import com.personal.lifelog.ui.theme.LogDimens
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TodayTimelineHeader(onOpenWorkoutHistory: () -> Unit) {
-    FlowRow(Modifier.fillMaxWidth().padding(top = LogDimens.group),
-        horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
-        verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+    FlowRow(Modifier.fillMaxWidth().padding(top = LogDimens.gap),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
+        itemVerticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.home_timeline_title), Modifier.align(Alignment.CenterVertically),
-            style = MaterialTheme.typography.titleSmall)
+            style = MaterialTheme.typography.titleMedium)
         SecondaryButton(onClick = onOpenWorkoutHistory, modifier = Modifier.testTag("home-workout-history")) {
-            Icon(Icons.Filled.FitnessCenter, null, Modifier.size(20.dp))
+            Icon(Icons.Filled.FitnessCenter, null, Modifier.size(18.dp))
             Spacer(Modifier.width(LogDimens.gap))
             Text(stringResource(R.string.home_workout_history), Modifier.weight(1f, fill = false))
-            Spacer(Modifier.width(LogDimens.gap))
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(20.dp))
+            Spacer(Modifier.width(4.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(18.dp))
         }
     }
 }

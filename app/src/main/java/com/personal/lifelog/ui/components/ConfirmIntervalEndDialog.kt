@@ -3,7 +3,9 @@ package com.personal.lifelog.ui.components
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -18,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import com.personal.lifelog.R
 import com.personal.lifelog.core.time.RecordTime
 import com.personal.lifelog.feature.home.recordedDurationText
+import com.personal.lifelog.ui.theme.LogDimens
+import com.personal.lifelog.ui.theme.TabularTextStyle
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -43,18 +47,26 @@ fun ConfirmIntervalEndDialog(
         text = {
             Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()).testTag("actual-interval-dialog"),
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.interval_check_actual))
-                Text(stringResource(R.string.interval_start,
-                    actualTimeFormat.format(Instant.ofEpochMilli(start).atZone(RecordTime.zone(startZone)))))
-                Text(stringResource(R.string.interval_end,
-                    actualTimeFormat.format(Instant.ofEpochMilli(end).atZone(RecordTime.zone(endZone)))))
-                if (end > start) {
-                    Text(stringResource(R.string.interval_duration, recordedDurationText(end - start)),
-                        style = MaterialTheme.typography.titleMedium)
-                    if (end - start < minimumMs) Text(stringResource(R.string.interval_short_notice, minimumMs / 60_000))
+                Text(stringResource(R.string.interval_check_actual), style = MaterialTheme.typography.bodyMedium)
+                TonalCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(LogDimens.group), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(stringResource(R.string.interval_start,
+                            actualTimeFormat.format(Instant.ofEpochMilli(start).atZone(RecordTime.zone(startZone)))),
+                            style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(stringResource(R.string.interval_end,
+                            actualTimeFormat.format(Instant.ofEpochMilli(end).atZone(RecordTime.zone(endZone)))),
+                            style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        if (end > start) {
+                            Text(stringResource(R.string.interval_duration, recordedDurationText(end - start)),
+                                style = MaterialTheme.typography.titleMedium.merge(TabularTextStyle),
+                                color = MaterialTheme.colorScheme.primary)
+                            if (end - start < minimumMs) Text(stringResource(R.string.interval_short_notice, minimumMs / 60_000),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
                 SecondaryButton(onClick = { choosing = true }, enabled = !busy,
-                    modifier = Modifier.testTag("actual-interval-edit-end")) {
+                    modifier = Modifier.fillMaxWidth().testTag("actual-interval-edit-end")) {
                     Text(stringResource(R.string.interval_edit_end))
                 }
                 if (!valid) Text(stringResource(R.string.interval_end_range), color = MaterialTheme.colorScheme.error)

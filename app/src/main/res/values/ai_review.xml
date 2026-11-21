@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="review_ai_preview_action">预览 AI 回顾数据</string>
+    <string name="review_ai_preview_title">AI 回顾数据预览</string>
+    <string name="review_ai_preview_date">所选日期：%1$s</string>
+    <string name="review_ai_preview_close">收起</string>
+    <string name="review_ai_preview_loading">正在读取当日数据…</string>
+    <string name="review_ai_preview_failed">当日数据读取失败，未能生成预览，请重试</string>
+    <string name="review_ai_preview_failed_full">存储空间不足，未能生成预览，请清理后重试</string>
+    <string name="review_ai_preview_failed_unavailable">本地数据库暂不可用，未能生成预览，请重试</string>
+    <string name="review_ai_preview_stale">相关记录或目标已更新，旧预览已失效，请重新生成</string>
+    <string name="review_ai_preview_regenerate">重新生成预览</string>
+    <string name="review_ai_preview_meta">快照：%1$s · 时区：%2$s · v%3$d</string>
+    <string name="review_ai_preview_privacy_note">照片、路径、哈希、标识符、自定义名称原文与备注均留在本机。</string>
+    <string name="review_ai_preview_empty_day">当天还没有饮食、作息、工作或训练记录。</string>
+    <string name="review_ai_preview_expand_json">展开完整 JSON</string>
+    <string name="review_ai_preview_collapse_json">收起完整 JSON</string>
+    <string name="review_ai_preview_sleep_label">就寝时段</string>
+    <string name="review_ai_preview_work_label">工作时段</string>
+    <string name="review_ai_preview_meals_label">饮食记录</string>
+    <string name="review_ai_preview_workouts_label">训练记录</string>
+    <string name="review_ai_preview_goals_label">当前目标</string>
+    <string name="review_ai_preview_not_recorded">未记录</string>
+    <string name="review_ai_preview_goal_unset">未设置</string>
+    <string name="review_ai_preview_goal_suffix">（当前目标 %1$d 分钟）</string>
+    <string name="review_ai_preview_interval_completed">已完成 %1$d 段，共 %2$d 分钟</string>
+    <string name="review_ai_preview_interval_active_only">暂无已完成段，1 段进行中（%1$s 起）</string>
+    <string name="review_ai_preview_interval_active_extra">；另有 1 段进行中（%1$s 起）</string>
+    <string name="review_ai_preview_meals_summary">共 %1$d 条（纯照片 %2$d 条，附 %3$d 张照片）</string>
+    <string name="review_ai_preview_workouts_summary">共 %1$d 次，%2$d 个项目</string>
+    <string name="review_ai_preview_goals_summary">睡眠 %1$s · 工作 %2$s</string>
+    <string name="review_ai_preview_minutes">%1$d 分钟</string>
+
+    <!-- 第三项：DeepSeek 单日回顾测试版（仅 aiReviewTest 隔离构建展示） -->
+    <string name="ai_review_cancel">取消</string>
+    <string name="ai_review_test_entry">DeepSeek 测试</string>
+    <string name="ai_review_test_title">DeepSeek 测试配置</string>
+    <string name="ai_review_test_settings_title">DeepSeek 测试版</string>
+    <string name="ai_review_test_settings_note">仅限当前隔离测试包使用：可输入进程内临时 Key 并用内置虚构样例验证连接，不会读取正式包个人数据。</string>
+    <string name="ai_review_test_settings_open">输入测试 Key 与样例验证</string>
+    <string name="ai_review_key_section">DeepSeek API Key（进程内临时保存）</string>
+    <string name="ai_review_key_label">输入 DeepSeek API Key</string>
+    <string name="ai_review_key_placeholder">sk-…</string>
+    <string name="ai_review_key_clear">清除 Key</string>
+    <string name="ai_review_key_status_set">已输入本次进程测试 Key（跨页有效，不落盘）</string>
+    <string name="ai_review_key_status_empty">尚未输入测试 Key</string>
+    <string name="ai_review_key_notice">Key 仅保存在本次应用进程内存中，跨页用于本次测试；退出进程后需重新输入，不写入日志、数据库、界面状态恢复或备份。输入、切页与预览均保持离线。</string>
+
+    <string name="ai_review_sample_section">内置虚构样例连接测试</string>
+    <string name="ai_review_sample_action">用虚构样例测试连接</string>
+    <string name="ai_review_sample_confirm_title">确认发送虚构样例？</string>
+    <string name="ai_review_sample_quota_notice">即将向 DeepSeek（deepseek-flash）发送内置虚构样例，不读取本机 Room 记录；此次请求会使用您自己的 API 额度。</string>
+    <string name="ai_review_sample_confirm_send">确认发送样例</string>
+    <string name="ai_review_sample_sending">正在向 DeepSeek 发送虚构样例…</string>
+    <string name="ai_review_sample_result_title">虚构样例返回结果（非本机真实记录）</string>
+    <string name="ai_review_sample_need_key">请先在上方输入测试 Key，再发送虚构样例。</string>
+    <string name="ai_review_sample_load_failed">内置虚构样例读取失败，请重新打开页面重试。</string>
+
+    <string name="review_ai_send_action">发送到 DeepSeek 生成回顾</string>
+    <string name="review_ai_send_need_key">尚未输入测试 Key，请先在「DeepSeek 测试」中输入本次进程 Key。</string>
+    <string name="review_ai_send_open_key">去输入测试 Key</string>
+    <string name="review_ai_send_confirm_title">确认发送到 DeepSeek？</string>
+    <string name="review_ai_send_confirm_date">所选日期：%1$s</string>
+    <string name="review_ai_send_confirm_recipient">接收方：DeepSeek（deepseek-flash）</string>
+    <string name="review_ai_send_confirm_cost">将发送当前已预览的冻结 JSON，会消耗您自己的 DeepSeek API 额度。仅包含上述单日白名单字段，不含照片与备注。</string>
+    <string name="review_ai_send_confirm_action">确认发送</string>
+    <string name="review_ai_send_loading">正在向 DeepSeek 请求单日回顾…</string>
+    <string name="review_ai_send_result_title">DeepSeek 单日回顾（%1$s）</string>
+    <string name="review_ai_send_retry">手动重试</string>
+
+    <!-- DeepSeek 错误提示 -->
+    <string name="ai_review_err_missing_key">尚未输入测试 Key，请先输入 DeepSeek API Key。</string>
+    <string name="ai_review_err_invalid_key">测试 Key 格式无效，请检查是否包含换行或异常字符。</string>
+    <string name="ai_review_err_unauthorized">认证失败（401），请检查 DeepSeek API Key 是否正确。</string>
+    <string name="ai_review_err_balance">账户余额不足（402），请检查 DeepSeek 账户余额。</string>
+    <string name="ai_review_err_rate_limit">请求过于频繁（429），请稍后手动重试。</string>
+    <string name="ai_review_err_bad_request">测试版请求格式异常（400/422），未生成回顾，请核对测试版协议。</string>
+    <string name="ai_review_err_timeout">请求超时，该次请求可能已到达服务端，请确认后手动重试。</string>
+    <string name="ai_review_err_network">网络连接失败或被中止，请检查网络后手动重试。</string>
+    <string name="ai_review_err_server">DeepSeek 服务暂时不可用，请稍后手动重试。</string>
+    <string name="ai_review_err_empty">模型返回正文为空，未展示结果，可手动重试。</string>
+    <string name="ai_review_err_truncated">模型返回内容不完整或被截断，未展示结果，可手动重试。</string>
+    <string name="ai_review_err_malformed">模型返回格式异常，无法解析，可手动重试。</string>
+    <string name="ai_review_err_asset">内置提示词或样例资源读取失败，请重试。</string>
+</resources>

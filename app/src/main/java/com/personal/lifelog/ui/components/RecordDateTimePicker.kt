@@ -5,9 +5,12 @@ import android.os.Build
 import android.view.ContextThemeWrapper
 import android.view.ViewGroup
 import android.widget.NumberPicker
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,8 +32,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.personal.lifelog.R
-import com.personal.lifelog.ui.components.ActionButton
 import com.personal.lifelog.ui.theme.LogDimens
+import com.personal.lifelog.ui.theme.TabularTextStyle
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
@@ -67,12 +70,24 @@ fun RecordDateTimePicker(
             modifier = Modifier.testTag("record-time-picker").padding(LogDimens.page).widthIn(max = 560.dp).fillMaxWidth()
                 .heightIn(max = (LocalConfiguration.current.screenHeightDp - 48).coerceAtLeast(240).dp),
             shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface,
         ) {
             Column(Modifier.padding(20.dp)) {
                 Text(stringResource(title), style = MaterialTheme.typography.headlineSmall)
                 Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(top = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                    Text(local.format(java.time.format.DateTimeFormatter.ofPattern(if (dateOnly) "uuuu年M月d日" else "uuuu年M月d日 HH:mm")), style = MaterialTheme.typography.bodyLarge)
+                    verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
+                    Surface(
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = local.format(java.time.format.DateTimeFormatter.ofPattern(if (dateOnly) "uuuu年M月d日" else "uuuu年M月d日 HH:mm")),
+                            style = MaterialTheme.typography.titleMedium.merge(TabularTextStyle),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        )
+                    }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
                         Wheel(R.string.picker_year, year, 1, 9999, Modifier.weight(1.4f), tagPrefix) { year = it; day = day.coerceAtMost(YearMonth.of(year, month).lengthOfMonth()) }
                         Wheel(R.string.picker_month, month, 1, 12, Modifier.weight(1f), tagPrefix) { month = it; day = day.coerceAtMost(YearMonth.of(year, month).lengthOfMonth()) }
@@ -93,9 +108,10 @@ fun RecordDateTimePicker(
                         }
                     }
                 }
-                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(LogDimens.gap, Alignment.End)) {
                     ActionButton(onClick = onCancel) { Text(stringResource(R.string.picker_cancel)) }
-                    ActionButton(onClick = { offset?.let { onConfirm(local, it) } }, enabled = offset != null) {
+                    PrimaryButton(onClick = { offset?.let { onConfirm(local, it) } }, enabled = offset != null,
+                        modifier = Modifier.heightIn(min = LogDimens.touch)) {
                         Text(stringResource(R.string.picker_confirm))
                     }
                 }
@@ -156,12 +172,30 @@ fun RecordDatePicker(title: Int, initial: java.time.LocalDate, onCancel: () -> U
 
 /** One entry and one confirmation for the complete date/time. */
 @Composable
-fun RecordTimeChoice(label: Int, value: String, enabled: Boolean = true, onClick: () -> Unit) {
+fun RecordTimeChoice(
+    @StringRes label: Int,
+    value: String,
+    enabled: Boolean = true,
+    @StringRes hint: Int = R.string.picker_hint,
+    onClick: () -> Unit,
+) {
     RecordCard(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.picker_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(LogDimens.card),
+            horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.titleMedium.merge(TabularTextStyle))
+                Text(stringResource(hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            }
+            Icon(
+                imageVector = Icons.Outlined.Schedule,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

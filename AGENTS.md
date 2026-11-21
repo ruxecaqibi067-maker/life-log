@@ -6,6 +6,7 @@
 - 当前公开测试版 0.1.8 / code13（tag `v0.1.8`），Room/备份 v7；固定本机入口 `artifacts/phone-test/随手记.apk`。2026-11-20 按用户明确要求整合荣耀大陆非 Google 语音路径与首页中央圆形麦克风修复，递增 versionCode 至 13 并发布至 GitHub，详见 `docs/releases/0.1.8.md`（此前本地 code12 保留在 `docs/releases/0.1.8-local.md`）。原长期签名保持 `d7f287...c747`，密钥在当前 `LOCALAPPDATA/LifeLogAndroid/signing` 且保留旧 Codex D 盘副本。
 - 前置0.1.5完整主线`ec005a5`，包含既有饮食/睡眠/工作/训练、黑屏起床修复、批量力量/感受、公共滚轮和首页并排双卡。开始工作留普通首页，不进入睡前黑屏。历史交付不重新实现。
 - 用户指定主管对话负责规划、整合、验收与发布，实现对话执行各包。新用户指令优先；不要额外制造审批步骤。
+- 2026-11-21按当前本地工作区（含未提交与新增文件）整合独立「随手记 AI测试」：`aiReviewTest`、应用ID`com.personal.lifelog.aireview`、0.1.8-ai-review/code13。仅该构建允许INTERNET和DeepSeek发送，Key/结果仅内存；正式构建仍离线，固定正式APK不替换。本轮只交付本地`artifacts/ai-review-test/随手记-AI测试.apk`，不推送。验收与范围见docs/STATUS.md。
 
 ## 先读取
 
@@ -27,8 +28,8 @@ T01–T09任务已合并到`docs/archive/tasks/T01-T09-基础功能任务.md`，
 - 饮食文字/照片任一即可，运动数值选填；缺记录不能解释为零睡眠、未吃饭或没运动。
 - 同餐最多9张，有序MealPhoto关联为完整图片来源，photoId保留首张封面兼容；引用清理、快照、备份和恢复必须含非封面图，取消编辑不提前删旧文件。
 - 自定义项目、历史名称/类型快照都要保留、备份。睡眠与工作独立，汇总沿用结束日整段归档；进行中不计入完成量。
-- 自动记录JSON默认写入Download/lifelog/latest.json，可在设置关闭，省略照片内容。Android9使用仅maxSdk28存储权限，Android10起使用MediaStore。完整ZIP仍包含照片。
-- 不加非必要权限、云同步、广告、统计、GPS、AI或超出任务的功能。
+- 正式包自动JSON仍写Download/lifelog/latest.json；AI测试包独立写Download/lifelog-ai-test/latest.json，其余隔离包按完整应用ID分目录；读取、临时文件和MediaStore查询也必须隔离，设置显示实际路径。Android9使用仅maxSdk28存储权限，Android10起使用MediaStore。JSON省略照片内容，完整ZIP仍包含照片。
+- 不加非必要权限、云同步、广告、统计、GPS或超出任务的功能。用户已明确授权上述独立AI测试包；正式版不扩大网络能力。
 - 照片、真实备份、密钥、密码、设备序列号及完整生活记录不提交Git。APK/日志/截图放忽略的artifacts；本地APK固定交付到`artifacts/phone-test/随手记.apk`。**以后默认只推送源码/文档，只有用户明确要求更新GitHub安装包时才创建Release或上传APK**；不能把“整合/更新/推送”自行解释为发包授权。
 
 ## 多对话与Git

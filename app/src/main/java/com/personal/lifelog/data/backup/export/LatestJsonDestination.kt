@@ -21,10 +21,23 @@ interface LatestJsonDestination {
     fun write(json: String)
 }
 
-/** Owns only Download/lifelog/latest.json. All methods are called on Dispatchers.IO. */
+/** Stable, separate destinations for production and independently installed test packages. */
+object LatestJsonExportLocation {
+    fun directory(packageName: String): String = when (packageName) {
+        "com.personal.lifelog" -> "lifelog"
+        "com.personal.lifelog.aireview" -> "lifelog-ai-test"
+        else -> "lifelog-$packageName"
+    }
+
+    fun relativePath(packageName: String) = "Download/${directory(packageName)}"
+    fun displayPath(packageName: String) = "${relativePath(packageName)}/latest.json"
+}
+
+/** Owns only this package's latest.json. All methods are called on Dispatchers.IO. */
 class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
     private val context = context.applicationContext
     private val resolver = this.context.contentResolver
+    private val relativePath = LatestJsonExportLocation.relativePath(this.context.packageName)
 
     override fun read(): String? {
         if (Build.VERSION.SDK_INT >= 29) {
@@ -50,7 +63,7 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
         val query = MediaStore.setIncludePending(collection)
         resolver.query(query, arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.IS_PENDING),
             "${MediaStore.Downloads.RELATIVE_PATH} = ? AND ${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.OWNER_PACKAGE_NAME} = ?",
-            arrayOf("$RELATIVE_PATH/", FILE_NAME, context.packageName), null)?.use {
+            arrayOf("$relativePath/", FILE_NAME, context.packageName), null)?.use {
             if (it.moveToFirst()) return DownloadEntry(ContentUris.withAppendedId(collection, it.getLong(0)), it.getInt(1) != 0)
         }
         return null
@@ -64,7 +77,7 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
         val uri = existing?.uri ?: resolver.insert(collection, ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
             put(MediaStore.Downloads.MIME_TYPE, "application/json")
-            put(MediaStore.Downloads.RELATIVE_PATH, RELATIVE_PATH)
+            put(MediaStore.Downloads.RELATIVE_PATH, relativePath)
             put(MediaStore.Downloads.IS_PENDING, 1)
         }) ?: throw IOException("Cannot create latest JSON")
         try {
@@ -102,7 +115,7 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
         resolver.query(uri, arrayOf(MediaStore.Downloads.DISPLAY_NAME, MediaStore.Downloads.RELATIVE_PATH),
             null, null, null)?.use {
             check(it.moveToFirst() && it.getString(0) == FILE_NAME &&
-                it.getString(1)?.trimEnd('/') == RELATIVE_PATH) { "Latest JSON destination has changed" }
+                it.getString(1)?.trimEnd('/') == relativePath) { "Latest JSON destination has changed" }
         } ?: throw IOException("Cannot query latest JSON")
     }
 
@@ -122,7 +135,8 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
 
     @Suppress("DEPRECATION")
     private fun legacyFile() = File(
-        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "lifelog/$FILE_NAME",
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+        "${LatestJsonExportLocation.directory(context.packageName)}/$FILE_NAME",
     )
 
     private fun writeLegacy(json: String) {
@@ -145,7 +159,6 @@ class SharedLatestJsonDestination(context: Context) : LatestJsonDestination {
     }
 
     private companion object {
-        const val RELATIVE_PATH = "Download/lifelog"
         const val FILE_NAME = "latest.json"
     }
 

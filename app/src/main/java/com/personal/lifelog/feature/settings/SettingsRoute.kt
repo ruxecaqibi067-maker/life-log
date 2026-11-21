@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.lifelog.data.backup.export.SafBackupDestination
+import com.personal.lifelog.data.backup.export.LatestJsonExportLocation
 import com.personal.lifelog.data.backup.importer.SafBackupSource
 
 /**
@@ -27,6 +28,7 @@ fun SettingsRoute(
     viewModel: SettingsViewModel,
     onOpenExercises: () -> Unit,
     onBack: () -> Unit,
+    onOpenAiReviewTest: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val resolver = context.contentResolver
@@ -101,6 +103,7 @@ fun SettingsRoute(
         onDismissBackupResult = viewModel::dismissBackupResult,
         onRetryRecovery = viewModel::retryRecovery,
         autoJsonEnabled = autoJsonEnabled,
+        autoJsonPath = LatestJsonExportLocation.displayPath(context.packageName),
         autoJsonWriteFailed = autoJsonWriteFailed,
         onAutoJsonEnabledChanged = { enabled ->
             viewModel.setAutoJsonEnabled(enabled)
@@ -109,6 +112,7 @@ fun SettingsRoute(
                 storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         },
+        onOpenAiReviewTest = onOpenAiReviewTest,
     )
 }
 

@@ -33,6 +33,7 @@ import com.personal.lifelog.domain.HabitFrequency
 import com.personal.lifelog.domain.HabitStatus
 import com.personal.lifelog.ui.components.*
 import com.personal.lifelog.ui.theme.LogDimens
+import com.personal.lifelog.ui.theme.TabularTextStyle
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -48,18 +49,26 @@ fun TodoHomeSection(viewModel: TodoViewModel, onOpenAll: () -> Unit) {
     val day by viewModel.home.collectAsStateWithLifecycle()
     val commands by viewModel.commands.collectAsStateWithLifecycle()
     RecordCard(Modifier.fillMaxWidth().testTag("todo-home-section")) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.todo_today), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                if (!day.loading && !day.failed) Text(stringResource(R.string.todo_progress,
-                    day.items.count { it.isCompleted }, day.items.size), style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!day.loading && !day.failed) {
+                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        Text(
+                            text = stringResource(R.string.todo_progress, day.items.count { it.isCompleted }, day.items.size),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelMedium.merge(TabularTextStyle),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 AddMenu(commands.busy, { viewModel.addTodo() }, viewModel::addHabit)
             }
             DayFeedback(day, viewModel::refresh)
-            day.items.take(4).forEach { item -> TodoRow(item, commands.busy, { viewModel.complete(item, it) }, { viewModel.editTodo(item) }) }
+            day.items.take(4).forEach { item -> TodoRow(item, commands.busy, { viewModel.complete(item, it) }, { viewModel.editTodo(item) }, nested = true) }
             if (day.items.size > 4) Text(stringResource(R.string.todo_more_items, day.items.size - 4),
-                Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.bodySmall)
+                Modifier.padding(horizontal = 4.dp, vertical = 2.dp), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             ActionButton(onClick = onOpenAll, modifier = Modifier.align(Alignment.End).testTag("todo-open-all")) {
                 Text(stringResource(R.string.todo_all_and_habits))
                 Spacer(Modifier.width(4.dp))
@@ -95,10 +104,9 @@ private fun DayFeedback(day: TodoDayState, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun TodoRow(item: TodoRecord, busy: Boolean, onComplete: (Boolean) -> Unit, onEdit: () -> Unit) {
-    RecordCard(onClick = onEdit, enabled = !busy, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-        .testTag("todo-row-${item.id}")) {
-        Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun TodoRow(item: TodoRecord, busy: Boolean, onComplete: (Boolean) -> Unit, onEdit: () -> Unit, nested: Boolean = false) {
+    val rowContent: @Composable ColumnScope.() -> Unit = {
+        Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             val description = stringResource(if (item.isCompleted) R.string.todo_uncheck else R.string.todo_check, item.title)
             Checkbox(checked = item.isCompleted, onCheckedChange = onComplete, enabled = !busy,
                 modifier = Modifier.testTag("todo-check-${item.id}").semantics { contentDescription = description })
@@ -108,9 +116,15 @@ private fun TodoRow(item: TodoRecord, busy: Boolean, onComplete: (Boolean) -> Un
                     color = if (item.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
                 val details = listOfNotNull(item.scheduledMinute?.let(::minuteText),
                     if (item.habitId != null) stringResource(R.string.todo_from_habit) else null).joinToString(" · ")
-                if (details.isNotEmpty()) Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (details.isNotEmpty()) Text(details, style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+    }
+    if (nested) {
+        TonalCard(onClick = onEdit, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("todo-row-${item.id}"), content = rowContent)
+    } else {
+        RecordCard(onClick = onEdit, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("todo-row-${item.id}"), content = rowContent)
     }
 }
 
@@ -126,31 +140,34 @@ fun TodoScreen(viewModel: TodoViewModel, onBack: () -> Unit) {
         }, actions = { AddMenu(commands.busy, { viewModel.addTodo(day.date) }, viewModel::addHabit) })
     }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("todo-management"),
-            contentPadding = PaddingValues(LogDimens.page), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            contentPadding = PaddingValues(LogDimens.page), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item(key = "date") {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    SecondaryButton(onClick = { datePicker = true }, modifier = Modifier.weight(1f).testTag("todo-select-date"), enabled = !commands.busy) {
-                        Text(day.date.format(dayFormat))
+                TonalCard(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth().padding(LogDimens.group), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                        SecondaryButton(onClick = { datePicker = true }, modifier = Modifier.weight(1f).testTag("todo-select-date"), enabled = !commands.busy) {
+                            Text(day.date.format(dayFormat), style = MaterialTheme.typography.labelLarge.merge(TabularTextStyle))
+                        }
+                        ActionButton(onClick = { viewModel.selectDate(null) }, enabled = !commands.busy) { Text(stringResource(R.string.nav_today)) }
                     }
-                    ActionButton(onClick = { viewModel.selectDate(null) }, enabled = !commands.busy) { Text(stringResource(R.string.nav_today)) }
                 }
             }
             item(key = "day-status") {
-                Text(stringResource(R.string.todo_progress, day.items.count { it.isCompleted }, day.items.size), style = MaterialTheme.typography.titleSmall)
+                SectionHeader(stringResource(R.string.todo_progress, day.items.count { it.isCompleted }, day.items.size))
                 DayFeedback(day, viewModel::refresh)
             }
             items(day.items, key = { "todo-${it.id}" }) { item ->
                 TodoRow(item, commands.busy, { viewModel.complete(item, it) }, { viewModel.editTodo(item) })
             }
             item(key = "habit-heading") {
-                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.todo_habits_ongoing), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    SectionHeader(stringResource(R.string.todo_habits_ongoing), Modifier.weight(1f))
                     ActionButton(onClick = viewModel::addHabit, enabled = !commands.busy) { Text(stringResource(R.string.todo_habit_add)) }
                 }
                 Text(stringResource(R.string.todo_habit_cycle_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 when {
-                    habits.loading -> CircularProgressIndicator(Modifier.padding(8.dp).size(20.dp), strokeWidth = 2.dp)
+                    habits.loading -> LoadingState(stringResource(R.string.todo_today))
                     habits.failed -> ErrorState(stringResource(R.string.todo_load_failed), onRetry = viewModel::refresh)
                     habits.items.isEmpty() -> Text(stringResource(R.string.todo_habits_empty), Modifier.padding(vertical = 12.dp),
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -170,19 +187,32 @@ fun TodoScreen(viewModel: TodoViewModel, onBack: () -> Unit) {
 @Composable
 private fun HabitRow(habit: HabitRecord, busy: Boolean, onEdit: () -> Unit, onPause: () -> Unit, onArchive: () -> Unit) {
     RecordCard(Modifier.fillMaxWidth().testTag("habit-row-${habit.id}")) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(habit.title, style = MaterialTheme.typography.titleSmall)
-            val start = LocalDate.parse(habit.startDate)
-            Text(stringResource(R.string.todo_habit_range, start.format(fullDayFormat), start.plusDays(20).format(fullDayFormat)),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(habit.title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                if (habit.status == HabitStatus.PAUSED) {
+                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        Text(
+                            text = stringResource(R.string.todo_habit_paused),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            val start = remember(habit.startDate) { runCatching { LocalDate.parse(habit.startDate) }.getOrNull() }
+            if (start != null) {
+                Text(stringResource(R.string.todo_habit_range, start.format(fullDayFormat), start.plusDays(20).format(fullDayFormat)),
+                    style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             val recurrence = when (habit.frequency) {
                 HabitFrequency.DAILY -> stringResource(R.string.todo_frequency_daily)
                 HabitFrequency.INTERVAL -> stringResource(R.string.todo_every_days, habit.intervalDays)
                 HabitFrequency.WEEKLY -> stringResource(R.string.todo_frequency_weekly) + " " + weekdaysText(habit.weekdaysMask)
             }
-            Text(listOfNotNull(recurrence, habit.scheduledMinute?.let(::minuteText),
-                if (habit.status == HabitStatus.PAUSED) stringResource(R.string.todo_habit_paused) else null).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium)
+            Text(listOfNotNull(recurrence, habit.scheduledMinute?.let(::minuteText)).joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 ActionButton(onClick = onEdit, enabled = !busy) { Text(stringResource(R.string.todo_edit_short)) }
                 ActionButton(onClick = onPause, enabled = !busy) {
@@ -202,16 +232,27 @@ fun TodoDialogs(viewModel: TodoViewModel) {
     val commands by viewModel.commands.collectAsStateWithLifecycle()
     draft?.takeIf { commands.deletion == null }?.let { EditorDialog(it, commands, viewModel) }
     commands.deletion?.let { request ->
-        AlertDialog(onDismissRequest = viewModel::cancelDelete,
+        AlertDialog(onDismissRequest = { if (!commands.busy) viewModel.cancelDelete() },
             title = { Text(stringResource(if (request.habit) R.string.todo_habit_archive_confirm else R.string.todo_delete_confirm)) },
             text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(request.title)
+                Text(request.title, style = MaterialTheme.typography.titleSmall)
                 Text(stringResource(if (request.habit) R.string.todo_habit_archive_note else R.string.todo_delete_note))
                 commands.error?.let { ErrorState(todoError(it)) }
             } },
-            confirmButton = { ActionButton(onClick = viewModel::confirmDelete, enabled = !commands.busy) {
-                Text(stringResource(if (commands.busy) R.string.saving else R.string.picker_confirm))
-            } },
+            confirmButton = {
+                Button(
+                    onClick = viewModel::confirmDelete,
+                    enabled = !commands.busy,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.heightIn(min = LogDimens.touch),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(stringResource(if (commands.busy) R.string.saving else R.string.picker_confirm))
+                }
+            },
             dismissButton = { ActionButton(onClick = viewModel::cancelDelete, enabled = !commands.busy) { Text(stringResource(R.string.picker_cancel)) } })
     }
     if (draft == null && commands.deletion == null && commands.error != null) AlertDialog(onDismissRequest = viewModel::clearError,

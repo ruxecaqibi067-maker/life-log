@@ -11,6 +11,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,8 +28,10 @@ import com.personal.lifelog.data.local.entity.ExerciseDefinition
 import com.personal.lifelog.domain.ErrorCode
 import com.personal.lifelog.domain.ExerciseType
 import com.personal.lifelog.ui.components.ActionButton
+import com.personal.lifelog.ui.components.ConfirmActionDialog
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.LoadingState
 import com.personal.lifelog.ui.components.PrimaryButton
 import com.personal.lifelog.ui.components.RecordCard
 import com.personal.lifelog.ui.components.RecordTextField
@@ -113,11 +116,13 @@ fun ExerciseLibraryScreen(
             if (busy && editor == null) item { SavingIndicator() }
             if (error != null && editor == null) item { ErrorState(stringResource(exerciseError(error))) }
             when {
-                state.loading -> item { CircularProgressIndicator() }
+                state.loading -> item { LoadingState(stringResource(R.string.workout_loading)) }
                 state.loadFailed -> item {
                     ErrorState(stringResource(R.string.exercise_load_error), onRetry = viewModel::retryLoad)
                 }
-                visibleRows.isEmpty() -> item { EmptyState(stringResource(R.string.exercise_no_results)) }
+                visibleRows.isEmpty() -> item {
+                    EmptyState(stringResource(R.string.exercise_no_results), icon = Icons.Filled.FitnessCenter)
+                }
                 else -> items(visibleRows, key = { it.id }) { row ->
                     ExerciseRow(row, busy, onSelected, { viewModel.edit(row) }, { viewModel.toggleHidden(row) })
                 }
@@ -164,7 +169,8 @@ fun ExerciseLibraryScreen(
                 }
             },
             confirmButton = {
-                ActionButton(onClick = { viewModel.save { onSelected?.invoke(it) } }, enabled = !busy) {
+                PrimaryButton(onClick = { viewModel.save { onSelected?.invoke(it) } }, enabled = !busy,
+                    modifier = Modifier.heightIn(min = LogDimens.touch)) {
                     Text(stringResource(R.string.exercise_save))
                 }
             },
@@ -174,18 +180,14 @@ fun ExerciseLibraryScreen(
         )
     }
     if (confirmDiscard) {
-        AlertDialog(
-            onDismissRequest = { confirmDiscard = false },
-            title = { Text(stringResource(R.string.exercise_discard_title)) },
-            text = { Text(stringResource(R.string.exercise_discard_hint)) },
-            confirmButton = {
-                ActionButton(onClick = { confirmDiscard = false; viewModel.dismissEditor() }) {
-                    Text(stringResource(R.string.exercise_discard))
-                }
-            },
-            dismissButton = {
-                ActionButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.exercise_keep_editing)) }
-            },
+        ConfirmActionDialog(
+            titleRes = R.string.exercise_discard_title,
+            messageRes = R.string.exercise_discard_hint,
+            confirmRes = R.string.exercise_discard,
+            cancelRes = R.string.exercise_keep_editing,
+            destructive = true,
+            onConfirm = { confirmDiscard = false; viewModel.dismissEditor() },
+            onDismiss = { confirmDiscard = false },
         )
     }
     BackHandler(enabled = busy && editor == null) { /* Keep write completion attached to this entry. */ }
@@ -233,12 +235,18 @@ private fun ExerciseIdentity(row: ExerciseDefinition, modifier: Modifier = Modif
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         Text(row.name, style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(row.type.labelRes()), style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Text(
+                text = stringResource(row.type.labelRes()),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

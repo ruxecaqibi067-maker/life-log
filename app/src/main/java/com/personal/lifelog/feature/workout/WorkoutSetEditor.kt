@@ -8,16 +8,18 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.personal.lifelog.R
 import com.personal.lifelog.core.validation.Rules
 import com.personal.lifelog.ui.components.ActionButton
-import com.personal.lifelog.ui.components.RecordCard
 import com.personal.lifelog.ui.components.RecordTextField
 import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.components.TonalCard
 import com.personal.lifelog.ui.theme.LogDimens
 
 /** Each group is a separate lazy row; a long exercise never creates a nested scrolling form. */
@@ -26,20 +28,11 @@ internal fun WorkoutSetEditor(
     item: WorkoutItemForm, itemIndex: Int, set: WorkoutSetForm, index: Int,
     enabled: Boolean, error: Boolean, viewModel: WorkoutEditorViewModel,
 ) {
-    RecordCard(Modifier.fillMaxWidth().testTag("workout-set-${set.id}"), shape = MaterialTheme.shapes.medium) {
-        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-            Text(stringResource(R.string.workout_set_heading, item.name, index + 1), style = MaterialTheme.typography.titleSmall)
-            RecordTextField(set.kilograms, { viewModel.changeSetWeight(item.id, set.id, it) },
-                Modifier.fillMaxWidth().testTag("${set.id}-kg"), enabled = enabled, isError = error, singleLine = true,
-                label = { Text(stringResource(R.string.workout_set_kg)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-            RecordTextField(set.repetitions, { viewModel.changeSetRepetitions(item.id, set.id, it) },
-                Modifier.fillMaxWidth().testTag("${set.id}-reps"), enabled = enabled, isError = error, singleLine = true,
-                label = { Text(stringResource(R.string.workout_set_reps)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-            Row {
-                ActionButton({ viewModel.copySet(item.id, set.id) }, enabled = enabled && !set.blank && item.sets.size < Rules.SETS_PER_ITEM_LIMIT,
-                    modifier = Modifier.weight(1f).testTag("${set.id}-copy")) { Text(stringResource(R.string.workout_set_copy)) }
+    TonalCard(Modifier.fillMaxWidth().testTag("workout-set-${set.id}"), shape = MaterialTheme.shapes.medium) {
+        Column(Modifier.padding(LogDimens.group), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.workout_set_heading, item.name, index + 1),
+                    Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                 IconButton({ viewModel.moveSet(item.id, set.id, -1) }, enabled = enabled && index > 0) {
                     Icon(Icons.Default.ArrowUpward, stringResource(R.string.workout_set_up, itemIndex + 1, index + 1))
                 }
@@ -49,6 +42,32 @@ internal fun WorkoutSetEditor(
                 IconButton({ viewModel.removeSet(item.id, set.id) }, enabled = enabled, modifier = Modifier.testTag("${set.id}-remove")) {
                     Icon(Icons.Default.Close, stringResource(R.string.workout_set_remove, itemIndex + 1, index + 1))
                 }
+            }
+            val kgField: @Composable (Modifier) -> Unit = { m ->
+                RecordTextField(set.kilograms, { viewModel.changeSetWeight(item.id, set.id, it) },
+                    m.testTag("${set.id}-kg"), enabled = enabled, isError = error, singleLine = true,
+                    label = { Text(stringResource(R.string.workout_set_kg)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            }
+            val repsField: @Composable (Modifier) -> Unit = { m ->
+                RecordTextField(set.repetitions, { viewModel.changeSetRepetitions(item.id, set.id, it) },
+                    m.testTag("${set.id}-reps"), enabled = enabled, isError = error, singleLine = true,
+                    label = { Text(stringResource(R.string.workout_set_reps)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+            if (LocalDensity.current.fontScale > 1.2f) {
+                kgField(Modifier.fillMaxWidth())
+                repsField(Modifier.fillMaxWidth())
+            } else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                    kgField(Modifier.weight(1f))
+                    repsField(Modifier.weight(1f))
+                }
+            }
+            ActionButton({ viewModel.copySet(item.id, set.id) },
+                enabled = enabled && !set.blank && item.sets.size < Rules.SETS_PER_ITEM_LIMIT,
+                modifier = Modifier.align(Alignment.End).testTag("${set.id}-copy")) {
+                Text(stringResource(R.string.workout_set_copy))
             }
         }
     }

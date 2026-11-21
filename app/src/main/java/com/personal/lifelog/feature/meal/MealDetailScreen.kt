@@ -4,12 +4,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,15 +18,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,12 +42,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.personal.lifelog.R
-import com.personal.lifelog.ui.components.ActionButton
+import com.personal.lifelog.ui.components.ConfirmActionDialog
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.RecordCard
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.components.SectionHeader
 import com.personal.lifelog.ui.theme.LogDimens
+import com.personal.lifelog.ui.theme.TabularTextStyle
 
 /**
  * Read-only meal detail with edit and confirmed delete. Deleting goes through
@@ -128,24 +130,17 @@ fun MealDetailScreen(
     }
 
     if (confirmDelete) {
-        AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text(stringResource(R.string.meal_delete_title)) },
-            text = { Text(stringResource(R.string.meal_delete_message)) },
-            confirmButton = {
-                ActionButton(
-                    onClick = {
-                        confirmDelete = false
-                        viewModel.delete()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text(stringResource(R.string.meal_delete_confirm)) }
+        ConfirmActionDialog(
+            titleRes = R.string.meal_delete_title,
+            messageRes = R.string.meal_delete_message,
+            confirmRes = R.string.meal_delete_confirm,
+            cancelRes = R.string.meal_cancel,
+            destructive = true,
+            onConfirm = {
+                confirmDelete = false
+                viewModel.delete()
             },
-            dismissButton = {
-                ActionButton(onClick = { confirmDelete = false }) {
-                    Text(stringResource(R.string.meal_cancel))
-                }
-            },
+            onDismiss = { confirmDelete = false },
         )
     }
 }
@@ -166,29 +161,36 @@ private fun MealDetailContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (state.photoItems.isNotEmpty()) {
-            Text(stringResource(R.string.meal_photos_count, state.photoItems.size), Modifier.testTag("meal-photo-count"), style = MaterialTheme.typography.titleSmall)
-            Box(Modifier.testTag("meal-detail-photos")) { MealPhotoGallery(state.photoItems, enabled = !state.deleting) }
-        }
-
-        if (!meal.text.isNullOrBlank()) {
-            Text(
-                text = meal.text,
-                style = MaterialTheme.typography.bodyLarge,
-            )
+            RecordCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SectionHeader(stringResource(R.string.meal_photos_count, state.photoItems.size), Modifier.testTag("meal-photo-count"))
+                    Box(Modifier.testTag("meal-detail-photos")) { MealPhotoGallery(state.photoItems, enabled = !state.deleting) }
+                }
+            }
         }
 
         val satiety = satietyDisplayText(meal.satiety, meal.satietyText)
-        if (satiety != null) {
-            DetailRow(
-                label = stringResource(R.string.meal_satiety_detail),
-                value = satiety,
-            )
+        RecordCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (!meal.text.isNullOrBlank()) {
+                    Text(
+                        text = meal.text,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                }
+                if (satiety != null) {
+                    DetailRow(
+                        label = stringResource(R.string.meal_satiety_detail),
+                        value = satiety,
+                    )
+                }
+                DetailRow(
+                    label = stringResource(R.string.meal_time_label),
+                    value = MealTimeDisplay.full(meal.occurredAtUtcMs, meal.zoneId),
+                )
+            }
         }
-
-        DetailRow(
-            label = stringResource(R.string.meal_time_label),
-            value = MealTimeDisplay.full(meal.occurredAtUtcMs, meal.zoneId),
-        )
 
         state.deleteError?.let { error ->
             ErrorState(message = stringResource(error.messageRes()))
@@ -217,23 +219,22 @@ private fun MealDetailContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DetailRow(label: String, value: String) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
             text = label,
-            modifier = Modifier.width(72.dp),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle),
         )
     }
 }

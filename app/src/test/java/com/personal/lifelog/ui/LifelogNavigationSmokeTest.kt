@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,6 +21,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
+import com.personal.lifelog.data.repository.DailyReviewRepository
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.feature.sleep.SleepViewModel
 import com.personal.lifelog.data.repository.SleepSummaryRepository
@@ -107,7 +109,9 @@ class LifelogNavigationSmokeTest {
                     records = records,
                     photos = photos,
                     clock = clock,
-                    zoneIdProvider = { ZoneId.of("Asia/Shanghai") }, workViewModel = workVM, workHomeViewModel = workHomeVM)
+                    zoneIdProvider = { ZoneId.of("Asia/Shanghai") }, workViewModel = workVM, workHomeViewModel = workHomeVM,
+                    dailyReviewSource = DailyReviewRepository(db, clock, { ZoneId.of("Asia/Shanghai") }),
+                )
             }
         }
     }
@@ -119,14 +123,19 @@ class LifelogNavigationSmokeTest {
         compose.onNodeWithText("记饮食").assertExists()
         // today -> review via bottom tab.
         compose.onNodeWithText("回顾").performClick()
-        compose.onNodeWithContentDescription("前一天").assertExists()
+        compose.onNodeWithContentDescription("前一天").performClick()
+        compose.onNodeWithTag("review-ai-preview-button").performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("review-ai-preview-toggle-json").fetchSemanticsNodes().isNotEmpty()
+        }
         // review -> settings via top bar, and settings content is reachable.
         compose.onNodeWithContentDescription("打开设置").performClick()
         compose.onNodeWithText("主题").assertExists()
         compose.onNodeWithText("备份与恢复").assertExists()
         // Back from settings returns to the tab that opened it (review).
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithContentDescription("前一天").assertExists()
+        compose.onNodeWithText("2026年10月21日", substring = true).assertExists()
+        compose.onNodeWithTag("review-ai-preview-card").assertDoesNotExist()
         // Back to today, open settings from there, and return to today.
         compose.onNodeWithText("今天").performClick()
         compose.onNodeWithText("记饮食").assertExists()

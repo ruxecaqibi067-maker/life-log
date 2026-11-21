@@ -21,8 +21,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -30,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,12 +55,15 @@ import com.personal.lifelog.domain.Satiety
 import com.personal.lifelog.ui.components.RecordDateTimePicker
 import com.personal.lifelog.ui.components.RecordTimeChoice
 import com.personal.lifelog.ui.components.ActionButton
+import com.personal.lifelog.ui.components.ConfirmActionDialog
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
 import com.personal.lifelog.ui.components.PrimaryButton
 import com.personal.lifelog.ui.components.RecordTextField
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.components.SectionHeader
+import com.personal.lifelog.ui.components.TonalCard
 import com.personal.lifelog.ui.theme.LogDimens
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -186,23 +189,17 @@ fun MealEditorScreen(
     }
 
     if (showDiscard) {
-        AlertDialog(
-            onDismissRequest = { showDiscard = false },
-            title = { Text(stringResource(R.string.meal_discard_title)) },
-            text = { Text(stringResource(R.string.meal_discard_message)) },
-            confirmButton = {
-                ActionButton(
-                    onClick = {
-                        showDiscard = false
-                        viewModel.discard()
-                    },
-                ) { Text(stringResource(R.string.meal_discard_confirm)) }
+        ConfirmActionDialog(
+            titleRes = R.string.meal_discard_title,
+            messageRes = R.string.meal_discard_message,
+            confirmRes = R.string.meal_discard_confirm,
+            cancelRes = R.string.meal_discard_continue,
+            destructive = true,
+            onConfirm = {
+                showDiscard = false
+                viewModel.discard()
             },
-            dismissButton = {
-                ActionButton(onClick = { showDiscard = false }) {
-                    Text(stringResource(R.string.meal_discard_continue))
-                }
-            },
+            onDismiss = { showDiscard = false },
         )
     }
 
@@ -256,7 +253,6 @@ private fun MealForm(
             onValueChange = onTextChanged,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 132.dp)
                 .testTag("meal_text_input"),
             enabled = !state.saving,
             label = { Text(stringResource(R.string.meal_text_label)) },
@@ -265,14 +261,12 @@ private fun MealForm(
                 stringResource(R.string.voice_over_limit, Rules.MEAL_TEXT_LIMIT) else stringResource(R.string.meal_text_hint)) },
             isError = state.error == MealUiError.TEXT_TOO_LONG || exceedsVoiceTextLimit(state.text, Rules.MEAL_TEXT_LIMIT),
             voiceInput = voiceAction,
+            minLines = 3,
             maxLines = 8,
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-            Text(
-                text = stringResource(R.string.meal_satiety_label),
-                style = MaterialTheme.typography.titleSmall,
-            )
+            SectionHeader(stringResource(R.string.meal_satiety_label))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
                 satietyOptions.forEach { value ->
                     FilterChip(
@@ -335,26 +329,40 @@ private fun MealForm(
 @Composable
 private fun PhotoSection(state: MealEditorUiState, onTakePhoto: () -> Unit, onPickPhoto: () -> Unit, onRemovePhoto: (String) -> Unit, onCancelCapture: () -> Unit) {
     val busy = state.saving || state.photoStatus == MealPhotoStatus.PROCESSING
-    Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.meal_photos_count, state.photoItems.size), Modifier.testTag("meal-photo-count"), style = MaterialTheme.typography.titleSmall)
+    TonalCard(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
+        Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionHeader(stringResource(R.string.meal_photos_count, state.photoItems.size), Modifier.testTag("meal-photo-count"))
             if (state.photoItems.isEmpty()) {
-                Box(Modifier.fillMaxWidth().height(96.dp), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.meal_photo_placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(Icons.Filled.Restaurant, contentDescription = null, modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.meal_photo_placeholder), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else MealPhotoGallery(state.photoItems, onRemove = onRemovePhoto, enabled = !busy)
             if (state.photoStatus == MealPhotoStatus.PROCESSING) {
                 CircularProgressIndicator(Modifier.size(24.dp)); Text(stringResource(R.string.meal_photo_processing))
             }
             if (state.captureTicket != null) Text(stringResource(R.string.meal_photo_pending), style = MaterialTheme.typography.bodySmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 SecondaryButton(onTakePhoto, modifier = Modifier.testTag("meal-photo-take"), enabled = !busy && state.photoItems.size < 9) {
+                    Icon(Icons.Filled.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(stringResource(if (state.captureTicket != null) R.string.meal_photo_retry_capture else R.string.meal_photo_take))
                 }
-                SecondaryButton(onPickPhoto, modifier = Modifier.testTag("meal-photo-pick"), enabled = !busy && state.photoItems.size < 9) { Text(stringResource(R.string.meal_photos_add_gallery)) }
+                SecondaryButton(onPickPhoto, modifier = Modifier.testTag("meal-photo-pick"), enabled = !busy && state.photoItems.size < 9) {
+                    Icon(Icons.Filled.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.meal_photos_add_gallery))
+                }
                 if (state.captureTicket != null) ActionButton(onCancelCapture, enabled = !busy) { Text(stringResource(R.string.meal_photos_cancel_capture)) }
             }
-            if (state.photoItems.size == 9) Text(stringResource(R.string.meal_photos_limit), style = MaterialTheme.typography.bodySmall)
+            if (state.photoItems.size == 9) Text(stringResource(R.string.meal_photos_limit), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

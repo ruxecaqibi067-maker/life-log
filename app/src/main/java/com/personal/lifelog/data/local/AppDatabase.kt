@@ -8,6 +8,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.personal.lifelog.core.validation.Rules
+import com.personal.lifelog.data.local.dao.DailyReviewDao
 import com.personal.lifelog.data.local.dao.MetadataDao
 import com.personal.lifelog.data.local.dao.RecordDao
 import com.personal.lifelog.data.local.dao.RestoreDao
@@ -37,6 +38,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workSummaries(): WorkSummaryDao
     abstract fun todos(): TodoDao
     abstract fun mealPhotos(): com.personal.lifelog.data.local.dao.MealPhotoDao
+    abstract fun dailyReview(): DailyReviewDao
 
     companion object {
         const val NAME = "life-log.db"

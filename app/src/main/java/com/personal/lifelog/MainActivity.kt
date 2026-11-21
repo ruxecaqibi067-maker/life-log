@@ -99,6 +99,8 @@ class MainActivity : ComponentActivity() {
                     workViewModel = workViewModel,
                     workHomeViewModel = workHomeViewModel,
                     todoViewModel = todoViewModel,
+                    dailyReviewSource = container.dailyReview,
+                    dailyReviewSender = container.dailyReviewSender,
                 )
             }
         }

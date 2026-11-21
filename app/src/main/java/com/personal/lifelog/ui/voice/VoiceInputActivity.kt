@@ -11,18 +11,27 @@ import android.os.Looper
 import android.speech.RecognizerIntent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.personal.lifelog.R
 import com.personal.lifelog.domain.ThemeMode
 import com.personal.lifelog.ui.components.*
 import com.personal.lifelog.ui.theme.LifeLogTheme
+import com.personal.lifelog.ui.theme.LogDimens
 
 /** Private result bridge: our UI + explicitly selected non-Google providers only. */
 class VoiceInputActivity : ComponentActivity() {
@@ -65,6 +74,7 @@ class VoiceInputActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         delegated = savedInstanceState?.getBoolean("delegatePending") == true
         permissionPending = savedInstanceState?.getBoolean("permissionPending") == true
         savedInstanceState?.getStringArrayList("failedProviders")?.mapNotNull(ComponentName::unflattenFromString)?.let(failedProviders::addAll)
@@ -72,17 +82,47 @@ class VoiceInputActivity : ComponentActivity() {
         setContent {
             LifeLogTheme(if (intent.getBooleanExtra(DARK, false)) ThemeMode.DARK else ThemeMode.LIGHT) {
                 Scaffold(topBar = { RecordTopBar(title = { Text(stringResource(R.string.voice_title)) }) }) { padding ->
-                    Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(status, style = MaterialTheme.typography.bodyLarge)
-                        if (providerLabel.isNotEmpty()) Text(getString(R.string.voice_provider, providerLabel))
-                        if (recording || delegated) CircularProgressIndicator()
-                        Text(stringResource(R.string.voice_network_note), style = MaterialTheme.typography.bodySmall)
+                    Column(
+                        Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(LogDimens.page),
+                        verticalArrangement = Arrangement.spacedBy(LogDimens.page),
+                    ) {
+                        TonalCard(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Surface(
+                                    modifier = Modifier.size(56.dp),
+                                    shape = CircleShape,
+                                    color = if (recording || delegated) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (recording || delegated) {
+                                            CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp)
+                                        } else {
+                                            Icon(Icons.Filled.Mic, contentDescription = null, modifier = Modifier.size(26.dp),
+                                                tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                }
+                                Text(status, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                                if (providerLabel.isNotEmpty()) {
+                                    Text(getString(R.string.voice_provider, providerLabel),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center)
+                                }
+                                Text(stringResource(R.string.voice_network_note), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                            }
+                        }
                         if (recording) PrimaryButton({ capture?.stop(); status = getString(R.string.voice_processing) }, Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.voice_finish_speaking))
                         }
                         if (!recording && !delegated) SecondaryButton(::begin, Modifier.fillMaxWidth()) { Text(stringResource(R.string.voice_retry)) }
                         SecondaryButton(::keyboardResult, Modifier.fillMaxWidth()) { Text(stringResource(R.string.voice_use_keyboard)) }
-                        ActionButton(::cancelResult) { Text(stringResource(R.string.picker_cancel)) }
+                        ActionButton(::cancelResult, Modifier.align(Alignment.End)) { Text(stringResource(R.string.picker_cancel)) }
                     }
                 }
             }

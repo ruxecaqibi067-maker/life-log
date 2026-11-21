@@ -85,22 +85,22 @@ fun SleepSummaryCard(
 
 @Composable
 internal fun DurationProgressRing(progress: Float?, description: String, icon: ImageVector = Icons.Filled.Bedtime, tag: String = "sleep-progress", diameterDp: androidx.compose.ui.unit.Dp = 112.dp) {
-    val track = MaterialTheme.colorScheme.outlineVariant
+    val track = MaterialTheme.colorScheme.surfaceContainerHigh
     val fill = MaterialTheme.colorScheme.primary
     Box(Modifier.size(diameterDp).semantics {
         contentDescription = description
         if (progress != null) progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)
     }.testTag(tag), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
-            val stroke = (if (diameterDp < 100.dp) 10.dp else 12.dp).toPx()
+            val stroke = (if (diameterDp < 100.dp) 9.dp else 12.dp).toPx()
             val inset = stroke / 2
             val diameter = size.minDimension - stroke
             drawArc(track, -90f, 360f, false, Offset(inset, inset), Size(diameter, diameter), style = Stroke(stroke))
             if (progress != null && progress > 0f) {
                 drawArc(fill, -90f, progress * 360f, false, Offset(inset, inset), Size(diameter, diameter),
-                    style = Stroke(stroke, cap = StrokeCap.Butt))
+                    style = Stroke(stroke, cap = StrokeCap.Round))
             }
         }
-        Icon(icon, null, Modifier.size(28.dp), tint = if (progress == null) MaterialTheme.colorScheme.onSurfaceVariant else fill)
+        Icon(icon, null, Modifier.size(26.dp), tint = if (progress == null) MaterialTheme.colorScheme.onSurfaceVariant else fill)
     }
 }

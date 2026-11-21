@@ -1,6 +1,9 @@
 package com.personal.lifelog
 
 import android.content.Context
+import com.personal.lifelog.data.aireview.AiReviewAssets
+import com.personal.lifelog.data.aireview.DeepSeekReviewService
+import com.personal.lifelog.data.aireview.HttpDeepSeekTransport
 import com.personal.lifelog.data.backup.export.BackupExporter
 import com.personal.lifelog.data.backup.export.LatestJsonExporter
 import com.personal.lifelog.data.backup.export.SharedLatestJsonDestination
@@ -8,6 +11,7 @@ import com.personal.lifelog.data.backup.importer.BackupImporter
 import com.personal.lifelog.data.backup.restore.RestoreEngine
 import com.personal.lifelog.data.local.AppDatabase
 import com.personal.lifelog.data.media.PhotoStorage
+import com.personal.lifelog.data.repository.DailyReviewRepository
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.SettingsRepository
 import com.personal.lifelog.data.repository.SleepSummaryRepository
@@ -18,6 +22,8 @@ import com.personal.lifelog.data.repository.WorkSummaryRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
 import com.personal.lifelog.data.repository.WriteCoordinator
 import com.personal.lifelog.data.repository.TodoRepository
+import com.personal.lifelog.domain.AiReviewSessionStore
+import com.personal.lifelog.domain.DailyReviewSender
 import com.personal.lifelog.feature.settings.BackupRestoreController
 import java.time.Clock
 import java.time.ZoneId
@@ -45,6 +51,20 @@ class AppContainer(
     }
     val sleepSummary: SleepSummaryRepository by lazy { SleepSummaryRepository(database) }
     val snapshots: SnapshotRepository by lazy { SnapshotRepository(database) }
+    val dailyReview: DailyReviewRepository by lazy { DailyReviewRepository(database, clock, zoneIdProvider) }
+    /** Enabled only in the isolated aiReviewTest build; main/debug/release stay strictly offline. */
+    val aiReviewSession: AiReviewSessionStore? by lazy {
+        if (BuildConfig.AI_REVIEW_NETWORK_ENABLED) AiReviewSessionStore() else null
+    }
+    val dailyReviewSender: DailyReviewSender? by lazy {
+        aiReviewSession?.let { session ->
+            DeepSeekReviewService(
+                session = session,
+                assets = AiReviewAssets(appContext),
+                transport = HttpDeepSeekTransport(),
+            )
+        }
+    }
     val latestJson: LatestJsonExporter by lazy {
         LatestJsonExporter(database, snapshots, writes, SharedLatestJsonDestination(appContext),
             appContext.getSharedPreferences("latest-json", Context.MODE_PRIVATE), clock,

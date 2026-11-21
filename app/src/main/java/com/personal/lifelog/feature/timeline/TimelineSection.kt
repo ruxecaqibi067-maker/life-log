@@ -32,12 +32,12 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -50,8 +50,10 @@ import com.personal.lifelog.domain.TimelineEntry
 import com.personal.lifelog.feature.meal.satietyDisplayText
 import com.personal.lifelog.ui.components.EmptyState
 import com.personal.lifelog.ui.components.ErrorState
+import com.personal.lifelog.ui.components.LoadingState
 import com.personal.lifelog.ui.components.RecordCard
 import com.personal.lifelog.ui.theme.LogDimens
+import com.personal.lifelog.ui.theme.TabularTextStyle
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -93,15 +95,7 @@ fun LazyListScope.timelineSection(
         }
 
         state.loading -> item(key = "timeline-loading") {
-            Text(
-                text = stringResource(R.string.timeline_loading),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
+            LoadingState(stringResource(R.string.timeline_loading))
         }
 
         state.entries.isEmpty() -> item(key = "timeline-empty") {
@@ -157,8 +151,8 @@ private fun TimelineSummary(entries: List<TimelineEntry>) {
         text = parts.joinToString(" · "),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        style = MaterialTheme.typography.bodyMedium,
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
@@ -195,7 +189,13 @@ private fun SleepTimelineRow(entry: TimelineEntry.Sleep, onClick: () -> Unit) {
     TimelineCard(
         onClick = onClick,
         onClickLabel = stringResource(R.string.timeline_open_sleep),
-        leading = { TimelineIcon(Icons.Filled.Bedtime) },
+        leading = {
+            TimelineIcon(
+                icon = Icons.Filled.Bedtime,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        },
         title = stringResource(R.string.timeline_kind_sleep),
         secondary = secondary,
         time = displayTime(entry.sortUtcMs, sortZone),
@@ -215,7 +215,13 @@ private fun WorkTimelineRow(entry: TimelineEntry.Work, onClick: () -> Unit) {
     TimelineCard(
         onClick = onClick,
         onClickLabel = stringResource(R.string.timeline_open_work),
-        leading = { TimelineIcon(Icons.Filled.WorkOutline) },
+        leading = {
+            TimelineIcon(
+                icon = Icons.Filled.WorkOutline,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        },
         title = stringResource(R.string.timeline_kind_work),
         secondary = secondary,
         time = displayTime(entry.sortUtcMs, sortZone),
@@ -233,7 +239,13 @@ private fun WorkoutTimelineRow(entry: TimelineEntry.Workout, onClick: () -> Unit
     TimelineCard(
         onClick = onClick,
         onClickLabel = stringResource(R.string.timeline_open_workout),
-        leading = { TimelineIcon(Icons.Filled.FitnessCenter) },
+        leading = {
+            TimelineIcon(
+                icon = Icons.Filled.FitnessCenter,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.primary,
+            )
+        },
         title = names,
         secondary = stringResource(R.string.timeline_workout_detail, entry.itemNames.size),
         time = displayTime(entry.sortUtcMs, entry.zoneId),
@@ -260,9 +272,7 @@ private fun TimelineCard(
     time: String,
 ) {
     RecordCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
     ) {
         Row(
@@ -276,7 +286,7 @@ private fun TimelineCard(
             leading()
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 Text(
                     text = title,
@@ -287,7 +297,7 @@ private fun TimelineCard(
                 if (secondary != null) {
                     Text(
                         text = secondary,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -296,7 +306,7 @@ private fun TimelineCard(
             }
             Text(
                 text = time,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.merge(TabularTextStyle),
                 color = MaterialTheme.colorScheme.primary,
             )
         }
@@ -323,7 +333,7 @@ private fun MealLeading(photoId: String?, photos: PhotoStorage) {
         modifier = Modifier
             .size(48.dp)
             .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .background(if (photoId == null) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest)
             .semantics { contentDescription = alt },
         contentAlignment = Alignment.Center,
     ) {
@@ -332,7 +342,7 @@ private fun MealLeading(photoId: String?, photos: PhotoStorage) {
                 Icon(
                     imageVector = Icons.Filled.Restaurant,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
@@ -367,17 +377,21 @@ private fun MealLeading(photoId: String?, photos: PhotoStorage) {
 }
 
 @Composable
-private fun TimelineIcon(icon: ImageVector) {
+private fun TimelineIcon(
+    icon: ImageVector,
+    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+) {
     Surface(
         modifier = Modifier.size(48.dp),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
+        color = containerColor,
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                tint = contentColor,
             )
         }
     }

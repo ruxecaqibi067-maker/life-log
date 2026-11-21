@@ -39,11 +39,14 @@ fun MealPhotoGallery(items: List<MealPhotoItem>, onRemove: ((String) -> Unit)? =
     }
     val selected = items.find { it.photoId == viewing }
     if (selected != null) Dialog(onDismissRequest = { viewing = null }) {
-        Surface(shape = MaterialTheme.shapes.large) {
-            Column(Modifier.fillMaxWidth().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (selected.preview != null) AsyncImage(selected.preview, stringResource(R.string.meal_photo_alt), Modifier.fillMaxWidth().heightIn(min = 160.dp, max = 420.dp), contentScale = ContentScale.Fit)
-                else Text(stringResource(R.string.meal_photo_missing))
-                ActionButton({ viewing = null }) { Text(stringResource(R.string.meal_photos_close)) }
+        Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (selected.preview != null) AsyncImage(selected.preview, stringResource(R.string.meal_photo_alt),
+                    Modifier.fillMaxWidth().heightIn(min = 160.dp, max = 420.dp), contentScale = ContentScale.Fit)
+                else Text(stringResource(R.string.meal_photo_missing), style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error)
+                ActionButton({ viewing = null }, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.meal_photos_close)) }
             }
         }
     }

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -22,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.lifelog.R
 import com.personal.lifelog.ui.components.*
 import com.personal.lifelog.ui.theme.LogDimens
+import com.personal.lifelog.ui.theme.TabularTextStyle
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -52,40 +54,43 @@ fun WorkHistoryScreen(viewModel: WorkHistoryViewModel, onAdd: () -> Unit, onEdit
         LazyColumn(state = scroll, modifier = Modifier.fillMaxSize().padding(padding).testTag("work-history"),
             contentPadding = PaddingValues(LogDimens.page), verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
             item("date") {
-                Column(verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                    Text(workHistoryDateFormat.format(state.date), Modifier.testTag("work-history-date"),
-                        style = MaterialTheme.typography.titleMedium)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                        SecondaryButton(onClick = { picking = true }, modifier = Modifier.testTag("work-history-choose")) {
-                            Icon(Icons.Filled.DateRange, null, Modifier.size(20.dp))
-                            Spacer(Modifier.width(LogDimens.gap))
-                            Text(stringResource(R.string.work_history_other))
+                TonalCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                        Text(workHistoryDateFormat.format(state.date), Modifier.testTag("work-history-date"),
+                            style = MaterialTheme.typography.titleMedium.merge(TabularTextStyle))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            SecondaryButton(onClick = { picking = true }, modifier = Modifier.testTag("work-history-choose")) {
+                                Icon(Icons.Filled.DateRange, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(LogDimens.gap))
+                                Text(stringResource(R.string.work_history_other))
+                            }
+                            if (state.date != today) ActionButton(viewModel::goToToday) { Text(stringResource(R.string.work_history_today)) }
                         }
-                        if (state.date != today) ActionButton(viewModel::goToToday) { Text(stringResource(R.string.work_history_today)) }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+                            ActionButton({ viewModel.selectDate(state.date.minusDays(1)) }, enabled = state.date > LocalDate.of(1, 1, 1)) {
+                                Text(stringResource(R.string.work_history_previous))
+                            }
+                            ActionButton({ viewModel.selectDate(state.date.plusDays(1)) }, enabled = state.date < LocalDate.of(9999, 12, 31)) {
+                                Text(stringResource(R.string.work_history_next))
+                            }
+                        }
+                        PrimaryButton(onAdd, Modifier.fillMaxWidth()) { Text(stringResource(R.string.work_add)) }
+                        Text(stringResource(R.string.work_history_rule), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-                        ActionButton({ viewModel.selectDate(state.date.minusDays(1)) }, enabled = state.date > LocalDate.of(1, 1, 1)) {
-                            Text(stringResource(R.string.work_history_previous))
-                        }
-                        ActionButton({ viewModel.selectDate(state.date.plusDays(1)) }, enabled = state.date < LocalDate.of(9999, 12, 31)) {
-                            Text(stringResource(R.string.work_history_next))
-                        }
-                    }
-                    PrimaryButton(onAdd, Modifier.fillMaxWidth()) { Text(stringResource(R.string.work_add)) }
-                    Text(stringResource(R.string.work_history_rule), style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             commands?.let { model -> item("record-actions") {
                 WorkHomeFeedback(model, onEdit, { confirmUndo = true })
             } }
             when {
-                state.loading -> item("loading") { Text(stringResource(R.string.work_loading)) }
+                state.loading -> item("loading") { LoadingState(stringResource(R.string.work_loading)) }
                 state.failed -> item("error") { ErrorState(stringResource(R.string.work_history_error), onRetry = viewModel::retry) }
                 else -> {
-                    item("records-title") { Text(stringResource(R.string.work_history_records), style = MaterialTheme.typography.titleMedium) }
+                    item("records-title") { SectionHeader(stringResource(R.string.work_history_records)) }
                     if (state.records.isEmpty()) item("empty") {
-                        EmptyState(stringResource(R.string.work_history_empty), hint = stringResource(R.string.work_empty_hint))
+                        EmptyState(stringResource(R.string.work_history_empty), hint = stringResource(R.string.work_empty_hint),
+                            icon = Icons.Filled.WorkOutline)
                     }
                     items(state.records, key = { it.id }) { record ->
                         RecordCard(modifier = Modifier.fillMaxWidth().testTag("work-record-${record.id}")) {
@@ -94,7 +99,7 @@ fun WorkHistoryScreen(viewModel: WorkHistoryViewModel, onAdd: () -> Unit, onEdit
                                 SecondaryButton(onClick = { onEdit(record.id) }, modifier = Modifier.fillMaxWidth()) {
                                     Text(stringResource(R.string.work_view_edit))
                                     Spacer(Modifier.width(LogDimens.gap))
-                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(18.dp))
                                 }
                             }
                         }

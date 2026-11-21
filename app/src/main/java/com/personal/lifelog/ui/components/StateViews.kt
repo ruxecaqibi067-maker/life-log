@@ -1,11 +1,13 @@
 package com.personal.lifelog.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -45,11 +47,11 @@ fun EmptyState(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (icon != null) {
-            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerLow) {
                 androidx.compose.material3.Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.padding(16.dp).size(32.dp),
+                    modifier = Modifier.padding(16.dp).size(28.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -70,6 +72,31 @@ fun EmptyState(
     }
 }
 
+/** Calm centered loading state shared across history, detail and timeline views. */
+@Composable
+fun LoadingState(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(20.dp),
+            strokeWidth = 2.dp,
+        )
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 /** Error feedback with an optional retry action; never shows raw exceptions. */
 @Composable
 fun ErrorState(
@@ -78,15 +105,19 @@ fun ErrorState(
     onRetry: (() -> Unit)? = null,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth().padding(vertical = LogDimens.gap),
+        modifier = modifier.fillMaxWidth().padding(vertical = LogDimens.tiny),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        border = BorderStroke(LogDimens.border, MaterialTheme.colorScheme.error.copy(alpha = 0.25f)),
     ) {
         Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(LogDimens.gap)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(LogDimens.gap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 androidx.compose.material3.Icon(Icons.Outlined.ErrorOutline, contentDescription = null,
-                    modifier = Modifier.size(24.dp))
+                    modifier = Modifier.size(22.dp))
                 Text(text = message, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             }
             if (onRetry != null) {

@@ -1,5 +1,6 @@
 package com.personal.lifelog.ui.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -9,10 +10,12 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
@@ -34,6 +37,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -48,6 +52,8 @@ import com.personal.lifelog.data.media.PhotoStorage
 import com.personal.lifelog.data.repository.RecordRepository
 import com.personal.lifelog.data.repository.TimelineRepository
 import com.personal.lifelog.data.repository.WorkoutRepository
+import com.personal.lifelog.domain.DailyReviewSender
+import com.personal.lifelog.domain.DailyReviewSource
 import com.personal.lifelog.feature.exercise.ExerciseLibraryScreen
 import com.personal.lifelog.feature.exercise.ExerciseLibraryViewModel
 import com.personal.lifelog.feature.home.HomeScreen
@@ -56,6 +62,8 @@ import com.personal.lifelog.feature.meal.MealDetailScreen
 import com.personal.lifelog.feature.meal.MealDetailViewModel
 import com.personal.lifelog.feature.meal.MealEditorScreen
 import com.personal.lifelog.feature.meal.MealEditorViewModel
+import com.personal.lifelog.feature.review.AiReviewTestScreen
+import com.personal.lifelog.feature.review.AiReviewTestViewModel
 import com.personal.lifelog.feature.review.ReviewScreen
 import com.personal.lifelog.feature.review.ReviewViewModel
 import com.personal.lifelog.feature.settings.SettingsRoute
@@ -100,6 +108,8 @@ fun LifelogApp(
     workViewModel: WorkViewModel,
     workHomeViewModel: WorkHomeViewModel,
     todoViewModel: TodoViewModel? = null,
+    dailyReviewSource: DailyReviewSource? = null,
+    dailyReviewSender: DailyReviewSender? = null,
 ) {
     val snackbar = remember { SnackbarHostState() }
     val sleepDiscarded = stringResource(R.string.sleep_short_discarded)
@@ -156,37 +166,52 @@ fun LifelogApp(
         contentWindowInsets = if (isBedtime) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
         bottomBar = {
             if (currentRoute == LifelogRoutes.TODAY || currentRoute == LifelogRoutes.REVIEW) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
-                    NavigationBarItem(
-                        selected = currentRoute == LifelogRoutes.TODAY,
-                        onClick = { navController.navigateTopLevel(LifelogRoutes.TODAY) },
-                        icon = {
-                            Icon(
-                                imageVector = if (currentRoute == LifelogRoutes.TODAY) {
-                                    Icons.Filled.Home
-                                } else {
-                                    Icons.Outlined.Home
-                                },
-                                contentDescription = null,
-                            )
-                        },
-                        label = { Text(stringResource(R.string.nav_today)) },
+                Column {
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
                     )
-                    NavigationBarItem(
-                        selected = currentRoute == LifelogRoutes.REVIEW,
-                        onClick = { navController.navigateTopLevel(LifelogRoutes.REVIEW) },
-                        icon = {
-                            Icon(
-                                imageVector = if (currentRoute == LifelogRoutes.REVIEW) {
-                                    Icons.Filled.DateRange
-                                } else {
-                                    Icons.Outlined.DateRange
-                                },
-                                contentDescription = null,
-                            )
-                        },
-                        label = { Text(stringResource(R.string.nav_review)) },
+                    val itemColors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                        NavigationBarItem(
+                            selected = currentRoute == LifelogRoutes.TODAY,
+                            onClick = { navController.navigateTopLevel(LifelogRoutes.TODAY) },
+                            colors = itemColors,
+                            icon = {
+                                Icon(
+                                    imageVector = if (currentRoute == LifelogRoutes.TODAY) {
+                                        Icons.Filled.Home
+                                    } else {
+                                        Icons.Outlined.Home
+                                    },
+                                    contentDescription = null,
+                                )
+                            },
+                            label = { Text(stringResource(R.string.nav_today)) },
+                        )
+                        NavigationBarItem(
+                            selected = currentRoute == LifelogRoutes.REVIEW,
+                            onClick = { navController.navigateTopLevel(LifelogRoutes.REVIEW) },
+                            colors = itemColors,
+                            icon = {
+                                Icon(
+                                    imageVector = if (currentRoute == LifelogRoutes.REVIEW) {
+                                        Icons.Filled.DateRange
+                                    } else {
+                                        Icons.Outlined.DateRange
+                                    },
+                                    contentDescription = null,
+                                )
+                            },
+                            label = { Text(stringResource(R.string.nav_review)) },
+                        )
+                    }
                 }
             }
         },
@@ -255,7 +280,23 @@ fun LifelogApp(
             }
             composable(LifelogRoutes.REVIEW) {
                 val reviewViewModel: ReviewViewModel = viewModel {
-                    ReviewViewModel(timelineRepository, createSavedStateHandle(), clock, zoneIdProvider)
+                    ReviewViewModel(
+                        timelineRepository = timelineRepository,
+                        saved = createSavedStateHandle(),
+                        clock = clock,
+                        zoneIdProvider = zoneIdProvider,
+                        dailyReviewSource = dailyReviewSource,
+                        dailyReviewSender = dailyReviewSender,
+                    )
+                }
+                DisposableEffect(reviewViewModel, navController) {
+                    val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+                        if (destination.route != LifelogRoutes.REVIEW) {
+                            reviewViewModel.dismissAiReviewPreview()
+                        }
+                    }
+                    navController.addOnDestinationChangedListener(listener)
+                    onDispose { navController.removeOnDestinationChangedListener(listener) }
                 }
                 ReviewScreen(
                     viewModel = reviewViewModel,
@@ -265,13 +306,43 @@ fun LifelogApp(
                     onOpenSleep = { id -> navController.navigate(LifelogRoutes.sleepEditor(id)) },
                     onOpenWork = { id -> navController.navigate(LifelogRoutes.workEditor(id)) },
                     onOpenWorkout = { id -> navController.navigate(LifelogRoutes.workoutDetail(id)) },
+                    onOpenAiReviewTest = {
+                        if (dailyReviewSender != null) {
+                            navController.navigateSingle(LifelogRoutes.AI_REVIEW_TEST)
+                        }
+                    },
                 )
+            }
+            composable(LifelogRoutes.AI_REVIEW_TEST) {
+                if (dailyReviewSender == null) {
+                    LaunchedEffect(Unit) { navController.popBackStack() }
+                } else {
+                    val testViewModel: AiReviewTestViewModel = viewModel {
+                        AiReviewTestViewModel(dailyReviewSender)
+                    }
+                    DisposableEffect(testViewModel, navController) {
+                        val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
+                            if (destination.route != LifelogRoutes.AI_REVIEW_TEST) {
+                                testViewModel.clearSampleState()
+                            }
+                        }
+                        navController.addOnDestinationChangedListener(listener)
+                        onDispose { navController.removeOnDestinationChangedListener(listener) }
+                    }
+                    AiReviewTestScreen(
+                        viewModel = testViewModel,
+                        onBack = { navController.navigateUp() },
+                    )
+                }
             }
             composable(LifelogRoutes.SETTINGS) {
                 SettingsRoute(
                     viewModel = settingsViewModel,
                     onOpenExercises = { navController.navigateSingle(LifelogRoutes.EXERCISES) },
                     onBack = { navController.navigateUp() },
+                    onOpenAiReviewTest = dailyReviewSender?.let {
+                        { navController.navigateSingle(LifelogRoutes.AI_REVIEW_TEST) }
+                    },
                 )
             }
             composable(LifelogRoutes.EXERCISES) {

@@ -36,6 +36,7 @@ android {
         versionCode = requestedVersionCode
         versionName = requestedVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("boolean", "AI_REVIEW_NETWORK_ENABLED", "false")
     }
 
     compileOptions {
@@ -45,6 +46,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     if (hasReleaseSigning) {
@@ -74,6 +76,13 @@ android {
             versionNameSuffix = "-qa"
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
+        }
+        create("aiReviewTest") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".aireview"
+            versionNameSuffix = "-ai-review"
+            buildConfigField("boolean", "AI_REVIEW_NETWORK_ENABLED", "true")
+            matchingFallbacks += "debug"
         }
     }
 

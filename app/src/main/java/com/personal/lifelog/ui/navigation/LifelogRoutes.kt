@@ -25,6 +25,7 @@ object LifelogRoutes {
     const val TODAY = "today"
     const val REVIEW = "review"
     const val SETTINGS = "settings"
+    const val AI_REVIEW_TEST = "ai-review-test"
     const val TODOS = "todos"
     const val WORK_HISTORY = "work/history"
     const val WORK_EDIT = "work/edit"

@@ -4,14 +4,24 @@ import android.app.Activity
 import android.content.Context
 import android.os.Build
 import android.view.ContextThemeWrapper
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.personal.lifelog.ui.voice.VoiceInputAction
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -74,7 +84,7 @@ fun RecordCard(
     content: @Composable ColumnScope.() -> Unit,
 ) = OutlinedCard(modifier, shape = shape,
     colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-    border = BorderStroke(LogDimens.border, MaterialTheme.colorScheme.outlineVariant), content = content)
+    border = BorderStroke(LogDimens.border, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)), content = content)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,7 +96,109 @@ fun RecordCard(
     content: @Composable ColumnScope.() -> Unit,
 ) = OutlinedCard(onClick, modifier, enabled = enabled, shape = shape,
     colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-    border = BorderStroke(LogDimens.border, MaterialTheme.colorScheme.outlineVariant), content = content)
+    border = BorderStroke(LogDimens.border, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)), content = content)
+
+/** Borderless tonal container for nested rows or grouped sections without double borders. */
+@Composable
+fun TonalCard(
+    modifier: Modifier = Modifier,
+    shape: Shape = MaterialTheme.shapes.medium,
+    color: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    content: @Composable ColumnScope.() -> Unit,
+) = Surface(modifier = modifier, shape = shape, color = color) {
+    Column(content = content)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TonalCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = MaterialTheme.shapes.medium,
+    color: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    content: @Composable ColumnScope.() -> Unit,
+) = Surface(onClick = onClick, modifier = modifier, enabled = enabled, shape = shape, color = color) {
+    Column(content = content)
+}
+
+/** Shared section heading with primary tint so every form and settings block reads uniformly. */
+@Composable
+fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+) = Text(
+    text = title,
+    modifier = modifier,
+    style = MaterialTheme.typography.titleSmall,
+    color = color,
+)
+
+/** Unified confirmation dialog with scrollable content and clear primary/destructive emphasis. */
+@Composable
+fun ConfirmActionDialog(
+    @StringRes titleRes: Int,
+    @StringRes confirmRes: Int,
+    @StringRes cancelRes: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    @StringRes messageRes: Int? = null,
+    messageText: String? = null,
+    destructive: Boolean = false,
+    busy: Boolean = false,
+    extraContent: @Composable (ColumnScope.() -> Unit)? = null,
+) {
+    AlertDialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        modifier = modifier,
+        title = { Text(stringResource(titleRes)) },
+        text = if (messageRes != null || messageText != null || extraContent != null) {
+            {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(LogDimens.gap),
+                ) {
+                    if (messageRes != null) Text(stringResource(messageRes))
+                    if (messageText != null) Text(messageText)
+                    if (extraContent != null) extraContent()
+                }
+            }
+        } else null,
+        confirmButton = {
+            if (destructive) {
+                Button(
+                    onClick = onConfirm,
+                    enabled = !busy,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.heightIn(min = LogDimens.touch),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(stringResource(if (busy) R.string.saving else confirmRes))
+                }
+            } else {
+                PrimaryButton(
+                    onClick = onConfirm,
+                    enabled = !busy,
+                    modifier = Modifier.heightIn(min = LogDimens.touch),
+                ) {
+                    Text(stringResource(if (busy) R.string.saving else confirmRes))
+                }
+            }
+        },
+        dismissButton = {
+            ActionButton(onClick = onDismiss, enabled = !busy) {
+                Text(stringResource(cancelRes))
+            }
+        },
+    )
+}
 
 @Composable
 fun RecordTextField(
@@ -125,16 +237,23 @@ fun RecordTextField(
                 tint = if (enabled && action.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
         }
     } }
-    if (voiceInput != null) OutlinedTextField(editing.copy(text = value), { next -> editing = next; if (next.text != value) onValueChange(next.text) }, modifier.focusRequester(focus), enabled = enabled,
+    val colors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    )
+    if (voiceInput != null) {
+        val displayValue = if (editing.text == value) editing else TextFieldValue(value, TextRange(value.length))
+        OutlinedTextField(displayValue, { next -> editing = next; if (next.text != value) onValueChange(next.text) }, modifier.focusRequester(focus), enabled = enabled,
+            textStyle = MaterialTheme.typography.bodyLarge, label = label, placeholder = placeholder,
+            supportingText = supportingText, isError = isError, keyboardOptions = keyboardOptions,
+            singleLine = singleLine, maxLines = maxLines, minLines = minLines,
+            shape = MaterialTheme.shapes.large, colors = colors, trailingIcon = trailing)
+    } else OutlinedTextField(value, onValueChange, modifier.focusRequester(focus), enabled = enabled,
         textStyle = MaterialTheme.typography.bodyLarge, label = label, placeholder = placeholder,
         supportingText = supportingText, isError = isError, keyboardOptions = keyboardOptions,
         singleLine = singleLine, maxLines = maxLines, minLines = minLines,
-        shape = MaterialTheme.shapes.large, trailingIcon = trailing)
-    else OutlinedTextField(value, onValueChange, modifier.focusRequester(focus), enabled = enabled,
-    textStyle = MaterialTheme.typography.bodyLarge, label = label, placeholder = placeholder,
-    supportingText = supportingText, isError = isError, keyboardOptions = keyboardOptions,
-    singleLine = singleLine, maxLines = maxLines, minLines = minLines,
-    shape = MaterialTheme.shapes.large, trailingIcon = trailing)
+        shape = MaterialTheme.shapes.large, colors = colors, trailingIcon = trailing)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -98,6 +99,7 @@ fun HomeScreen(
 ) {
     val sleepStatus by sleepViewModel.status.collectAsStateWithLifecycle()
     val sleepBusy by sleepViewModel.busy.collectAsStateWithLifecycle()
+    val sleepError by sleepViewModel.error.collectAsStateWithLifecycle()
     val activeSleep = sleepStatus.active
     val startId = remember(activeSleep?.id) { RecordIds.newId() }
     val sleepCard by homeViewModel.sleep.collectAsStateWithLifecycle()
@@ -106,6 +108,7 @@ fun HomeScreen(
     val workGoal by workHomeViewModel.goal.collectAsStateWithLifecycle()
     val workStatus by workViewModel.status.collectAsStateWithLifecycle()
     val workBusy by workViewModel.busy.collectAsStateWithLifecycle()
+    val workError by workViewModel.error.collectAsStateWithLifecycle()
     val activeWork = workStatus.active
     val workStartId = remember(activeWork?.id) { RecordIds.newId() }
     val sleepElapsed by rememberActiveElapsed(activeSleep?.startedAtUtcMs, sleepViewModel.clock)
@@ -128,7 +131,7 @@ fun HomeScreen(
                         Text(text = stringResource(R.string.nav_today))
                         Text(
                             text = homeDateFormatter.format(today),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -153,12 +156,12 @@ fun HomeScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth().testTag("home-timeline"),
-                contentPadding = PaddingValues(horizontal = LogDimens.page, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(horizontal = LogDimens.page, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 item(key = "duration-summaries") {
                     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("duration-summaries"),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         SleepSummaryCard(sleepCard, onOpenSleepHistory, homeViewModel::editGoal, homeViewModel::retrySleep,
                             Modifier.weight(1f).fillMaxHeight(), activeDurationMs = sleepElapsed.takeIf { sleepCard.content?.hasActiveSleep == true })
                         WorkSummaryCard(workCard, onOpenWorkHistory, workHomeViewModel::editGoal, workHomeViewModel::retryWork,
@@ -168,11 +171,15 @@ fun HomeScreen(
                 item(key = "daily-todos") {
                     todoContent()
                 }
-                item(key = "sleep-feedback") {
-                    SleepHomeFeedback(sleepViewModel, onEditSleep, {}, showRecordActions = false)
+                if (sleepStatus.failed || !sleepStatus.loaded || sleepError != null) {
+                    item(key = "sleep-feedback") {
+                        SleepHomeFeedback(sleepViewModel, onEditSleep, {}, showRecordActions = false)
+                    }
                 }
-                item(key = "work-feedback") {
-                    com.personal.lifelog.feature.work.WorkHomeFeedback(workViewModel, onEditWork, {}, showRecordActions = false)
+                if (workStatus.failed || workError != null) {
+                    item(key = "work-feedback") {
+                        com.personal.lifelog.feature.work.WorkHomeFeedback(workViewModel, onEditWork, {}, showRecordActions = false)
+                    }
                 }
                 item(key = "timeline-header") {
                     TodayTimelineHeader(onOpenWorkoutHistory)
@@ -187,10 +194,20 @@ fun HomeScreen(
                     onRetry = onRetryTimeline,
                 )
             }
-            ActionButton(onClick = { quickExpanded = !quickExpanded },
-                modifier = Modifier.fillMaxWidth().testTag("home-quick-toggle")) {
-                Icon(if (quickExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, Modifier.size(20.dp))
-                Text(stringResource(if (quickExpanded) R.string.home_quick_collapse else R.string.home_quick_expand))
+            HorizontalDivider(
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+            )
+            ActionButton(
+                onClick = { quickExpanded = !quickExpanded },
+                modifier = Modifier.fillMaxWidth().testTag("home-quick-toggle"),
+            ) {
+                Icon(if (quickExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null, Modifier.size(18.dp))
+                Text(
+                    text = stringResource(if (quickExpanded) R.string.home_quick_collapse else R.string.home_quick_expand),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
             }
             if (quickExpanded) HomeQuickActions(
                 sleepLabel = stringResource(when {
@@ -213,7 +230,7 @@ fun HomeScreen(
                 onMeal = onRecordMeal,
                 onWorkout = onRecordWorkout,
                 onVoice = { onQuickRecord(true) },
-                modifier = Modifier.padding(horizontal = LogDimens.page, vertical = 4.dp).testTag("home-quick-actions"),
+                modifier = Modifier.padding(start = LogDimens.page, end = LogDimens.page, bottom = 6.dp).testTag("home-quick-actions"),
             )
         }
     }

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.personal.lifelog.R
 import com.personal.lifelog.ui.components.RecordCard
 import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.theme.TabularTextStyle
 
 /** Compact, shared visuals; each caller retains its own summary, goals and commands. */
 @Composable
@@ -58,16 +59,17 @@ internal fun DurationSummaryCard(
                 Modifier.fillMaxWidth(), style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center)
             val editLabel = stringResource(if (sleep) R.string.home_sleep_goal_title else R.string.home_work_goal_title)
             OutlinedButton(onClick = onEditTarget, enabled = hasContent && !loading && !failed,
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shape = MaterialTheme.shapes.large,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("$prefix-target-edit")
                     .semantics { contentDescription = editLabel }) {
                 Text(if (hasContent) targetLabel else stringResource(if (loading) R.string.home_duration_goal_loading
                     else R.string.home_duration_goal_unavailable), Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                    style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle), textAlign = TextAlign.Center)
                 Spacer(Modifier.width(4.dp))
-                Icon(Icons.Filled.Edit, null, Modifier.size(16.dp))
+                Icon(Icons.Filled.Edit, null, Modifier.size(14.dp))
             }
             val historyLabel = stringResource(if (sleep) R.string.home_sleep_open_history else R.string.home_work_open_history)
             // The center is the record entry. The target above is a separate click target.
@@ -75,39 +77,58 @@ internal fun DurationSummaryCard(
                 modifier = Modifier.fillMaxWidth().weight(1f).heightIn(min = 48.dp).testTag("$prefix-summary-history")
                     .semantics { contentDescription = historyLabel }) {
                 Column(Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     DurationProgressRing(if (loading || failed) null else durationProgress(previewMs, targetMinutes),
-                        description, if (sleep) Icons.Filled.Bedtime else Icons.Filled.WorkOutline, "$prefix-progress", 88.dp)
+                        description, if (sleep) Icons.Filled.Bedtime else Icons.Filled.WorkOutline, "$prefix-progress", 84.dp)
                     if (elapsedLabel != null) {
-                        Text(activeLabel.orEmpty(), Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(activeLabel.orEmpty(),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.labelMedium)
+                        }
                         Text(elapsedLabel, Modifier.fillMaxWidth().testTag("$prefix-active-duration"),
-                            style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                            style = MaterialTheme.typography.titleMedium.merge(TabularTextStyle), textAlign = TextAlign.Center)
                         if (duration != null) Text(completedLabel.orEmpty(), Modifier.fillMaxWidth().testTag("$prefix-duration"),
-                            style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                            style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                         Text(stringResource(R.string.home_active_preview_hint), style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                     } else {
                         if (duration != null) Text(duration, Modifier.fillMaxWidth().testTag("$prefix-duration"),
-                            style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-                        if (activeLabel != null) Text(activeLabel, Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                            style = MaterialTheme.typography.titleLarge.merge(TabularTextStyle), textAlign = TextAlign.Center)
+                        if (activeLabel != null) {
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                            ) {
+                                Text(activeLabel,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
                     }
                     if (loading) Text(stringResource(if (sleep) R.string.home_sleep_loading else R.string.home_work_loading),
-                        style = MaterialTheme.typography.bodyMedium)
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (hasContent && recordedDurationMs == null && elapsed == null && !loading && !failed) {
                         Text(stringResource(if (sleep) R.string.home_sleep_no_completed else R.string.home_work_no_completed),
-                            style = MaterialTheme.typography.bodySmall)
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center)
                     }
-                    if (feedback != null) Text(feedback, Modifier.fillMaxWidth().heightIn(min = 60.dp).testTag("$prefix-feedback"),
-                        style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                    if (feedback != null) Text(feedback, Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("$prefix-feedback"),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center)
                 }
             }
             if (failed) {
                 Text(stringResource(if (sleep) R.string.home_sleep_read_error else R.string.home_work_read_error),
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 if (hasContent) Text(stringResource(if (sleep) R.string.home_sleep_stale else R.string.home_work_stale),
-                    style = MaterialTheme.typography.bodySmall)
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 SecondaryButton(onClick = onRetry, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.retry)) }
             }
         }

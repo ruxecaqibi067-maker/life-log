@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,7 +60,10 @@ import com.personal.lifelog.ui.components.ErrorState
 import com.personal.lifelog.ui.components.RecordCard
 import com.personal.lifelog.ui.components.RecordTopBar
 import com.personal.lifelog.ui.components.SecondaryButton
+import com.personal.lifelog.ui.components.SectionHeader
+import com.personal.lifelog.ui.components.TonalCard
 import com.personal.lifelog.ui.theme.LogDimens
+import com.personal.lifelog.ui.theme.TabularTextStyle
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -92,8 +96,10 @@ fun SettingsScreen(
     onDismissBackupResult: () -> Unit = {},
     onRetryRecovery: () -> Unit = {},
     autoJsonEnabled: Boolean = true,
+    autoJsonPath: String? = null,
     autoJsonWriteFailed: Boolean = false,
     onAutoJsonEnabledChanged: (Boolean) -> Unit = {},
+    onOpenAiReviewTest: (() -> Unit)? = null,
 ) {
     val backupBlocked = backupState is BackupRestoreState.Working ||
         backupState is BackupRestoreState.Preview ||
@@ -120,129 +126,163 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = LogDimens.page, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(LogDimens.group),
+                .padding(horizontal = LogDimens.page, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(LogDimens.page),
         ) {
-            SectionLabel(stringResource(R.string.settings_theme))
-            ThemeSelector(themeMode, onThemeSelected)
-            if (themeWriteFailed) {
-                ErrorState(message = stringResource(R.string.settings_theme_error))
-            }
-
-            SecondaryButton(onClick = onOpenExercises, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Filled.FitnessCenter, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.settings_exercises))
-            }
-
-            SectionLabel(stringResource(R.string.settings_backup))
-            Row(
-                modifier = Modifier.fillMaxWidth().toggleable(
-                    value = autoJsonEnabled, role = Role.Switch, onValueChange = onAutoJsonEnabledChanged,
-                ).padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_auto_json))
-                    Text(stringResource(R.string.settings_auto_json_path), style = MaterialTheme.typography.bodySmall)
+            RecordCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
+                    SectionLabel(stringResource(R.string.settings_theme))
+                    ThemeSelector(themeMode, onThemeSelected)
+                    if (themeWriteFailed) {
+                        ErrorState(message = stringResource(R.string.settings_theme_error))
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    SecondaryButton(onClick = onOpenExercises, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Filled.FitnessCenter, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.settings_exercises))
+                    }
                 }
-                Switch(checked = autoJsonEnabled, onCheckedChange = null)
-            }
-            if (autoJsonWriteFailed) {
-                ErrorState(message = stringResource(R.string.settings_auto_json_error))
-            }
-            Text(
-                text = stringResource(R.string.settings_backup_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            SecondaryButton(
-                onClick = onExportBackup,
-                enabled = canStartBackup,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(Icons.Filled.Backup, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.settings_backup_export))
-            }
-            Text(
-                text = lastExportAtUtcMs?.let {
-                    stringResource(R.string.settings_last_export, formatBackupTime(it, zoneId))
-                } ?: stringResource(R.string.settings_never_exported),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            SecondaryButton(
-                onClick = onSelectBackup,
-                enabled = canStartBackup,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(Icons.Filled.Restore, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.settings_backup_restore))
-            }
-            SecondaryButton(
-                onClick = onExportRollback,
-                enabled = canStartBackup,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(Icons.Filled.History, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.settings_backup_rollback_export))
             }
 
-            when (val state = backupState) {
-                BackupRestoreState.Idle -> Unit
-                is BackupRestoreState.Working -> BackupProgressCard(
-                    operation = state.operation,
-                    cancelling = state.cancelling,
-                    onCancel = onCancelBackupTask,
-                )
-                is BackupRestoreState.Preview -> BackupPreviewDialog(
-                    preview = state.prepared.preview,
-                    zoneId = zoneId,
-                    onConfirm = onConfirmRestore,
-                    onCancel = onCancelBackupPreview,
-                )
-                is BackupRestoreState.Result -> BackupResultCard(
-                    outcome = state.outcome,
-                    zoneId = zoneId,
-                    onDismiss = onDismissBackupResult,
-                    onRetryRecovery = onRetryRecovery,
-                    onExportBackup = onExportBackup,
-                    onSelectBackup = onSelectBackup,
-                    onExportRollback = onExportRollback,
-                )
+            RecordCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
+                    SectionLabel(stringResource(R.string.settings_backup))
+                    TonalCard(Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().toggleable(
+                                value = autoJsonEnabled, role = Role.Switch, onValueChange = onAutoJsonEnabledChanged,
+                            ).padding(horizontal = LogDimens.group, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(stringResource(R.string.settings_auto_json), style = MaterialTheme.typography.bodyLarge)
+                                Text(autoJsonPath ?: stringResource(R.string.settings_auto_json_path), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = autoJsonEnabled, onCheckedChange = null)
+                        }
+                    }
+                    if (autoJsonWriteFailed) {
+                        ErrorState(message = stringResource(R.string.settings_auto_json_error))
+                    }
+                    Text(
+                        text = stringResource(R.string.settings_backup_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SecondaryButton(
+                        onClick = onExportBackup,
+                        enabled = canStartBackup,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.Backup, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.settings_backup_export))
+                    }
+                    Text(
+                        text = lastExportAtUtcMs?.let {
+                            stringResource(R.string.settings_last_export, formatBackupTime(it, zoneId))
+                        } ?: stringResource(R.string.settings_never_exported),
+                        style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SecondaryButton(
+                        onClick = onSelectBackup,
+                        enabled = canStartBackup,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.settings_backup_restore))
+                    }
+                    SecondaryButton(
+                        onClick = onExportRollback,
+                        enabled = canStartBackup,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.settings_backup_rollback_export))
+                    }
+
+                    when (val state = backupState) {
+                        BackupRestoreState.Idle -> Unit
+                        is BackupRestoreState.Working -> BackupProgressCard(
+                            operation = state.operation,
+                            cancelling = state.cancelling,
+                            onCancel = onCancelBackupTask,
+                        )
+                        is BackupRestoreState.Preview -> BackupPreviewDialog(
+                            preview = state.prepared.preview,
+                            zoneId = zoneId,
+                            onConfirm = onConfirmRestore,
+                            onCancel = onCancelBackupPreview,
+                        )
+                        is BackupRestoreState.Result -> BackupResultCard(
+                            outcome = state.outcome,
+                            zoneId = zoneId,
+                            onDismiss = onDismissBackupResult,
+                            onRetryRecovery = onRetryRecovery,
+                            onExportBackup = onExportBackup,
+                            onSelectBackup = onSelectBackup,
+                            onExportRollback = onExportRollback,
+                        )
+                    }
+                }
             }
 
-            SectionLabel(stringResource(R.string.settings_about))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = stringResource(R.string.settings_version),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = versionName(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (onOpenAiReviewTest != null) {
+                RecordCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
+                        SectionLabel(stringResource(R.string.ai_review_test_settings_title))
+                        Text(
+                            text = stringResource(R.string.ai_review_test_settings_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        SecondaryButton(
+                            onClick = onOpenAiReviewTest,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.ai_review_test_settings_open))
+                        }
+                    }
+                }
             }
-            Text(
-                text = stringResource(R.string.settings_local_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+
+            RecordCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(LogDimens.card), verticalArrangement = Arrangement.spacedBy(LogDimens.group)) {
+                    SectionLabel(stringResource(R.string.settings_about))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(LogDimens.group),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_version),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = versionName(),
+                            style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.settings_local_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }
@@ -289,13 +329,7 @@ private fun ThemeSelector(themeMode: ThemeMode, onSelected: (ThemeMode) -> Unit)
 }
 
 @Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-    )
-}
+private fun SectionLabel(text: String) = SectionHeader(text)
 
 @Composable
 private fun BackupProgressCard(
@@ -356,40 +390,45 @@ private fun BackupPreviewDialog(
                 modifier = Modifier
                     .heightIn(max = 420.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
                     text = stringResource(R.string.backup_preview_replace_warning),
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                Text(
-                    text = stringResource(R.string.backup_preview_counts),
-                    style = MaterialTheme.typography.titleSmall,
-                )
-                Text(countsLine(R.string.backup_preview_meals, counts["meals"] ?: 0))
-                Text(countsLine(R.string.backup_preview_sleeps, counts["sleeps"] ?: 0))
-                Text(countsLine(R.string.backup_preview_work, counts["workRecords"] ?: 0))
-                Text(countsLine(R.string.backup_preview_sessions, counts["sessions"] ?: 0))
-                Text(countsLine(R.string.backup_preview_exercises, counts["exercises"] ?: 0))
-                Text(countsLine(R.string.backup_preview_items, counts["items"] ?: 0))
-                Text(countsLine(R.string.backup_preview_sets, counts["sets"] ?: 0))
-                Text(countsLine(R.string.backup_preview_media, counts["media"] ?: 0))
-                Text(countsLine(R.string.backup_preview_todos, preview.todoCount))
-                Text(countsLine(R.string.backup_preview_habits, preview.habitCount))
+                TonalCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(LogDimens.group), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = stringResource(R.string.backup_preview_counts),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(countsLine(R.string.backup_preview_meals, counts["meals"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_sleeps, counts["sleeps"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_work, counts["workRecords"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_sessions, counts["sessions"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_exercises, counts["exercises"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_items, counts["items"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_sets, counts["sets"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_media, counts["media"] ?: 0), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_todos, preview.todoCount), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                        Text(countsLine(R.string.backup_preview_habits, preview.habitCount), style = MaterialTheme.typography.bodyMedium.merge(TabularTextStyle))
+                    }
+                }
                 if (preview.earliestLocalDate != null && preview.latestLocalDate != null) {
                     Text(stringResource(R.string.backup_preview_calendar_range,
-                        preview.earliestLocalDate, preview.latestLocalDate), style = MaterialTheme.typography.bodySmall)
+                        preview.earliestLocalDate, preview.latestLocalDate), style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle))
                 }
                 Text(stringResource(R.string.backup_preview_todo_replace_note), style = MaterialTheme.typography.bodySmall)
-                Text(range, style = MaterialTheme.typography.bodySmall)
+                Text(range, style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle))
                 Text(stringResource(if (preview.hasActiveWork) R.string.backup_preview_has_active_work
-                    else R.string.backup_preview_no_active_work))
+                    else R.string.backup_preview_no_active_work), style = MaterialTheme.typography.bodySmall)
                 Text(stringResource(R.string.backup_preview_sleep_goal,
                     preview.targetSleepMinutes?.let { com.personal.lifelog.feature.home.durationMinutesText(it.toLong()) }
-                        ?: stringResource(R.string.work_goal_unset)))
+                        ?: stringResource(R.string.work_goal_unset)), style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle))
                 Text(stringResource(R.string.backup_preview_work_goal,
                     preview.targetWorkMinutes?.let { com.personal.lifelog.feature.home.durationMinutesText(it.toLong()) }
-                        ?: stringResource(R.string.work_goal_unset)))
+                        ?: stringResource(R.string.work_goal_unset)), style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle))
                 Text(
                     text = stringResource(
                         if (preview.hasActiveSleep) {
@@ -405,7 +444,7 @@ private fun BackupPreviewDialog(
                         R.string.backup_preview_exported_at,
                         formatBackupTime(preview.exportedAtUtcMs, zoneId),
                     ),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.merge(TabularTextStyle),
                 )
                 Text(
                     text = stringResource(R.string.backup_preview_app_version, preview.appVersion),
@@ -414,6 +453,7 @@ private fun BackupPreviewDialog(
                 Text(
                     text = stringResource(R.string.backup_preview_rollback_note),
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },

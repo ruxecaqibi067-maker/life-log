@@ -33,6 +33,9 @@ private fun text(size: Int, line: Int, weight: FontWeight = FontWeight.Normal) =
     fontSize = size.sp, lineHeight = line.sp, fontWeight = weight, letterSpacing = 0.sp,
 )
 
+internal val TabularTextStyle: TextStyle
+    get() = TextStyle(fontFeatureSettings = "tnum")
+
 // System font and sp preserve user font settings, including Chinese fallback fonts.
 internal val LogTypography = Typography(
     headlineSmall = text(24, 34, FontWeight.Medium),

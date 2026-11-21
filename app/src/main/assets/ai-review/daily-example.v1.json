@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "selectedDate": "2026-11-18",
+  "timeZone": "Asia/Shanghai",
+  "snapshotAt": "2026-11-18T16:30:00+08:00",
+  "hasAnyRecord": true,
+  "sleep": {
+    "targetMinutes": 480,
+    "completedSegmentCount": 1,
+    "completedDurationMinutes": 480,
+    "hasActiveSegment": false,
+    "activeStartedAt": null,
+    "completedSegments": [
+      {
+        "startedAt": "2026-11-17T23:00:00+08:00",
+        "endedAt": "2026-11-18T07:00:00+08:00",
+        "durationMinutes": 480
+      }
+    ]
+  },
+  "work": {
+    "targetMinutes": 480,
+    "completedSegmentCount": 1,
+    "completedDurationMinutes": 180,
+    "hasActiveSegment": true,
+    "activeStartedAt": "2026-11-18T15:00:00+08:00",
+    "completedSegments": [
+      {
+        "startedAt": "2026-11-18T09:00:00+08:00",
+        "endedAt": "2026-11-18T12:00:00+08:00",
+        "durationMinutes": 180
+      }
+    ]
+  },
+  "meals": {
+    "recordCount": 1,
+    "photoOnlyRecordCount": 1,
+    "totalPhotoCount": 2,
+    "records": [
+      {
+        "occurredAt": "2026-11-18T12:30:00+08:00",
+        "hasText": false,
+        "photoCount": 2,
+        "satiety": null
+      }
+    ]
+  },
+  "workouts": {
+    "sessionCount": 1,
+    "itemCount": 2,
+    "sessions": [
+      {
+        "occurredAt": "2026-11-18T13:30:00+08:00",
+        "effort": "MODERATE",
+        "itemCount": 2,
+        "items": [
+          {
+            "name": "跑步",
+            "type": "CARDIO",
+            "durationSeconds": 1800,
+            "distanceMeters": null,
+            "setCount": 0,
+            "sets": []
+          },
+          {
+            "name": "卧推",
+            "type": "STRENGTH",
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "setCount": 3,
+            "sets": [
+              {
+                "weightGrams": 60000,
+                "repetitions": 8
+              },
+              {
+                "weightGrams": 60000,
+                "repetitions": 8
+              },
+              {
+                "weightGrams": 60000,
+                "repetitions": 8
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
